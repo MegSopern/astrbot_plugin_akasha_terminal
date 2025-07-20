@@ -7,10 +7,10 @@
 
 export const helpCfg = {
   // 帮助标题
-  title: '虚空trss版帮助',
+  title: '虚空帮助',
 
   // 帮助副标题
-  subTitle: 'TRSS-Yunzai & trss-akasha-terminal-plugin',
+  subTitle: 'AstrBot & akasha-terminal',
 
   // 帮助表格列数，可选：2-5，默认3
   // 注意：设置列数过多可能导致阅读困难，请参考实际效果进行设置
