@@ -264,4 +264,4 @@ export const cfg = {
    ## 📜 许可证
   - 本项目使用 AGPL-3.0 许可证开源
   
-![Star History Chart](https://api.star-history.com/svg?repos=lqc-xhh/astrbot_plugin_akasha-terminal&type)
+![Star History Chart](https://api.star-history.com/svg?repos=Xinhaihai-Xinhaihai/astrbot_plugin_akasha-terminal&type)
