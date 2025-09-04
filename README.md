@@ -2,6 +2,11 @@
 
 # astrbot_plugin_akasha-terminal
 
+[![GitHub](https://img.shields.io/badge/作者-Xinhaihai-FB7299)](https://github.com/Xinhaihai)
+[![GitHub](https://img.shields.io/badge/作者-wbndm1234-FB7299)](https://github.com/wbndm1234)
+[![GitHub](https://img.shields.io/badge/作者-MegSopern-FB7299)](https://github.com/MegSopern)
+
+#
 ![:动态访问量](https://count.kjchmc.cn/get/@:astrbot_plugin_akasha-terminal)
 
 
