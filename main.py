@@ -25,10 +25,10 @@ class AkashaTerminal(Star):
             logger.info("Akasha Terminal用户系统插件初始化完成")
         except Exception as e:
             logger.error(f"Akasha Terminal用户系统插件初始化失败:{str(e)}")
-        logo()
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
+        logo_AATP()
 
     @filter.command("个人信息", alias="查看信息")
     async def get_user_info(
