@@ -7,6 +7,7 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
+from .core.task import Task
 from .core.user import User
 from .utils.utils import *
 
@@ -21,10 +22,13 @@ class AkashaTerminal(Star):
     def __init__(self, context: Context):
         super().__init__(context)
         try:
+            # 用户系统
             self.user_system = User()
-            logger.info("Akasha Terminal用户系统插件初始化完成")
+            # 任务系统
+            self.task_system = Task()
+            logger.info("Akasha Terminal插件初始化完成")
         except Exception as e:
-            logger.error(f"Akasha Terminal用户系统插件初始化失败:{str(e)}")
+            logger.error(f"Akasha Terminal插件初始化失败:{str(e)}")
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
@@ -137,3 +141,74 @@ class AkashaTerminal(Star):
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+
+    @filter.command("领取任务", alias="获取任务")
+    async def get_daily_task(self, event: AstrMessageEvent):
+        """领取日常任务"""
+        user_id = str(event.get_sender_id())
+        # 检查是否已有活跃的日常任务
+        quest_data = await self.user_system.get_quest_data(user_id)
+        daily_tasks = quest_data.get("daily", {})
+        if daily_tasks:
+            for task_id in daily_tasks.keys():
+                active_task = await self.task_system.get_task_by_id(task_id)
+            if active_task:
+                message = (
+                    f"你已有一个未完成的日常任务：\n"
+                    f"【{active_task['name']}】\n"
+                    f"描述：{active_task['description']}\n"
+                    f"奖励：{active_task['reward']}\n"
+                    f"请完成当前任务后再领取新的任务"
+                )
+        else:
+            # 没有活跃任务，分配新任务
+            task = await self.task_system.assign_daily_task(user_id)
+            if task:
+                message = (
+                    f"已为你分配日常任务：\n"
+                    f"【{task['name']}】\n"
+                    f"描述：{task['description']}\n"
+                    f"奖励：{task['reward']}"
+                )
+            else:
+                message = "获取任务失败，请稍后再试"
+        yield event.plain_result(message)
+
+    @filter.command("我的任务", alias="查看任务")
+    async def check_my_tasks(self, event: AstrMessageEvent):
+        """查看当前任务进度"""
+        user_id = str(event.get_sender_id())
+        quest_data = await self.user_system.get_quest_data(user_id)
+        daily_tasks = quest_data.get("daily", {})
+
+        if not daily_tasks:
+            yield event.plain_result("你当前没有任务，可使用【领取任务】获取日常任务")
+            return
+
+        message = "你的当前任务：\n"
+        for task_id, progress in daily_tasks.items():
+            task = await self.task_system.get_task_by_id(task_id)
+            if task:
+                message += (
+                    f"【{task['name']}】{progress['current']}/{progress['target']}\n"
+                    f"  描述：{task['description']}\n"
+                )
+        yield event.plain_result(message)
+
+    # 添加任务进度通知处理（在对应的动作处理函数中）
+    @filter.command("打工")
+    async def work_action(self, event: AstrMessageEvent):
+        """处理打工动作并检查任务进度"""
+        user_id = str(event.get_sender_id())
+        # 检查任务进度
+        task_result = await self.task_system.check_task_completion(user_id, "打工")
+        if task_result["progress_msg"]:
+            yield event.plain_result(task_result["progress_msg"])
+        if task_result["completed"]:
+            yield event.plain_result(task_result["message"])
+            # 获取并发送奖励消息
+            success, reward_msg = await self.task_system.grant_reward(
+                user_id, task_result["task_id"]
+            )
+            if success:
+                yield event.plain_result(reward_msg)
