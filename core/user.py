@@ -151,6 +151,20 @@ class User:
 
         return quest_data[quest_key]
 
+    async def update_quest_data(self, user_id, data, group_id=None):
+        """更新用户任务数据"""
+        quest_key = f"{user_id}_{group_id}" if group_id else user_id
+        quest_data = await read_json(self.quest_data_path)
+
+        if quest_key not in quest_data:
+            current_data = await self.get_quest_data(user_id, group_id)
+        else:
+            current_data = quest_data[quest_key]
+
+        current_data.update(data)
+        quest_data[quest_key] = current_data
+        return await write_json(self.quest_data_path, quest_data)
+
     async def delete_user(self, user_id):
         """删除用户所有数据"""
         try:
