@@ -63,7 +63,7 @@ def logo_AATP():
     print("\n\033[95m欢迎使用虚空插件！\033[0m")
 
 
-async def read_json(self, file_path: Path) -> Dict[str, Any]:
+async def read_json(file_path: Path) -> Dict[str, Any]:
     """异步原子读取JSON文件"""
     # 原子读：加共享锁 -> 读 -> 解锁
     if not file_path.exists():
@@ -91,7 +91,7 @@ async def read_json(self, file_path: Path) -> Dict[str, Any]:
         return {}
 
 
-async def write_json(self, file_path: Path, data: Dict[str, Any]) -> bool:
+async def write_json(file_path: Path, data: Dict[str, Any]) -> bool:
     """异步原子写入JSON文件"""
     loop = asyncio.get_running_loop()
 
