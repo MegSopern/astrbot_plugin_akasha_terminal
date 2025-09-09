@@ -1,5 +1,4 @@
 import re
-
 import aiohttp  # noqa: F401
 import astrbot.api.message_components as Comp
 from aiocqhttp import CQHttp  # noqa: F401
@@ -8,17 +7,26 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 import json
 import time
+from pathlib import Path
+import random
 
-@register("helloworld", "YourName", "一个简单的 Hello World 插件", "1.0.0")
-class MyPlugin(Star):
-    def __init__(self, context: Context):
-        super().__init__(context)
+key = random.randint(1,6)
 
-    async def initialize(self):
-        """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
+class Task():
+    def __init__(self,Task_name,Task_reward_1,Task_reward_2,Task_time):
+        with ("./data/task.json","r") as Task_file:
+              self.Task_name = Task_file["key"]["2"]
+              self.Task_reward_1 = Task_file["key"]["4"]["1"]   #奖励钱
+              self.Task_reward_2 = Task_file["key"]["4"]["3"]   #奖励quest_points
+        #冷却时间 待定
+        if key == 1:    self.Task_time = 1
+        elif key == 2:    self.Task_time = 1
+        elif key == 3:    self.Task_time = 1
+        elif key == 4:    self.Task_time = 1
+        elif key == 5:    self.Task_time = 1
+        else: self.Task_time = 1
+
+
     
-    # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
-    @filter.command("helloworld")
-    
-    async def terminate(self):
-        """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+ 
+            
