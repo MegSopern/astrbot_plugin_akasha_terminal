@@ -1,0 +1,68 @@
+{
+
+"1":{
+	"id":"daily_work",
+	"name":"勤劳工作者",
+	"description": "完成3次打工赚钱",
+	"reward":{
+		"money":"500",
+		"items":{"2":1},
+		"quest_points":"10"
+	}
+},
+
+"2":{
+	"id":"daily_date",
+	"name":"浪漫约会",
+		"description": "进行1次约会",
+	"reward":{
+		"love":"100",
+		"items":{"1":2},
+		"quest_points":"15"
+	}
+},
+
+"3":{
+	"id":"daily_shop",
+	"name":"购物达人",
+	"description": "在商店购买3件道具",
+	"reward":{
+		 "money":"300",
+		 "items":{"4":1},
+		 "quest_points":"8"
+},
+
+"4":{
+	"id":"daily_synthesis",
+	"name":"合成大师",
+	"description":"成功合成2个道具",
+	"reward":{
+		"money":"800",
+		"items":{"5":1},
+		"quest_points":"20"
+	}
+},
+
+"5":{
+	"id":"daily_gift",
+	"name":"慷慨之心",
+	"description":"赠送1件礼物给其他玩家",
+	"reward":{
+		"love":"50",
+		"items":{"1":1},
+		"quest_points":"12"
+	}
+},
+
+"6":{
+	"id":"weekly_relationship",
+	"name":"社交达人",
+	"description":"与5个不同的人互动",
+	"reward":{
+		"money":"1500"
+	}
+		
+}
+
+
+}}
