@@ -1,0 +1,284 @@
+{
+    "enhanced_wife_system": {
+        "description": "增强老婆系统",
+        "type": "object",
+        "hint": "",
+        "items": {
+            "date_cooldown": {
+                "description": "约会冷却时间",
+                "type": "int",
+                "hint": "增强老婆系统约会功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 86400
+            },
+            "confession_cooldown": {
+                "description": "表白冷却时间",
+                "type": "int",
+                "hint": "增强老婆系统表白功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 86400
+            },
+            "propose_cooldown": {
+                "description": "求婚冷却时间",
+                "type": "int",
+                "hint": "增强老婆系统求婚功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 86400
+            },
+            "confession_wait": {
+                "description": "表白等待时间",
+                "type": "int",
+                "hint": "表白等待时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            }
+        }
+    },
+    "quest_system": {
+        "description": "任务系统",
+        "type": "object",
+        "hint": "",
+        "items": {
+            "daily_refresh": {
+                "description": "每日任务刷新时间",
+                "type": "int",
+                "hint": "每日任务刷新的时间间隔（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 604800
+            },
+            "weekly_refresh": {
+                "description": "周常任务刷新时间",
+                "type": "int",
+                "hint": "周常任务刷新的时间间隔（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 604800
+            },
+            "special_refresh": {
+                "description": "特殊任务刷新时间",
+                "type": "int",
+                "hint": "特殊任务刷新的时间间隔（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 604800
+            },
+            "quest_complete_delay": {
+                "description": "任务完成延迟",
+                "type": "int",
+                "hint": "任务完成的延迟时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 60
+            }
+        }
+    },
+    "shop_system": {
+        "description": "商城系统",
+        "type": "object",
+        "hint": "",
+        "items": {
+            "signin_cooldown": {
+                "description": "签到冷却时间",
+                "type": "int",
+                "hint": "商城系统签到功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 86400
+            },
+            "streak_expire": {
+                "description": "连续签到过期时间",
+                "type": "int",
+                "hint": "连续签到过期时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 604800
+            },
+            "protection_duration": {
+                "description": "保护效果持续时间",
+                "type": "int",
+                "hint": "保护效果持续时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 604800
+            },
+            "luck_duration": {
+                "description": "幸运效果持续时间",
+                "type": "int",
+                "hint": "幸运效果持续时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 604800
+            },
+            "workboost_duration": {
+                "description": "打工加成持续时间",
+                "type": "int",
+                "hint": "打工加成持续时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 604800
+            }
+        }
+    },
+    "synthesis_system": {
+        "description": "合成系统",
+        "type": "object",
+        "hint": "",
+        "items": {
+            "synthesis_cooldown": {
+                "description": "合成冷却时间",
+                "type": "int",
+                "hint": "合成系统的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            },
+            "decompose_cooldown": {
+                "description": "分解冷却时间",
+                "type": "int",
+                "hint": "分解系统的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            },
+            "batch_synthesis_delay": {
+                "description": "批量合成延迟",
+                "type": "int",
+                "hint": "批量合成的延迟时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 60
+            }
+        }
+    },
+    "other_systems": {
+        "description": "其他系统",
+        "type": "object",
+        "hint": "",
+        "items": {
+            "gacha_cooldown": {
+                "description": "抽卡冷却时间",
+                "type": "int",
+                "hint": "抽卡系统的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            },
+            "duel_cooldown": {
+                "description": "决斗冷却时间",
+                "type": "int",
+                "hint": "决斗系统的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            },
+            "exercise_cooldown": {
+                "description": "修炼冷却时间",
+                "type": "int",
+                "hint": "修炼系统的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 7200
+            },
+            "breakthrough_cooldown": {
+                "description": "突破冷却时间",
+                "type": "int",
+                "hint": "突破系统的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 7200
+            },
+            "idcard_cooldown": {
+                "description": "身份证查询冷却时间",
+                "type": "int",
+                "hint": "身份证查询的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 300
+            },
+            "cpwsc_cooldown": {
+                "description": "猜拳冷却时间",
+                "type": "int",
+                "hint": "猜拳系统的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 300
+            }
+        }
+    },
+    "wife_system": {
+        "description": "老婆系统",
+        "type": "object",
+        "hint": "",
+        "items": {
+            "random_marry_cooldown": {
+                "description": "随机娶群友冷却",
+                "type": "int",
+                "hint": "随机娶群友功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            },
+            "force_marry_cooldown": {
+                "description": "强娶冷却时间",
+                "type": "int",
+                "hint": "强娶功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            },
+            "work_cooldown": {
+                "description": "打工冷却时间",
+                "type": "int",
+                "hint": "老婆系统打工功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 7200
+            },
+            "hug_cooldown": {
+                "description": "抱抱冷却时间",
+                "type": "int",
+                "hint": "抱抱功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            },
+            "shopping_cooldown": {
+                "description": "逛街冷却时间",
+                "type": "int",
+                "hint": "逛街功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 3600
+            },
+            "steal_wife_cooldown": {
+                "description": "抢老婆冷却时间",
+                "type": "int",
+                "hint": "抢老婆功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 7200
+            },
+            "welfare_cooldown": {
+                "description": "低保冷却时间",
+                "type": "int",
+                "hint": "低保功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 14400
+            },
+            "lottery_cooldown": {
+                "description": "获取虚空彩球冷却时间",
+                "type": "int",
+                "hint": "获取虚空彩球功能的冷却时间（秒）",
+                "default": 0,
+                "min": 0,
+                "max": 7200
+            }
+        }
+    }
+}
