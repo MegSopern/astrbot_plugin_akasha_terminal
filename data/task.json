@@ -1,17 +1,18 @@
 {
 
-"1":{
-	"id":"daily_work",
+"daily_work":{
+	"id":"1",
 	"name":"勤劳工作者",
 	"description": "完成3次打工赚钱",
+	"type":"daily",
 	"reward":{
 		"money":"500",
 		"items":{"2":1},
 		"quest_points":"10"
 	}
 },
-"2":{
-	"id":"daily_shop",
+"daily_shop":{
+	"id":"2",
 	"name":"购物达人",
 	"description": "在商店购买3件道具",
 	"reward":{
@@ -20,8 +21,8 @@
 		 "quest_points":"8"
 	}
 },
-"3":{
-	"id":"daily_synthesis",
+"daily_synthesis":{
+	"id":"3",
 	"name":"合成大师",
 	"description":"成功合成2个道具",
 	"reward":{
@@ -30,32 +31,178 @@
 		"quest_points":"20"
 	}
 },
-"4":{
-	"id":"weekly_relationship",
+"weekly_relationship":{
+	"id":"4",
 	"name":"社交达人",
 	"description":"与5个不同的人互动",
 	"reward":{
 		"money":"1500"
 	}	
 },
-"5":{
-	"id":"daily_gift",
+"daily_gift":{
+	"id":"5",
 	"name":"慷慨之心",
 	"description":"赠送1件礼物给其他玩家",
 	"reward":{
-		"love":"50",
+		"money":"50",
 		"items":{"1":1},
 		"quest_points":"12"
 	}
 },
-"6":{
-	"id":"daily_date",
+"daily_date":{
+	"id":"6",
 	"name":"浪漫约会",
-		"description": "进行1次约会",
+	"description": "进行1次约会",
 	"reward":{
-		"love":"100",
+		"money":"100",
 		"items":{"1":2},
 		"quest_points":"15"
+	}
+},
+"weekly_wealth":{
+	"id":"7",
+	"name":"财富积累者",
+	"description": "累计获取10000金币",
+	"reward":{
+		"money":"100",
+		"items":{"6":1},
+		"quest_points":"15"
+	}
+},
+"special_sign":{
+	"id":"8",
+	"name":"初次登录",
+	"description": "首次使用任务系统",
+	"reward":{
+		"money":"100",
+		"items":{"4":2},
+		"quest_points":"15"
+	}
+},
+"weekly_money":{
+	"id":"9",
+	"name":"金币吞噬者",
+	"description": "累计获取100000金币",
+	"reward":{
+		"money":"100",
+		"items":{"8":1},
+		"quest_points":"15"
+	}
+},
+"achievement_hunter":{
+	"id":"10",
+	"name":"任务猎人",
+	"description": "完成十个任务",
+	"reward":{
+		"money":"100",
+		"items":{"9":1},
+		"quest_points":"15"
+	}
+},
+
+"daily_protect":{
+	"id":"11",
+	"name":"保护商队",
+	"description":"保护商人安全到达目的地",
+	"reward":{
+		"money":"1300",
+		"items":{"2":1},
+		"quest_points":"12"
+	}
+},
+
+"daily_finding":{
+	"id":"12",
+	"name":"寻找遗物",
+	"description":"根据模糊的线索,寻找一件遗物",
+	"reward":{
+		"money":"1000",
+		"items":{"6":2},
+		"quest_points":"0"
+	}
+},
+
+"daily_risk":{
+	"id":"13",
+	"name":"森林冒险",
+	"description":"森林探险",
+	"reward":{
+		"money":"888",
+		"items":{"1":3},
+		"quest_points":"0"
+	}
+},
+
+"weekly_purofy":{
+	"id":"14",
+	"name":"净化水源",
+	"description":"某个村庄的水源被污染了,需要净化",
+	"reward":{
+		"money":"288",
+		"items":{"5":2},
+		"quest_points":"0"
+	}
+},
+
+"weekly_teaching":{
+	"id":"15",
+	"name":"学习知识",
+	"description":"学习知识",
+	"reward":{
+		"money":"0",
+		"items":{"7":2},
+		"quest_points":"0"
+}
+},
+"special_party":{
+	"id":"16",
+	"name":"聚会狂欢",
+	"description":"你胜利了",
+	"reward":{
+		"money":"1888",
+		"items":{"10":3},
+		"quest_points":"0"
+	}
+},
+
+"weekly_hunter":{
+	"id":"17",
+	"name":"狩猎野兽",
+	"description":"狩猎传说中的野兽",
+	"reward":{
+		"money":"1488",
+		"items":{"8":1},
+		"quest_points":"0"
+	}
+},
+"weekly_boss":{
+	"id":"18",
+	"name":"每周挑战",
+	"description":"挑战boss",
+	"reward":{
+		"money":"2088",
+		"items":{"8":1},
+		"quest_points":"0"
+	}
+},
+"daily_fight":{
+	"id":"19",
+	"name":"武术交流",
+	"description":"和一位玩家进行一次决斗",
+	"reward":{
+		"money":"666",
+		"items":{"4":1},
+		"quest_points":"0"
+	}
+},
+"special_final":{
+	"id":"20",
+	"name":"You do it",
+	"description":"成为最强*(排行第一且保持一个月)",
+	"reward":{
+		"money":"58888",
+		"items":{"10":5},
+		"quest_points":"0"
 	}
 }
 }
