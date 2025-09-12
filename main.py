@@ -61,7 +61,7 @@ class AkashaTerminal(Star):
 
             message = (
                 f"用户信息:\n"
-                f"ID: {user_id}\n"
+                f"姓名: {user_id}\n"
                 f"等级: {user_data.get('level', 1)}\n"
                 f"经验: {battle_data.get('experience', 0)}\n"
                 f"金钱: {home_data.get('money', 0)}\n"
