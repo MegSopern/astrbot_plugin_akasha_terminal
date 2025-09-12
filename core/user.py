@@ -11,7 +11,7 @@ from ..utils.utils import read_json, write_json
 
 # 数据存储路径：插件目录上一层的plugin_data/astrbot_plugin_akasha_terminal
 BASE_DIR = (
-    Path(__file__).parent.parent.parent.parent
+    Path(__file__).resolve().parent.parent.parent.parent
     / "plugin_data"
     / "astrbot_plugin_akasha_terminal"
 )
