@@ -7,6 +7,10 @@ from pathlib import Path
 from typing import Any, Dict
 
 from astrbot.api import logger
+from astrbot.core.message.components import Reply
+from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
+    AiocqhttpMessageEvent,
+)
 
 
 def logo_AATP():
@@ -114,3 +118,20 @@ async def write_json(file_path: Path, data: Dict[str, Any]) -> bool:
     except Exception as e:
         logger.error(f"写入文件 {file_path} 失败: {str(e)}")
         return False
+
+
+def get_referenced_msg_id(event: AiocqhttpMessageEvent) -> str | None:
+    """获取被引用消息者的id"""
+    for seg in event.get_messages():
+        if isinstance(seg, Reply):
+            return str(seg.sender_id)
+
+
+async def get_nickname(event: AiocqhttpMessageEvent, user_id) -> str:
+    """获取群用户的群昵称或QQ名"""
+    client = event.bot
+    group_id = event.get_group_id()
+    all_info = await client.get_group_member_info(
+        group_id=int(group_id), user_id=int(user_id)
+    )
+    return all_info.get("card") or all_info.get("nickname")

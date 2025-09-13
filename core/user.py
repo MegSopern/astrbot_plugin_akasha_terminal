@@ -1,5 +1,4 @@
 import json
-import os  # noqa: F401
 import time
 from pathlib import Path
 from typing import Any, Dict  # noqa: F401
@@ -198,3 +197,69 @@ class User:
         except Exception as e:
             logger.error(f"获取用户列表失败: {str(e)}")
             return []
+
+    async def format_user_info(self, user_id: str, nickname: str) -> str:
+        """格式化用户信息为字符串"""
+        try:
+            user_data = await self.get_user(user_id)
+            battle_data = await self.get_battle_data(user_id)
+            home_data = await self.get_home_data(user_id)
+            return (
+                f"用户信息:\n"
+                f"昵称：{nickname}\n"
+                f"ID: {user_id}\n"
+                f"等级: {user_data.get('level', 1)}\n"
+                f"经验: {battle_data.get('experience', 0)}\n"
+                f"金钱: {home_data.get('money', 0)}\n"
+                f"好感度: {home_data.get('love', 0)}"
+            )
+        except Exception as e:
+            logger.error(f"格式化用户信息失败: {str(e)}")
+            return f"获取用户信息失败: {str(e)}"
+
+    async def add_money(self, user_id: str, input_str: str) -> tuple[bool, str]:
+        """
+        增加用户金钱\n
+        :param user_id: 用户ID
+        :param amount: 增加的金额
+        :return: (是否成功, 结果消息)
+        """
+        try:
+            parts = input_str.strip().split()
+            if len(parts) < 1:
+                return (
+                    False,
+                    "请指定增加的金额，使用方法:/增加金钱 金额 qq\n或：/增加金钱 金额 @用户",
+                )
+            amount: int = parts[0]
+            to_user_id = parts[1] if len(parts) > 1 else user_id
+
+            if amount <= 0:
+                return False, "增加的金额必须为正整数"
+
+            home_data = await self.get_home_data(to_user_id)
+            home_data["money"] = home_data.get("money", 0) + amount
+            await self.update_home_data(user_id, home_data)
+
+            return True, f"成功增加 {amount} 金钱\n当前金钱: {home_data['money']}"
+        except Exception as e:
+            logger.error(f"增加用户金钱失败: {str(e)}")
+            return False, "操作失败，请稍后再试~"
+
+    async def get_all_users_info(self) -> str:
+        """获取所有用户详细信息列表"""
+        try:
+            user_list = await self.get_user_list()
+            if not user_list:
+                return "暂无用户数据"
+
+            message = "用户列表:\n"
+            for user_id in user_list:
+                user_data = await self.get_user(user_id)
+                nickname = user_data.get("nickname", "未设置")
+                message += f"- {user_id} ({nickname})\n"
+
+            return message
+        except Exception as e:
+            logger.error(f"获取所有用户信息失败: {str(e)}")
+            return f"操作失败: {str(e)}"
