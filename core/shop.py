@@ -112,7 +112,7 @@ class Shop:
         if quantity <= 0:
             return False, "购买数量必须为正整数"
 
-        target_item = items[item_name]
+        target_item = items.get(item_name)
 
         # 检查库存
         if target_item["stock"] != -1:  # 有限库存
@@ -209,3 +209,131 @@ class Shop:
         await self._save_backpack_data(backpack)
 
         return True, f"成功给用户{to_user_id}：\n赠送{item_name} x {amount}"
+
+    async def format_shop_items(self) -> str:
+        """格式化商店物品列表为显示文本"""
+        items = await self.get_shop_items()
+        if not items:
+            return "商店暂无商品"
+
+        message = "📦 虚空商城\n"
+        for item_name, item in items.items():
+            stock = "无限" if item["stock"] == -1 else item["stock"]
+            message += f"[{item['id']}] {item_name}：{item['price']}金币\n"
+            message += f"描述: {item['description']}\n(库存: {stock})\n"
+        return message
+
+    async def handle_buy_command(
+        self, user_id: str, input_str: str
+    ) -> tuple[bool, str]:
+        """处理购买命令解析和执行"""
+        try:
+            # 解析输入格式：物品名称 数量
+            parts = input_str.strip().split()
+            if len(parts) < 1:
+                return (
+                    False,
+                    "请指定物品名称，使用方法: /购买道具 物品名称\n"
+                    "或：/购买道具 物品名称 数量",
+                )
+
+            item_name = parts[0]
+            quantity = int(parts[1]) if len(parts) > 1 else 1
+
+            # 获取用户金钱
+            from .user import User  # 避免循环导入
+
+            user_system = User()
+            home_data = await user_system.get_home_data(user_id)
+            user_money = home_data.get("money", 0)
+
+            # 执行购买
+            return await self.buy_item(user_id, item_name, user_money, quantity)
+        except ValueError:
+            return False, "数量必须是数字"
+        except Exception as e:
+            return False, f"购买失败: {str(e)}"
+
+    async def format_backpack(self, user_id: str) -> str:
+        """格式化用户背包为显示文本"""
+        user_backpack = await self.get_user_backpack(user_id)
+        if not user_backpack:
+            return "你的背包是空的，快去商店买点东西吧~"
+
+        message = "🎒 你的背包\n"
+        for item_name, count in user_backpack.items():
+            target_item = await self.get_item_detail(item_name)
+            if target_item:
+                message += f"{item_name} × {count}\n描述:{target_item['description']}\n"
+        return message
+
+    async def handle_gift_command(
+        self, from_user_id: str, input_str: str
+    ) -> tuple[bool, str]:
+        """处理赠送命令解析和执行"""
+        try:
+            # 解析输入格式：@用户 物品名称 数量
+            parts = input_str.strip().split()
+            if len(parts) < 2:
+                return (
+                    False,
+                    "请指定物品名称及赠送对象，使用方法:\n"
+                    "/赠送道具 物品名称 用户ID/@用户\n或：/赠送道具 物品名称 用户ID/@用户 数量",
+                )
+
+            # 提取目标用户ID
+            item_name = parts[0]
+            to_user_id = parts[1]
+            if to_user_id == from_user_id:
+                return (
+                    False,
+                    "请选择除了自己之外的人进行赠送，使用方法:\n"
+                    "/赠送道具 物品名称 用户ID/@用户\n或：/赠送道具 物品名称 用户ID/@用户 数量",
+                )
+            amount = parts[2] if len(parts) > 2 else 1
+            if amount <= 0:
+                return (False, "赠送数量必须为正整数")
+            return await self.gift_item(from_user_id, to_user_id, item_name, amount)
+        except ValueError:
+            return False, "数量必须是数字"
+        except Exception as e:
+            return False, f"赠送失败: {str(e)}"
+
+    async def handle_use_command(
+        self, user_id: str, input_str: str
+    ) -> tuple[bool, str]:
+        """处理使用物品命令解析和执行"""
+        try:
+            parts = input_str.strip().split()
+            if len(parts) < 1:
+                return (
+                    False,
+                    "请指定物品名称，使用方法: /使用道具 物品名称\n"
+                    "或：/使用道具 物品名称 数量",
+                )
+
+            item_name = parts[0]
+            quantity = int(parts[1]) if len(parts) > 1 else 1
+            if quantity <= 0:
+                return (False, "使用数量必须为正整数")
+            success, effect = await self.use_item(user_id, item_name, quantity)
+            if success:
+                # 格式化效果描述
+                effect_desc = []
+                for key, value in effect.items():
+                    if key == "love":
+                        effect_desc.append(f"好感度+{value}")
+                    elif key == "luck_boost":
+                        effect_desc.append(f"幸运值提升{value}%")
+                    elif key == "money_min":
+                        effect_desc.append(f"获得金币{value}-{effect.get('money_max')}")
+                return (
+                    True,
+                    f"成功使用{item_name} ×{quantity}，获得效果:\n {', '.join(effect_desc)}",
+                )
+            else:
+                return False, effect
+        except ValueError:
+            return False, "数量必须是数字"
+        except Exception as e:
+            return False, f"使用失败: {str(e)}"

@@ -221,178 +221,52 @@ class AkashaTerminal(Star):
     async def show_shop(self, event: AstrMessageEvent):
         """显示商店物品列表"""
         try:
-            items = await self.shop_system.get_shop_items()
-            if not items:
-                yield event.plain_result("商店暂无商品")
-                return
-
-            message = "📦 虚空商城\n"
-            for item_name, item in items.items():
-                stock = "无限" if item["stock"] == -1 else item["stock"]
-                message += f"[{item['id']}] {item_name}：{item['price']}金币\n"
-                message += f"描述: {item['description']}\n(库存: {stock})\n"
-
+            message = await self.shop_system.format_shop_items()
             yield event.plain_result(message)
         except Exception as e:
             logger.error(f"显示商店失败: {str(e)}")
-            yield event.plain_result(f"显示商店失败: {str(e)}")
+            yield event.plain_result("显示商店失败，请稍后重试")
 
     @filter.command("购买道具", alias={"买道具", "购买物品", "买物品"})
     async def buy_prop(self, event: AstrMessageEvent):
         """/购买道具 物品名称 数量"""
-        try:
-            user_id = event.get_sender_id()
-            msg = event.message_str.strip().split()
-            # 基础校验：至少需要命令和物品名称
-            if len(msg) < 2:
-                yield event.plain_result(
-                    "请指定物品名称，使用方法: /购买道具 物品名称\n或：/购买道具 物品名称 数量"
-                )
-                return
+        user_id = event.get_sender_id()
+        # 提取命令后的参数部分
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
 
-            # 解析物品名称和数量
-            item_parts = msg[1:]
-            quantity = 1
-            item_name = ""
-            # 检查最后一部分是否为数量（数字）
-            if len(item_parts) >= 1 and item_parts[-1].isdigit():
-                quantity = int(item_parts[-1])
-                item_name = " ".join(item_parts[:-1])
-            else:
-                item_name = " ".join(item_parts)
-
-            # 获取用户金钱
-            home_data = await self.user_system.get_home_data(user_id)
-            user_money = home_data.get("money", 0)
-
-            # 执行购买
-            success, message = await self.shop_system.buy_item(
-                user_id, item_name, user_money, quantity
-            )
-            if success:
-                item = await self.shop_system.get_item_detail(item_name)
-                # 扣除总花费金钱
-                home_data["money"] = user_money - item["price"] * quantity
-                await self.user_system.update_home_data(user_id, home_data)
-
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"购买道具失败: {str(e)}")
-            yield event.plain_result(f"购买道具失败: {str(e)}")
+        success, message = await self.shop_system.handle_buy_command(user_id, input_str)
+        yield event.plain_result(message)
 
     @filter.command("使用道具", alias={"用道具", "使用物品", "用物品"})
     async def use_item(self, event: AstrMessageEvent):
         """使用道具，使用方法: /使用道具 物品名称"""
-        try:
-            user_id: str = event.get_sender_id()
-            meg = event.message_str.strip().split()
+        user_id: str = event.get_sender_id()
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
 
-            if len(meg) < 2:
-                yield event.plain_result(
-                    "请指定物品名称，使用方法: /使用道具 物品名称\n或：/使用道具 物品名称 数量"
-                )
-
-            item_parts = meg[1:]
-            quantity = 1
-            item_name = ""
-            if len(item_parts) >= 1 and item_parts[-1].isdigit():
-                quantity = int(item_parts[-1])
-                item_name = " ".join(item_parts[:-1])
-            else:
-                item_name = " ".join(item_parts)
-
-            success, prop_effect = await self.shop_system.use_item(user_id, item_name)
-
-            if success and isinstance(prop_effect, dict):
-                # 处理物品效果
-                home_data = await self.user_system.get_home_data(user_id)
-                message = "使用成功，获得效果: "
-
-                if "luck_boost" in prop_effect:
-                    yield event.plain_result("\n未完成有关luck_boost的方法")
-                if "duration" in prop_effect:
-                    yield event.plain_result("\n未完成有关duration的方法")
-                    return
-                if "love" in prop_effect:
-                    home_data["love"] = home_data.get("love", 0) + prop_effect["love"]
-                    message += f"\n好感度+{prop_effect['love'] * quantity} "
-                if "money_min" in prop_effect and "money_max" in prop_effect:
-                    total_money = sum(
-                        random.randint(
-                            prop_effect["money_min"], prop_effect["money_max"]
-                        )
-                        for _ in range(quantity)
-                    )
-                    home_data["money"] = home_data.get("money", 0) + total_money
-                    message += f"\n金币+{total_money} "
-                await self.user_system.update_home_data(user_id, home_data)
-                yield event.plain_result(message)
-            else:
-                yield event.plain_result(prop_effect)
-        except Exception as e:
-            logger.error(f"使用道具失败: {str(e)}")
-            yield event.plain_result(f"使用道具失败: {str(e)}")
+        success, message = await self.shop_system.handle_use_command(user_id, input_str)
+        yield event.plain_result(message)
 
     @filter.command("背包", alias="我的背包")
     async def show_backpack(self, event: AstrMessageEvent):
         """查看我的背包"""
         try:
             user_id: str = event.get_sender_id()
-            backpack = await self.shop_system.get_user_backpack(user_id)
-
-            if not backpack:
-                yield event.plain_result("你的背包是空的")
-                return
-
-            message = "🎒 我的背包\n"
-            for item_name, count in backpack.items():
-                item = await self.shop_system.get_item_detail(str(item_name))
-                if item:
-                    message += f"{item['name']} x {count}\n"
-                    message += f"描述: {item['description']}\n"
-
+            message = await self.shop_system.format_backpack(user_id)
             yield event.plain_result(message)
         except Exception as e:
             logger.error(f"查看背包失败: {str(e)}")
-            yield event.plain_result(f"查看背包失败: {str(e)}")
+            yield event.plain_result("查看背包失败，请稍后重试~")
 
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
-    async def gift_item(
-        self, event: AstrMessageEvent, input_id: int | str | None = None
-    ):
+    async def gift_item(self, event: AstrMessageEvent):
         """赠送道具，使用方法: /赠送道具 物品名称 @用户"""
-        logger.info(input_id)
-        try:
-            user_id = event.get_sender_id()
-            meg: str = event.message_str.strip().split()
-            if len(meg) < 3:
-                yield event.plain_result(
-                    "请指定物品名称及赠送对象，使用方法:\n"
-                    "/赠送道具 物品名称 用户ID/@用户\n或：/赠送道具 物品名称 用户ID/@用户 数量"
-                )
-                return
-            if match := re.findall(r"(\d+)", event.message_str):
-                if len(match) < 2:
-                    amount: int = 1
-                else:
-                    amount = int(match[1])
-            if amount < 0:
-                yield event.plain_result("金额必须为正整数")
-                return
-            if len(match) <= 2:
-                if user_id == match[0]:
-                    yield event.plain_result(
-                        "请选择除了自己之外的人进行赠送，使用方法:\n"
-                        "/赠送道具 物品名称 用户ID/@用户\n或：/赠送道具 物品名称 用户ID/@用户 数量"
-                    )
-                    return
-                else:
-                    # 第一个数字作为ID
-                    to_user_id = str(match[0])
-            success, result = await self.shop_system.gift_item(
-                user_id, to_user_id, meg[1], amount
-            )
-            yield event.plain_result(result)
-        except Exception as e:
-            logger.error(f"赠送道具失败: {str(e)}")
-            yield event.plain_result(f"赠送道具失败: {str(e)}")
+        from_user_id: str = event.get_sender_id()
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+
+        success, message = await self.shop_system.handle_gift_command(
+            from_user_id, input_str
+        )
+        yield event.plain_result(message)
