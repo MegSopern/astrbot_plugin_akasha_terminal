@@ -205,3 +205,92 @@ class Task:
             "daily_date": ["约会"],
         }
         return action in action_mapping.get(task["id"], [])
+
+    async def get_user_daily_task(self, user_id: str) -> str:
+        """
+        处理用户领取日常任务的逻辑并返回消息
+        :param user_id: 用户ID
+        :return: 任务相关消息
+        """
+        try:
+            # 检查是否已有活跃的日常任务
+            quest_data = await self.user_system.get_quest_data(user_id)
+            daily_tasks = quest_data.get("daily", {})
+
+            if daily_tasks:
+                task_id = next(iter(daily_tasks.keys()))
+                active_task = await self.get_task_by_id(task_id)
+                if active_task:
+                    return (
+                        f"你已有一个未完成的日常任务：\n"
+                        f"【{active_task['name']}】\n"
+                        f"描述：{active_task['description']}\n"
+                        f"奖励：{active_task['reward']}\n"
+                        f"请完成当前任务后再领取新的任务"
+                    )
+
+            # 没有活跃任务，分配新任务
+            task = await self.assign_daily_task(user_id)
+            if task:
+                return (
+                    f"已为你分配日常任务：\n"
+                    f"【{task['name']}】\n"
+                    f"描述：{task['description']}\n"
+                    f"奖励：{task['reward']}"
+                )
+            return "获取任务失败，请稍后再试"
+        except Exception as e:
+            logger.error(f"处理日常任务领取失败: {str(e)}")
+            return "处理任务时发生错误，请稍后再试"
+
+    async def format_user_tasks(self, user_id: str) -> str:
+        """
+        格式化用户当前任务进度为字符串
+        :param user_id: 用户ID
+        :return: 格式化的任务信息
+        """
+        try:
+            quest_data = await self.user_system.get_quest_data(user_id)
+            daily_tasks = quest_data.get("daily", {})
+
+            if not daily_tasks:
+                return "你当前没有任务，可使用【领取任务】获取日常任务"
+
+            message = "你的当前任务：\n"
+            for task_id, progress in daily_tasks.items():
+                task = await self.get_task_by_id(task_id)
+                if task:
+                    message += (
+                        f"【{task['name']}】{progress['current']}/{progress['target']}\n"
+                        f"  描述：{task['description']}\n"
+                    )
+            return message
+        except Exception as e:
+            logger.error(f"格式化用户任务失败: {str(e)}")
+            return "获取任务信息失败，请稍后再试"
+
+    async def handle_work_action(self, user_id: str) -> list[str]:
+        """
+        处理打工动作并检查任务进度
+        :param user_id: 用户ID
+        :return: 结果消息列表
+        """
+        messages = []
+        try:
+            # 检查任务进度
+            task_result = await self.check_task_completion(user_id, "打工")
+            if task_result["progress_msg"]:
+                messages.append(task_result["progress_msg"])
+
+            if task_result["completed"]:
+                messages.append(task_result["message"])
+                # 获取并发送奖励消息
+                success, reward_msg = await self.grant_reward(
+                    user_id, task_result["task_id"]
+                )
+                if success:
+                    messages.append(reward_msg)
+            return messages
+        except Exception as e:
+            logger.error(f"处理打工动作失败: {str(e)}")
+            return ["处理打工动作时发生错误，请稍后再试~"]
