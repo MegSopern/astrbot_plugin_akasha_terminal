@@ -267,7 +267,7 @@ class User:
                     False,
                     "请指定增加的金额，使用方法:/增加金钱 金额 qq\n或：/增加金钱 金额 @用户",
                 )
-            amount: int = int(parts[0])
+            amount = int(parts[0])
             to_user_id = parts[1] if len(parts) > 1 else user_id
 
             if amount <= 0:
