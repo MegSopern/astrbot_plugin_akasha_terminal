@@ -50,7 +50,12 @@ class User:
             },
             "home": {
                 "path": self.home_data_path,
-                "default": lambda uid: {"s": 0, "wait": 0, "money": 100, "love": 0},
+                "default": lambda uid: {
+                    "spouse": 0,
+                    "wait": 0,
+                    "money": 100,
+                    "love": 0,
+                },
                 "is_independent_file": False,
             },
             "quest": {
