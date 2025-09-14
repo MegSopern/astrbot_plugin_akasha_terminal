@@ -43,7 +43,7 @@ class AkashaTerminal(Star):
         """获取用户信息"""
         try:
             # 获取用户ID，默认为发送者ID
-            user_id: str = event.get_sender_id()
+            user_id = str(event.get_sender_id())
             # 获取群用户昵称
             nickname = await get_nickname(event, user_id)
             cmd_prefix = event.message_str.split()[0]
@@ -57,9 +57,7 @@ class AkashaTerminal(Star):
             yield event.plain_result("获取用户信息失败，请稍后再试~")
 
     @filter.permission_type(filter.PermissionType.ADMIN)
-    @filter.command(
-        "增加金钱", alias={"添加金钱", "加钱", "增加金币", "添加金币", "加金币"}
-    )
+    @filter.command("增加金钱", alias="添加金钱")
     async def add_user_money(
         self, event: AstrMessageEvent, input_id: int | str | None = None
     ):
@@ -84,7 +82,7 @@ class AkashaTerminal(Star):
     @filter.command("领取任务", alias="获取任务")
     async def get_daily_task(self, event: AstrMessageEvent):
         """领取日常任务"""
-        user_id: str = event.get_sender_id()
+        user_id = str(event.get_sender_id())
         message = await self.task_system.get_user_daily_task(user_id)
         yield event.plain_result(message)
 
@@ -127,7 +125,7 @@ class AkashaTerminal(Star):
     @filter.command("使用道具", alias={"用道具", "使用物品", "用物品"})
     async def use_item(self, event: AstrMessageEvent):
         """使用道具，使用方法: /使用道具 物品名称"""
-        user_id: str = event.get_sender_id()
+        user_id = str(event.get_sender_id())
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         success, message = await self.shop_system.handle_use_command(user_id, input_str)
@@ -137,7 +135,7 @@ class AkashaTerminal(Star):
     async def show_backpack(self, event: AstrMessageEvent):
         """查看我的背包"""
         try:
-            user_id: str = event.get_sender_id()
+            user_id = str(event.get_sender_id())
             message = await self.shop_system.format_backpack(user_id)
             yield event.plain_result(message)
         except Exception as e:
@@ -147,7 +145,7 @@ class AkashaTerminal(Star):
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
     async def gift_item(self, event: AstrMessageEvent):
         """赠送道具，使用方法: /赠送道具 物品名称 @用户"""
-        from_user_id: str = event.get_sender_id()
+        from_user_id = str(event.get_sender_id())
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         success, message = await self.shop_system.handle_gift_command(
