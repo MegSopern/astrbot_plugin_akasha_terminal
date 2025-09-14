@@ -22,11 +22,6 @@
 - **合成系统**: 物品合成、分解、工坊升级
 - **家园系统**: 房屋建设、装饰
 
-### 数据存储
-- **JSON存储**: 传统文件存储方式
-- **MySQL存储**: 高性能数据库存储
-- **数据同步**: JSON与MySQL双向同步
-
 ## 📋 命令列表
 
 ### 游戏命令
@@ -45,31 +40,6 @@
 | `#合成 物品名` | 合成物品 |
 | `#分解 物品名` | 分解物品 |
 
-## 🔧 配置说明
-
-### 主配置 (config/cfg.js)
-```javascript
-export const cfg = {
-  // 游戏配置
-  game: {
-    maxLevel: 100,
-    expMultiplier: 1.0,
-    cooldownEnabled: true
-  }
-}
-```
-
-## 🚨 注意事项
-
-1. **安全性**
-   - 定期备份数据库数据
-
-2. **性能优化**
-   - 定期清理过期的统计数据
-
-3. **数据备份**
-   - 定期备份JSON文件
-   - 重要操作前建议先备份
 
 ## 📞 支持与反馈
 
@@ -77,7 +47,9 @@ export const cfg = {
 1. 检查日志文件获取详细错误信息
 3. 验证依赖包是否正确安装
 
-### 游戏说明🌈
+
+### 🌈老虚空说明
+  游戏说明
   使用#虚空帮助 查看具体说明
 
   <h1 align="center"><i>游戏管理⚙</i></h1>
@@ -136,16 +108,16 @@ export const cfg = {
 
   - 上述方法未能解决或我有其他问题!
   
-  - 联系我们 Q群 1017886209或PR插件啦，球球了（修不动啊QAQ）
+  - 联系我们或PR插件啦，球球了（修不动啊QAQ）
   </details>
    
    ## ❤️ 贡献
   - 这个是原[虚空插件](https://github.com/wbndm1234/trss-akasha-terminal-plugin) 仓库，感谢[倒霉](https://github.com/wbndm1234)许可他的插件让我们二改
 
   **提交 Bug 或建议**：
-  - 通过 [GitHub Issues](https://github.com/lqc-xhh/astrbot_plugin_akasha_terminal/issues) 提交问题啦
-  - 通过 [GitHub pull requests](https://github.com/lqc-xhh/astrbot_plugin_akasha_terminal/pulls) 提交PR啦
-  - 可以来[QQ群](https://qm.qq.com/q/n0ewaCWIGk)玩玩来提点建议捏
+  - 通过 [GitHub Issues](https://github.com/Xinhaihai-Xinhaihai/astrbot_plugin_akasha_terminal/issues) 提交问题啦
+  - 通过 [GitHub pull requests](https://github.com/Xinhaihai-Xinhaihai/astrbot_plugin_akasha_terminal/pulls) 提交PR啦
+  - 可以来[QQ群](https://qm.qq.com/q/evPFBVDc64)玩玩来提点建议捏
   - astrbot的[帮助文档](https://astrbot.app)
 
    ## 📜 许可证
