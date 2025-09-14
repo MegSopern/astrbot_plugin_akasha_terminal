@@ -39,36 +39,22 @@ class AkashaTerminal(Star):
         logo_AATP()
 
     @filter.command("个人信息", alias="查看信息")
-    async def get_user_info(
-        self, event: AstrMessageEvent, input_id: int | str | None = None
-    ):
+    async def get_user_info(self, event: AstrMessageEvent):
         """获取用户信息"""
         try:
             # 获取用户ID，默认为发送者ID
-            user_id = event.get_sender_id()
-            if at_id := next(
-                (
-                    str(seg.qq)
-                    for seg in event.get_messages()
-                    if isinstance(seg, Comp.At)
-                ),
-                None,
-            ):
-                user_id = str(at_id)
-            elif input_id is not None and str(input_id) != str(user_id):
-                user_id = str(input_id)
-            else:
-                user_id = str(user_id)
-
+            user_id: str = event.get_sender_id()
             # 获取群用户昵称
             nickname = await get_nickname(event, user_id)
-
-            # 调用用户系统的格式化方法
-            message = await self.user_system.format_user_info(user_id, nickname)
+            cmd_prefix = event.message_str.split()[0]
+            input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+            message = await self.user_system.format_user_info(
+                user_id, nickname, input_str
+            )
             yield event.plain_result(message)
         except Exception as e:
             logger.error(f"获取用户信息失败: {str(e)}")
-            yield event.plain_result(f"获取用户信息失败: {str(e)}")
+            yield event.plain_result("获取用户信息失败，请稍后再试~")
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command("增加金钱", alias="添加金钱")
@@ -86,7 +72,6 @@ class AkashaTerminal(Star):
     @filter.command("用户列表")
     async def list_all_users(self, event: AstrMessageEvent):
         """获取所有用户列表"""
-        # 调用用户系统的获取所有用户信息方法
         message = await self.user_system.get_all_users_info()
         yield event.plain_result(message)
 

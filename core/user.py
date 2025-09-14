@@ -55,7 +55,7 @@ class User:
                 except Exception as e:
                     logger.error(f"初始化数据文件失败 {file_path}: {str(e)}")
 
-    async def get_user(self, user_id):
+    async def get_user(self, user_id: str, nickname: str = "") -> Dict[str, Any]:
         """获取用户基础信息"""
         user_file = self.user_data_path / f"{user_id}.json"
         data = await read_json(user_file)
@@ -70,7 +70,9 @@ class User:
                 "created_at": time.time(),
             }
             await write_json(user_file, data)
-
+        if nickname and data.get("nickname") != nickname:
+            data["nickname"] = nickname
+            await write_json(user_file, data)
         return data
 
     async def update_user(self, user_id, data):
@@ -198,24 +200,25 @@ class User:
             logger.error(f"获取用户列表失败: {str(e)}")
             return []
 
-    async def format_user_info(self, user_id: str, nickname: str) -> str:
+    async def format_user_info(
+        self, user_id: str, nickname: str, input_str: str
+    ) -> str:
         """格式化用户信息为字符串"""
-        try:
-            user_data = await self.get_user(user_id)
-            battle_data = await self.get_battle_data(user_id)
-            home_data = await self.get_home_data(user_id)
-            return (
-                f"用户信息:\n"
-                f"昵称：{nickname}\n"
-                f"ID: {user_id}\n"
-                f"等级: {user_data.get('level', 1)}\n"
-                f"经验: {battle_data.get('experience', 0)}\n"
-                f"金钱: {home_data.get('money', 0)}\n"
-                f"好感度: {home_data.get('love', 0)}"
-            )
-        except Exception as e:
-            logger.error(f"格式化用户信息失败: {str(e)}")
-            return f"获取用户信息失败: {str(e)}"
+        parts = input_str.strip().split()
+        if len(parts) >= 1 and parts[0].isdigit():
+            user_id = parts[0]
+        user_data = await self.get_user(user_id, nickname)
+        battle_data = await self.get_battle_data(user_id)
+        home_data = await self.get_home_data(user_id)
+        return (
+            f"用户信息:\n"
+            f"昵称：{user_data.get('nickname')}\n"
+            f"ID: {user_id}\n"
+            f"等级: {user_data.get('level', 1)}\n"
+            f"经验: {battle_data.get('experience', 0)}\n"
+            f"金钱: {home_data.get('money', 0)}\n"
+            f"好感度: {home_data.get('love', 0)}"
+        )
 
     async def add_money(self, user_id: str, input_str: str) -> tuple[bool, str]:
         """
