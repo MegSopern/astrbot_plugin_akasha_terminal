@@ -1,7 +1,7 @@
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict  # noqa: F401
+from typing import Any, Dict, Optional
 
 from astrbot.api import logger
 
@@ -25,10 +25,50 @@ class User:
         self.home_data_path = self.data_dir / "home_data.json"
         self.quest_data_path = self.data_dir / "quest_data.json"
 
-        # 创建必要目录
-        self._init_dirs()
+        # 数据配置映射：统一管理各类型数据的路径、默认值和特殊处理
+        self._data_config = {
+            "user": {
+                "path": self.user_data_path,
+                "default": lambda uid: {
+                    "id": uid,
+                    "nickname": "",
+                    "level": 1,
+                    "experience": 0,
+                    "created_at": time.time(),
+                },
+                "is_independent_file": True,
+            },
+            "battle": {
+                "path": self.battle_data_path,
+                "default": lambda uid: {
+                    "experience": 0,
+                    "level": 0,
+                    "levelname": "无等级",
+                    "privilege": 0,
+                },
+                "is_independent_file": False,
+            },
+            "home": {
+                "path": self.home_data_path,
+                "default": lambda uid: {"s": 0, "wait": 0, "money": 100, "love": 0},
+                "is_independent_file": False,
+            },
+            "quest": {
+                "path": self.quest_data_path,
+                "default": lambda uid: {
+                    "daily": {},
+                    "weekly": {},
+                    "special": {},
+                    "quest_points": 0,
+                    "last_daily_reset": "",
+                    "last_weekly_reset": "",
+                },
+                "is_independent_file": False,
+            },
+        }
 
-        # 初始化数据文件
+        # 创建必要目录和初始化文件
+        self._init_dirs()
         self._init_data_files()
 
     def _init_dirs(self):
@@ -41,150 +81,148 @@ class User:
             logger.error(f"数据目录初始化失败: {str(e)}")
 
     def _init_data_files(self):
-        """初始化基础数据文件"""
-        for file_path in [
-            self.battle_data_path,
-            self.home_data_path,
-            self.quest_data_path,
-        ]:
-            if not file_path.exists():
-                try:
-                    with open(file_path, "w", encoding="utf-8") as f:
-                        json.dump({}, f, ensure_ascii=False)
-                    logger.info(f"初始化数据文件: {file_path}")
-                except Exception as e:
-                    logger.error(f"初始化数据文件失败 {file_path}: {str(e)}")
+        """初始化基础数据文件（非用户独立文件）"""
+        for config in self._data_config.values():
+            if not config["is_independent_file"]:
+                file_path = config["path"]
+                if not file_path.exists():
+                    try:
+                        with open(file_path, "w", encoding="utf-8") as f:
+                            json.dump({}, f, ensure_ascii=False)
+                        logger.info(f"初始化数据文件: {file_path}")
+                    except Exception as e:
+                        logger.error(f"初始化数据文件失败 {file_path}: {str(e)}")
 
+    async def _get_data(
+        self, data_type: str, user_id: str, group_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        通用数据获取方法
+        :param data_type: 数据类型（user/battle/home/quest）
+        :param user_id: 用户ID
+        :param group_id: 群组ID（仅quest类型需要）
+        :return: 对应类型的用户数据
+        """
+        config = self._data_config.get(data_type)
+        if not config:
+            raise ValueError(f"不支持的数据类型: {data_type}")
+
+        if config["is_independent_file"]:
+            # 用户独立文件类型（单用户JSON文件）
+            file_path = config["path"] / f"{user_id}.json"
+            data = await read_json(file_path)
+            if not data:
+                data = config["default"](user_id)
+                await write_json(file_path, data)
+            return data
+        else:
+            # 共享文件类型（多用户JSON文件）
+            all_data = await read_json(config["path"])
+            if user_id not in all_data:
+                all_data[user_id] = config["default"](user_id)
+                await write_json(config["path"], all_data)
+            return all_data[user_id]
+
+    async def _update_data(
+        self,
+        data_type: str,
+        user_id: str,
+        new_data: Dict[str, Any],
+        group_id: Optional[str] = None,
+    ) -> bool:
+        """
+        通用数据更新方法\n
+        :param data_type: 数据类型（user/battle/home/quest）
+        :param user_id: 用户ID
+        :param new_data: 新数据字典
+        :param group_id: 群组ID
+        :return: 是否更新成功
+        """
+        config = self._data_config.get(data_type)
+        if not config:
+            raise ValueError(f"不支持的数据类型: {data_type}")
+
+        try:
+            if config["is_independent_file"]:
+                # 用户独立文件类型
+                file_path = config["path"] / f"{user_id}.json"
+                current_data = await read_json(file_path) or config["default"](user_id)
+                current_data.update(new_data)
+                return await write_json(file_path, current_data)
+            else:
+                # 共享文件类型
+                all_data = await read_json(config["path"])
+                current_data = all_data.get(user_id, config["default"](user_id))
+                current_data.update(new_data)
+                all_data[user_id] = current_data
+                return await write_json(config["path"], all_data)
+        except Exception as e:
+            logger.error(f"更新{data_type}数据失败: {str(e)}")
+            return False
+
+    # 以下为对外接口方法（保持原有功能和参数不变）
     async def get_user(self, user_id: str, nickname: str = "") -> Dict[str, Any]:
         """获取用户基础信息"""
-        user_file = self.user_data_path / f"{user_id}.json"
-        data = await read_json(user_file)
-
-        # 如果用户不存在，初始化默认数据
-        if not data:
-            data = {
-                "id": user_id,
-                "nickname": "",
-                "level": 1,
-                "experience": 0,
-                "created_at": time.time(),
-            }
-            await write_json(user_file, data)
+        data = await self._get_data("user", user_id)
         if nickname and data.get("nickname") != nickname:
+            await self.update_user(user_id, {"nickname": nickname})
             data["nickname"] = nickname
-            await write_json(user_file, data)
         return data
 
-    async def update_user(self, user_id, data):
+    async def update_user(self, user_id: str, data: Dict[str, Any]) -> bool:
         """更新用户基础信息"""
-        user_file = self.user_data_path / f"{user_id}.json"
-        # 先读取现有数据
-        existing_data = await self.get_user(user_id)
-        # 合并新数据
-        existing_data.update(data)
-        # 写入文件
-        return await write_json(user_file, existing_data)
+        return await self._update_data("user", user_id, data)
 
-    async def get_battle_data(self, user_id):
+    async def get_battle_data(self, user_id: str) -> Dict[str, Any]:
         """获取用户战斗数据"""
-        battle_data = await read_json(self.battle_data_path)
+        return await self._get_data("battle", user_id)
 
-        if user_id not in battle_data:
-            battle_data[user_id] = {
-                "experience": 0,
-                "level": 0,
-                "levelname": "无等级",
-                "privilege": 0,
-            }
-            await write_json(self.battle_data_path, battle_data)
-
-        return battle_data[user_id]
-
-    async def update_battle_data(self, user_id, data):
+    async def update_battle_data(self, user_id: str, data: Dict[str, Any]) -> bool:
         """更新用户战斗数据"""
-        battle_data = await read_json(self.battle_data_path)
-        if user_id not in battle_data:
-            current_data = await self.get_battle_data(user_id)
-        else:
-            current_data = battle_data[user_id]
+        return await self._update_data("battle", user_id, data)
 
-        current_data.update(data)
-        battle_data[user_id] = current_data
-        return await write_json(self.battle_data_path, battle_data)
-
-    async def get_home_data(self, user_id):
+    async def get_home_data(self, user_id: str) -> Dict[str, Any]:
         """获取用户家园数据"""
-        home_data = await read_json(self.home_data_path)
+        return await self._get_data("home", user_id)
 
-        if user_id not in home_data:
-            home_data[user_id] = {"s": 0, "wait": 0, "money": 100, "love": 0}
-            await write_json(self.home_data_path, home_data)
-
-        return home_data[user_id]
-
-    async def update_home_data(self, user_id, data):
+    async def update_home_data(self, user_id: str, data: Dict[str, Any]) -> bool:
         """更新用户家园数据"""
-        home_data = await read_json(self.home_data_path)
-        if user_id not in home_data:
-            current_data = await self.get_home_data(user_id)
-        else:
-            current_data = home_data[user_id]
+        return await self._update_data("home", user_id, data)
 
-        current_data.update(data)
-        home_data[user_id] = current_data
-        return await write_json(self.home_data_path, home_data)
-
-    async def get_quest_data(self, user_id, group_id=None):
+    async def get_quest_data(
+        self, user_id: str, group_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """获取用户任务数据"""
-        quest_key = f"{user_id}_{group_id}" if group_id else user_id
-        quest_data = await read_json(self.quest_data_path)
+        return await self._get_data("quest", user_id)
 
-        if quest_key not in quest_data:
-            quest_data[quest_key] = {
-                "daily": {},
-                "weekly": {},
-                "special": {},
-                "quest_points": 0,
-                "last_daily_reset": "",
-                "last_weekly_reset": "",
-            }
-            await write_json(self.quest_data_path, quest_data)
-
-        return quest_data[quest_key]
-
-    async def update_quest_data(self, user_id, data, group_id=None):
+    async def update_quest_data(self, user_id: str, data: Dict[str, Any]) -> bool:
         """更新用户任务数据"""
-        quest_key = f"{user_id}_{group_id}" if group_id else user_id
-        quest_data = await read_json(self.quest_data_path)
+        return await self._update_data("quest", user_id, data)
 
-        if quest_key not in quest_data:
-            current_data = await self.get_quest_data(user_id, group_id)
-        else:
-            current_data = quest_data[quest_key]
-
-        current_data.update(data)
-        quest_data[quest_key] = current_data
-        return await write_json(self.quest_data_path, quest_data)
-
-    async def delete_user(self, user_id):
+    async def delete_user(self, user_id: str) -> bool:
         """删除用户所有数据"""
         try:
-            # 删除用户基础信息
-            user_file = self.user_data_path / f"{user_id}.json"
+            # 处理独立文件类型数据
+            user_file = self._data_config["user"]["path"] / f"{user_id}.json"
             if user_file.exists():
                 user_file.unlink()
 
-            # 删除战斗数据
-            battle_data = await read_json(self.battle_data_path)
-            if user_id in battle_data:
-                del battle_data[user_id]
-                await write_json(self.battle_data_path, battle_data)
+            # 处理共享文件类型数据
+            for data_type in ["battle", "home"]:
+                config = self._data_config[data_type]
+                all_data = await read_json(config["path"])
+                if user_id in all_data:
+                    del all_data[user_id]
+                    await write_json(config["path"], all_data)
 
-            # 删除家园数据
-            home_data = await read_json(self.home_data_path)
-            if user_id in home_data:
-                del home_data[user_id]
-                await write_json(self.home_data_path, home_data)
+            # 特殊处理quest数据（可能包含group_id）
+            quest_data = await read_json(self.quest_data_path)
+            keys_to_delete = [
+                k for k in quest_data if k.startswith(f"{user_id}_") or k == user_id
+            ]
+            for key in keys_to_delete:
+                del quest_data[key]
+            await write_json(self.quest_data_path, quest_data)
 
             logger.info(f"用户 {user_id} 数据已删除")
             return True
@@ -192,7 +230,7 @@ class User:
             logger.error(f"删除用户 {user_id} 数据失败: {str(e)}")
             return False
 
-    async def get_user_list(self):
+    async def get_user_list(self) -> list[str]:
         """获取所有用户ID列表"""
         try:
             return [f.stem for f in self.user_data_path.glob("*.json") if f.is_file()]
@@ -221,12 +259,7 @@ class User:
         )
 
     async def add_money(self, user_id: str, input_str: str) -> tuple[bool, str]:
-        """
-        增加用户金钱\n
-        :param user_id: 用户ID
-        :param amount: 增加的金额
-        :return: (是否成功, 结果消息)
-        """
+        """增加用户金钱"""
         try:
             parts = input_str.strip().split()
             if len(parts) < 1:
@@ -234,7 +267,7 @@ class User:
                     False,
                     "请指定增加的金额，使用方法:/增加金钱 金额 qq\n或：/增加金钱 金额 @用户",
                 )
-            amount: int = parts[0]
+            amount: int = int(parts[0])
             to_user_id = parts[1] if len(parts) > 1 else user_id
 
             if amount <= 0:
@@ -242,9 +275,11 @@ class User:
 
             home_data = await self.get_home_data(to_user_id)
             home_data["money"] = home_data.get("money", 0) + amount
-            await self.update_home_data(user_id, home_data)
+            await self.update_home_data(to_user_id, home_data)
 
             return True, f"成功增加 {amount} 金钱\n当前金钱: {home_data['money']}"
+        except ValueError:
+            return False, "金额必须是整数"
         except Exception as e:
             logger.error(f"增加用户金钱失败: {str(e)}")
             return False, "操作失败，请稍后再试~"
@@ -260,7 +295,7 @@ class User:
             for user_id in user_list:
                 user_data = await self.get_user(user_id)
                 nickname = user_data.get("nickname", "未设置")
-                message += f"- {user_id} ({nickname})\n"
+                message += f"- {nickname}：ID({user_id})\n"
 
             return message
         except Exception as e:
