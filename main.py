@@ -57,7 +57,9 @@ class AkashaTerminal(Star):
             yield event.plain_result("获取用户信息失败，请稍后再试~")
 
     @filter.permission_type(filter.PermissionType.ADMIN)
-    @filter.command("增加金钱", alias="添加金钱")
+    @filter.command(
+        "增加金钱", alias={"添加金钱", "加钱", "增加金币", "添加金币", "加金币"}
+    )
     async def add_user_money(
         self, event: AstrMessageEvent, input_id: int | str | None = None
     ):
