@@ -13,21 +13,14 @@ from ..utils.utils import read_json, write_json
 
 
 class lottery:
-    def __init__(self, items_with_weight):
-        # 初始化抽奖配置
-        self.weapon_data = None  # 初始化属性
-
+ 
+    def __init__(self):
+        self.weapon_data = None
         try:
             file_path = Path(__file__).parent.parent / "data" / "weapon.json"
-            self.weapon_data = read_json(file_path)
-
-        except FileNotFoundError:
-            logger.error(f"抽奖配置文件未找到: {file_path}")
-        except json.JSONDecodeError:
-            logger.error(f"抽奖配置文件格式错误: {file_path}")
-        except Exception as e:
-            logger.error(f"加载抽奖配置时发生未知错误: {e}")
-
+            with open(file_path, 'r', encoding='utf-8') as f:
+        self.weapon_data = json.load(f)
+        
         def lottery(self):
             """执行一次抽奖"""
             self.items = ["五星", "四星", "三星"]  # 获奖
@@ -52,3 +45,4 @@ class lottery:
                     else:
                         a = random.randint(300, 312)
                         print(f"{self.weapon_data[a]['name']}")
+
