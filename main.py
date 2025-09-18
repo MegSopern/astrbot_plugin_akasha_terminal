@@ -38,9 +38,9 @@ class AkashaTerminal(Star):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
         logo_AATP()
 
-    @filter.command("个人信息", alias="查看信息")
+    @filter.command("我的信息", alias={"个人信息", "查看信息"})
     async def get_user_info(self, event: AstrMessageEvent):
-        """获取用户信息"""
+        """查看个人信息"""
         try:
             # 获取用户ID，默认为发送者ID
             user_id = str(event.get_sender_id())
