@@ -98,7 +98,12 @@ class Shop:
                         "stock": 2,
                     },
                 },
-                "daily_items": ["爱心巧克力", "幸运符", "金币袋"],
+                "daily_items": [
+                    "爱心巧克力",
+                    "幸运符",
+                    "金币袋",
+                    "双倍经验卡",
+                ],  # 每日刷新的商品ID
                 "last_refresh": datetime.now().strftime("%Y-%m-%d"),
             }
             self._save_data(self.shop_data_path, default_shop)
