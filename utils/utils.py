@@ -120,7 +120,7 @@ async def write_json(file_path: Path, data: Dict[str, Any]) -> bool:
         return False
 
 
-def get_referenced_msg_id(event: AiocqhttpMessageEvent) -> str | None:
+async def get_referenced_msg_id(event: AiocqhttpMessageEvent) -> str | None:
     """获取被引用消息者的id"""
     for seg in event.get_messages():
         if isinstance(seg, Reply):
