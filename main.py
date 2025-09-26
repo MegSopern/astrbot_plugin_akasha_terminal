@@ -8,6 +8,7 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
+from .core.lottery import Lottery
 from .core.shop import Shop
 from .core.task import Task
 from .core.user import User
@@ -30,6 +31,8 @@ class AkashaTerminal(Star):
             self.task_system = Task()
             # 商店系统
             self.shop_system = Shop()
+            # 抽奖系统
+            self.lottery_system = Lottery()
             logger.info("Akasha Terminal插件初始化完成")
         except Exception as e:
             logger.error(f"Akasha Terminal插件初始化失败:{str(e)}")
@@ -152,3 +155,26 @@ class AkashaTerminal(Star):
             from_user_id, input_str
         )
         yield event.plain_result(message)
+
+    @filter.command("抽武器", alias={"单抽武器", "单抽"})
+    async def draw_weapon(self, event: AstrMessageEvent):
+        """单抽一次武器"""
+        try:
+            user_id = str(event.get_sender_id())
+            message = await self.lottery_system.draw_single(user_id)
+            yield event.plain_result(message)
+        except Exception as e:
+            logger.error(f"抽武器失败: {str(e)}")
+            yield event.plain_result("抽武器失败，请稍后再试~")
+            return
+
+    @filter.command("十连抽武器", alias={"十连武器", "十连"})
+    async def draw_ten_weapons(self, event: AstrMessageEvent):
+        """十连抽武器"""
+        try:
+            user_id = str(event.get_sender_id())
+            message = await self.lottery_system.draw_multiple(user_id)
+            yield event.plain_result(message)
+        except Exception as e:
+            logger.error(f"十连抽武器失败: {str(e)}")
+            yield event.plain_result("十连抽武器失败，请稍后再试~")
