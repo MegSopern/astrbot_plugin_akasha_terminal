@@ -23,7 +23,7 @@ class Lottery:
         # 字典，定义每个星级下的具体武器 {weapon_star: [weapon_id1,weapon_id2, ...]}
         weapon_star_data = self.load_weapon_data()
         # 星级池子含有的武器列表
-        self.weapon_star_data = weapon_star_data if weapon_star_data else {}
+        self.weapon_star_data = weapon_star_data or {}
         pool_weights = {"三星武器": 17, "四星武器": 2, "五星武器": 1}
         self.items = list(pool_weights.keys())
         self.weights = list(pool_weights.values())
@@ -78,7 +78,7 @@ class Lottery:
         weapon_data = await read_json(self.weapon_path)
         return weapon_data.get(weapon_id)
 
-    async def update_data(self, user_id: str, str, target_weapon_id: str) -> bool:
+    async def update_data(self, user_id: str, target_weapon_id: str) -> bool:
         """
         更新用户的抽奖数据，记录抽中的武器\n
         :param user_id: 用户ID
@@ -137,7 +137,7 @@ class Lottery:
                         message = f"恭喜你抽中了{weapon_star}：{weapon_name}！\n"
                     else:
                         message = "抽奖失败，请稍后再试~"
-            return message
+                return message
 
     async def draw_multiple(self, user_id: str):
         """
