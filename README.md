@@ -1,10 +1,10 @@
-![astrbot_plugin_akasha_terminal](https://socialify.git.ci/lqc-xhh/astrbot_plugin_akasha_terminal/image?description=1&font=Raleway&forks=1&issues=1&language=1&name=1&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Auto)
+![astrbot_plugin_akasha_terminal](https://socialify.git.ci/MegSopern/astrbot_plugin_akasha_terminal/image?description=1&font=Raleway&forks=1&issues=1&language=1&name=1&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Auto)
 
 # astrbot_plugin_akasha_terminal
 
+[![GitHub](https://img.shields.io/badge/作者-MegSopern-FB7299)](https://github.com/MegSopern)
 [![GitHub](https://img.shields.io/badge/作者-Xinhaihai-FB7299)](https://github.com/Xinhaihai)
 [![GitHub](https://img.shields.io/badge/作者-wbndm1234-FB7299)](https://github.com/wbndm1234)
-[![GitHub](https://img.shields.io/badge/作者-MegSopern-FB7299)](https://github.com/MegSopern)
 
 #
 ![:动态访问量](https://count.kjchmc.cn/get/@:astrbot_plugin_akasha_terminal)
