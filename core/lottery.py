@@ -213,7 +213,7 @@ class Lottery:
 
                     else:
                         # 三星武器收集起来
-                        three_star_results = {}
+                        three_star_results = []
                         three_star_results.append(
                             {
                                 "name": target_weapon_data["name"],
