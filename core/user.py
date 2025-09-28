@@ -43,7 +43,8 @@ class User:
             },
             "home": {
                 "default": lambda uid: {
-                    "spouse": 0,
+                    "spouse_id": "",
+                    "spouse_name": "",
                     "wait": 0,
                     "money": 100,
                     "love": 0,
