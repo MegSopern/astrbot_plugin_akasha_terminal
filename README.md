@@ -123,4 +123,4 @@
    ## 📜 许可证
   - 本项目使用 GPL-3.0 许可证开源
   
-![Star History Chart](https://api.star-history.com/svg?repos=Xinhaihai-Xinhaihai/astrbot_plugin_akasha_terminal&type)
+![Star History Chart](https://api.star-history.com/svg?repos=MegSopern/astrbot_plugin_akasha_terminal&type)
