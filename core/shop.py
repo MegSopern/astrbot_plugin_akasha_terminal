@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
@@ -16,7 +17,7 @@ class Shop:
             BASE_DIR.parent.parent
             / "plugin_data"
             / "astrbot_plugin_akasha_terminal"
-            / "user_backpack.json"
+            / "user_backpack"
         )
         self.data_dir.mkdir(parents=True, exist_ok=True)  # 确保数据目录存在
         self._init_default_data()
@@ -106,11 +107,10 @@ class Shop:
                 ],  # 每日刷新的商品ID
                 "last_refresh": datetime.now().strftime("%Y-%m-%d"),
             }
-            self._save_data(self.shop_data_path, default_shop)
-
-        # 初始化用户背包
+            asyncio.run(self._save_data(self.shop_data_path, default_shop))
+        # 初始化用户背包路径文件
         if not self.backpack_path.exists():
-            self._save_data(self.backpack_path, {})
+            asyncio.run(self._save_data(self.backpack_path, {}))
 
     async def _load_data(self, file_path: Path) -> Dict[str, Any]:
         """通用数据加载方法"""
@@ -150,7 +150,8 @@ class Shop:
         # 加载数据
         shop_data = await self._load_data(self.shop_data_path)
         items = shop_data["items"]
-        backpack = await self._load_data(self.backpack_path)
+        file_path = self.backpack_path / f"{user_id}.json"
+        backpack = await self.get_user_backpack(user_id)
 
         # 基础校验
         if item_name not in items:
@@ -177,9 +178,10 @@ class Shop:
             await self._save_data(self.shop_data_path, shop_data)
 
         # 更新背包
-        user_backpack = backpack.setdefault(user_id, {})
-        user_backpack[item_name] = user_backpack.get(item_name, 0) + quantity
-        await self._save_data(self.backpack_path, backpack)
+        if item_name not in backpack:
+            backpack[item_name] = 0
+        backpack[item_name] += quantity
+        await self._save_data(file_path, backpack)
 
         return (
             True,
@@ -188,8 +190,9 @@ class Shop:
 
     async def get_user_backpack(self, user_id: str) -> Dict[str, int]:
         """获取用户背包物品列表"""
-        backpack = await self._load_data(self.backpack_path)
-        return backpack.get(user_id, {})
+        file_path = self.backpack_path / f"{user_id}.json"
+        backpack = await self._load_data(file_path)
+        return backpack or {}
 
     async def use_item(
         self, user_id: str, item_name: str, quantity: int = 1
@@ -201,15 +204,15 @@ class Shop:
         :param quantity: 使用数量（默认1）
         :return: (是否成功, 物品效果或错误消息)
         """
-        backpack = await self._load_data(self.backpack_path)
-
+        file_path = self.backpack_path / f"{user_id}.json"
+        backpack = await self.get_user_backpack(user_id)
         # 物品存在性与数量校验
-        if user_id not in backpack or item_name not in backpack[user_id]:
+        if item_name not in backpack:
             return False, "物品不存在"
-        if backpack[user_id][item_name] < quantity:
+        if backpack[item_name] < quantity:
             return (
                 False,
-                f"您所需{item_name}的数量不足\n当前持有数量：{backpack[user_id][item_name]}",
+                f"您所需{item_name}的数量不足\n当前持有数量：{backpack[item_name]}",
             )
 
         # 获取物品效果
@@ -218,10 +221,10 @@ class Shop:
             return False, "物品信息不存在"
 
         # 更新背包
-        backpack[user_id][item_name] -= quantity
-        if backpack[user_id][item_name] == 0:
-            del backpack[user_id][item_name]
-        await self._save_data(self.backpack_path, backpack)
+        backpack[item_name] -= quantity
+        if backpack[item_name] == 0:
+            del backpack[item_name]
+        await self._save_data(file_path, backpack)
 
         return True, item["effect"]
 
@@ -236,27 +239,25 @@ class Shop:
         :param amount: 赠送数量（默认1）
         :return: (是否成功, 结果消息)
         """
-        backpack = await self._load_data(self.backpack_path)
+        from_file_path = self.backpack_path / f"{from_user_id}.json"
+        to_file_path = self.backpack_path / f"{to_user_id}.json"
+        from_backpack = await self.get_user_backpack(from_user_id)
+        to_backpack = await self.get_user_backpack(to_user_id)
 
         # 校验赠送者物品
-        if (
-            from_user_id not in backpack
-            or item_name not in backpack[from_user_id]
-            or backpack[from_user_id][item_name] < amount
-        ):
+        if item_name not in from_backpack or from_backpack[item_name] < amount:
             return False, "物品不存在或数量不足"
 
-        # 执行赠送逻辑
-        # 减少赠送者物品
-        backpack[from_user_id][item_name] -= amount
-        if backpack[from_user_id][item_name] == 0:
-            del backpack[from_user_id][item_name]
+        # 执行赠送逻辑,减少赠送者物品
+        from_backpack[item_name] -= amount
+        if from_backpack[item_name] == 0:
+            del from_backpack[item_name]
 
         # 增加接收者物品
-        to_backpack = backpack.setdefault(to_user_id, {})
         to_backpack[item_name] = to_backpack.get(item_name, 0) + amount
 
-        await self._save_data(self.backpack_path, backpack)
+        await self._save_data(from_file_path, from_backpack)
+        await self._save_data(to_file_path, to_backpack)
         return True, f"成功给用户{to_user_id}：\n赠送{item_name} x {amount}"
 
     async def format_shop_items(self) -> str:
