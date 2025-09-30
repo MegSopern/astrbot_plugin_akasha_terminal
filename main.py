@@ -158,10 +158,10 @@ class AkashaTerminal(Star):
 
     @filter.command("抽武器", alias={"单抽武器", "单抽"})
     async def draw_weapon(self, event: AstrMessageEvent):
-        """单抽一次武器"""
+        """单抽武器"""
         try:
             user_id = str(event.get_sender_id())
-            message = await self.lottery_system.draw_single(user_id)
+            message = await self.lottery_system.weapon_draw(user_id, count=1)
             yield event.plain_result(message)
         except Exception as e:
             logger.error(f"抽武器失败: {str(e)}")
@@ -173,7 +173,7 @@ class AkashaTerminal(Star):
         """十连抽武器"""
         try:
             user_id = str(event.get_sender_id())
-            message = await self.lottery_system.draw_multiple(user_id)
+            message = await self.lottery_system.weapon_draw(user_id, count=10)
             yield event.plain_result(message)
         except Exception as e:
             logger.error(f"十连抽武器失败: {str(e)}")

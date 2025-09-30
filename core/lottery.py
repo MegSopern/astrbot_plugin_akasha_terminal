@@ -29,14 +29,14 @@ class Lottery:
             / "data"
             / "weapon.json"
         )
-        # 字典，定义每个星级下的具体武器 {weapon_star: [weapon_id1,weapon_id2, ...]}
-        weapon_star_data = self.load_weapon_data()
-        # 星级池子含有的武器列表
-        self.weapon_all_data = weapon_star_data or {}
-        pool_weights = {"三星武器": 17, "四星武器": 2, "五星武器": 1}
-        self.items = list(pool_weights.keys())
-        self.weights = list(pool_weights.values())
-        self.total_weight = sum(self.weights)
+        # 加载武器数据（按星级分类）{weapon_star: [weapon_id1,weapon_id2, ...]}
+        self.weapon_all_data = self.load_weapon_data() or {}
+        # 武器池子概率（固定概率）
+        self.five_star_prob = 1  # 五星武器基础概率1%
+        self.four_star_prob = 5  # 四星武器基础概率5%
+        self.three_star_prob = (
+            100 - self.five_star_prob - self.four_star_prob
+        )  # 三星武器基础概率94%
 
     def load_weapon_data(file_path="weapon.json"):
         """加载武器数据并按星级分类"""
@@ -91,8 +91,7 @@ class Lottery:
         self, user_id: str, target_weapon_id: str, user_data, user_backpack
     ) -> bool:
         """
-        更新用户背包数据
-
+        更新用户背包、抽奖次数及武器计数（新增保底计数初始化）\n
         :param user_id: 用户ID
         :param weapon_id: 武器ID
         :param user_data: 用户数据字典
@@ -101,45 +100,51 @@ class Lottery:
         """
         # 读取现有用户数据
         weapon_new_data = await self.get_weapon_info(target_weapon_id)
+        if not weapon_new_data:
+            return False
+
         weapon_star = weapon_new_data.get("class")
-        # 初始化抽奖记录结构（如果不存在）
+        # 初始化背包结构（含保底计数字段）
         if "weapon" not in user_backpack:
             user_backpack["weapon"] = {
                 "纠缠之缘": 0,
-                "总抽奖次数": 0,
+                "总抽卡次数": 0,
                 "武器计数": {},
                 "武器详细": {
                     "三星武器": {"数量": 0, "详细信息": {}},
                     "四星武器": {"数量": 0, "详细信息": {}},
                     "五星武器": {"数量": 0, "详细信息": {}},
                 },
+                "未出五星计数": 0,  # 新增：累计未出5星次数（用于5星保底）
+                "未出四星计数": 0,  # 新增：累计未出4星次数（用于4星保底）
             }
-        if user_backpack["weapon"] and isinstance(weapon_new_data, dict):
-            # 更新抽奖记录
-            user_backpack["weapon"]["总抽奖次数"] += 1
-            user_backpack["weapon"]["武器计数"][target_weapon_id] = (
-                user_backpack["weapon"]["武器计数"].get(target_weapon_id, 0) + 1
-            )
-            user_backpack["weapon"]["武器详细"][weapon_star]["数量"] += 1
-            if (
-                target_weapon_id
-                not in user_backpack["weapon"]["武器详细"][weapon_star]["详细信息"]
-            ):
-                user_backpack["weapon"]["武器详细"][weapon_star]["详细信息"][
-                    target_weapon_id
-                ] = weapon_new_data
-            # 写回更新后的数据
-            await write_json(self.user_data_path / f"{user_id}.json", user_data)
-            await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
-            return True
-        else:
-            return False
 
-    async def weapon_draw(self, user_id: str, count: int = 10):
+        # 更新抽卡记录与武器计数
+        user_backpack["weapon"]["总抽卡次数"] += 1
+        user_backpack["weapon"]["武器计数"][target_weapon_id] = (
+            user_backpack["weapon"]["武器计数"].get(target_weapon_id, 0) + 1
+        )
+        user_backpack["weapon"]["武器详细"][weapon_star]["数量"] += 1
+        # 仅在首次获得该武器时添加详细信息
+        weapon_ids = [
+            item["id"]
+            for item in user_backpack["weapon"]["武器详细"][weapon_star]["详细信息"]
+        ]
+        if target_weapon_id not in weapon_ids:
+            user_backpack["weapon"]["武器详细"][weapon_star]["详细信息"].append(
+                weapon_new_data
+            )
+
+        # 写回数据
+        await write_json(self.user_data_path / f"{user_id}.json", user_data)
+        await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
+        return True
+
+    async def weapon_draw(self, user_id: str, count: int = 1):
         """
         执行武器抽卡\n
         :param user_id: 用户ID
-        :param count: 抽卡数量
+        :param count: 抽卡次数（每次消耗10纠缠之缘）
         1. 根据权重选择一个主奖项（星级）
         2. 从对应的子奖项列表中随机选择一个具体武器
         3. 返回主奖项和子奖项
@@ -148,117 +153,166 @@ class Lottery:
         """
         user_data = await read_json(self.user_data_path / f"{user_id}.json") or {}
         user_backpack = await read_json(self.backpack_path / f"{user_id}.json") or {}
-        entangled_fate = user_backpack.get("weapon", {}).get("纠缠之缘", 0)
-        cost = 10 * count  # 每次抽卡消耗10个纠缠之缘
-        # 检查纠缠之缘是否足够
+        weapon_data = user_backpack.get("weapon", {})
+        entangled_fate = weapon_data.get("纠缠之缘", 0)
+
+        # 检查纠缠之缘是否足够（10颗/次）
+        cost = 10 * count
         if entangled_fate < cost:
-            message = [
+            return [
                 Comp.At(qq=user_id),
                 Comp.Plain(f"\n需要{cost}颗纠缠之缘，你当前只有{entangled_fate}颗\n"),
-                Comp.Plain("💡 可以通过[签到]获得更多纠缠之缘"),
+                Comp.Plain("💡 可通过[签到]获得更多纠缠之缘"),
             ]
-            return message
         # 扣减纠缠之缘
         user_backpack["weapon"]["纠缠之缘"] = entangled_fate - cost
-        rand_num = random.uniform(0, self.total_weight)
-        # 确定随机数落在哪个区间
-        current = 0
-        for i, weight in enumerate(self.weights):
-            current += weight
-            if current >= rand_num:
-                # 选中的武器星级
-                weapon_star = self.items[i]
-                if weapon_star == "三星武器":
-                    rarity = 3
-                elif weapon_star == "四星武器":
-                    rarity = 4
-                elif weapon_star == "五星武器":
-                    rarity = 5
-                if (
-                    weapon_star in self.weapon_all_data
-                    and self.weapon_all_data[weapon_star]
-                ):
-                    # 从该池中随机选择一个具体的武器（等概率）
-                    target_weapon_id = str(
-                        random.choice(self.weapon_all_data[weapon_star])
-                    )
-                    target_weapon_data = await self.get_weapon_info(target_weapon_id)
-                    message = ""
-                    weapon_count = user_backpack["weapon"]["武器详细"][weapon_star][
-                        "数量"
-                    ]
-                    if rarity >= 4:
-                        if rarity == 5:
-                            message = "\n🎉 恭喜获得传说武器！"
-                            # 五星武器增加好感度
-                            spouse_name = str(
-                                user_data.get("home", {}).get("spouse_name")
-                            )
-                            if spouse_name:
-                                user_data["home"]["love"] = (
-                                    user_data.get("home", {}).get("love", 0) + 20
-                                )
-                                message += (
-                                    f"\n💕 {spouse_name}为你的好运感到高兴！好感度+20"
-                                )
-                        # 组装消息段
-                        message = [
-                            Comp.At(qq=user_id),
-                            Comp.Plain(f"恭喜获得{'⭐' * rarity} {rarity}星武器！"),
-                            Comp.Plain(f"⚔️ {target_weapon_data['name']}\n"),
-                            Comp.Plain(f"📦 这是你的第{weapon_count}把{rarity}星武器"),
-                        ]
-                        # if image_path:
-                        #     message.append(Comp.Image.fromFileSystem(image_path))  # 从本地文件目录发送图片
 
-                    else:
-                        # 三星武器收集起来
-                        three_star_results = []
-                        three_star_results.append(
-                            {
-                                "name": target_weapon_data["name"],
-                                "count": weapon_count,
-                                # 'imagePath': image_path
-                            }
+        # 初始化保底计数（从用户数据读取，无则为0）
+        five_star_miss = weapon_data.get("未出五星计数", 0)  # 累计未出5星次数
+        four_star_miss = weapon_data.get("未出四星计数", 0)  # 累计未出4星次数
+        # 用于每次抽卡的基础概率
+        base_five_star_prob = self.five_star_prob
+        base_four_star_prob = self.four_star_prob
+        draw_results = []  # 存储每抽结果
+
+        # 循环处理每一次抽卡（逐抽计算保底概率）
+        message = [Comp.At(qq=user_id), Comp.Plain("\n【武器抽卡结果】：\n")]
+        for _ in range(count):
+            # 计算本次5星概率（阶梯保底：64抽后每抽+6.5%）
+            current_five_star_prob = base_five_star_prob
+            if five_star_miss > 64:
+                current_five_star_prob += (five_star_miss - 64) * 6.5
+                current_five_star_prob = min(current_five_star_prob, 100)  # 上限100%
+
+            # 判断是否触发4星保底（每10抽必出，即连续9抽未出则第10抽保底）
+            is_four_star_guarantee = four_star_miss >= 9
+
+            # 随机判定抽中星级（0-100随机数，匹配概率规则）
+            rand_val = random.uniform(0, 100)
+            weapon_star = None
+
+            # 优先判定5星（基础1%+阶梯保底）
+            if rand_val <= current_five_star_prob:
+                weapon_star = "五星武器"
+            # 再判定4星（基础5%或保底强制）：五星已排除，剩余5%四星
+            elif is_four_star_guarantee or rand_val <= (
+                current_five_star_prob + base_four_star_prob
+            ):
+                weapon_star = "四星武器"
+            # 否则为3星（基础94%）
+            else:
+                weapon_star = "三星武器"
+
+            # 选择对应星级的武器（等概率抽取）
+            if (
+                weapon_star in self.weapon_all_data
+                and self.weapon_all_data[weapon_star]
+            ):
+                # 从该池中随机选择一个具体的武器（等概率）
+                target_weapon_id = str(random.choice(self.weapon_all_data[weapon_star]))
+                target_weapon_info = await self.get_weapon_info(target_weapon_id)
+                draw_results.append({"star": weapon_star, "info": target_weapon_info})
+                spouse_name = str(user_data.get("home", {}).get("spouse_name"))
+                # 更新保底计数（关键：根据抽中结果重置/累加计数）
+                if weapon_star == "五星武器":
+                    five_star_miss = 0  # 中5星：双计数重置
+                    four_star_miss = 0
+                    message.append("\n🎉 恭喜获得传说武器！")
+                    if spouse_name:
+                        user_data["home"]["love"] = (
+                            user_data.get("home", {}).get("love", 0) + 30
                         )
-                    # ----- 批量发送三星武器结果 -----
-                    if three_star_results:
-                        if count == 1:
-                            w = three_star_results[0]
-                            message = [
-                                Comp.At(qq=user_id),
-                                Comp.Plain(f"⭐⭐⭐ 获得三星武器：{w['name']}\n"),
-                                Comp.Plain(f"📦 这是你的第{w['count']}把三星武器\n"),
-                                Comp.Plain(
-                                    f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}"
-                                ),
-                            ]
-                            # if w["imagePath"]:
-                            #     message.append(Comp.Image.fromFileSystem(w["imagePath"]))
+                        message.append(
+                            f"💖 {spouse_name}为你的好运感到高兴！好感度+30\n"
+                        )
+                    else:
+                        message.append("\n💡 你未绑定伴侣，绑定伴侣可提升好感度")
+                elif weapon_star == "四星武器":
+                    five_star_miss += 1  # 中4星：5星计数累加，4星计数重置
+                    four_star_miss = 0
+                    message.append("🎉 恭喜获得稀有武器！\n")
+                    if spouse_name:
+                        user_data["home"]["love"] = (
+                            user_data.get("home", {}).get("love", 0) + 20
+                        )
+                        message.append(
+                            f"💖 {spouse_name}为你的好运感到高兴！好感度+20\n"
+                        )
+                    else:
+                        message.append("\n💡 你未绑定伴侣，绑定伴侣可提升好感度")
+                else:  # 中3星：双计数均累加
+                    five_star_miss += 1
+                    four_star_miss += 1
 
-                        # else:
-                        #     lines = [
-                        #         Comp.At(qq=user_id),
-                        #         Comp.Plain("\n★★★ 获得三星武器：\n"),
-                        #     ]
-                        #     for w in three_star_results:
-                        #         lines.append(f"⚔️ {w['name']} (第{w['count']}把)")
-                        #     lines.append(
-                        #         f"\n💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}"
-                        #     )
+                weapon_image_path = (
+                    Path(__file__).resolve().parent.parent
+                    / "resources"
+                    / "weapon_images"
+                    / "gacha.webp"
+                )
+                # 从本地文件目录发送图片
+                if weapon_image_path:
+                    message.append(Comp.Image.fromFileSystem(weapon_image_path))
+                # 实时更新用户数据（含保底计数）
+                user_backpack["weapon"]["未出五星计数"] = five_star_miss
+                user_backpack["weapon"]["未出四星计数"] = four_star_miss
+                await self.update_data(
+                    user_id, target_weapon_id, user_data, user_backpack
+                )
 
-                        #     if total_luck_bonus > 0:
-                        #         lines.append(f"\n🍀 幸运加成：+{total_luck_bonus}%")
-                        #         if location_desc:
-                        #             lines.append(f" ({location_desc})")
-                        #         if love_bonus > 0:
-                        #             lines.append(f" ({wife_name}的祝福)")
-                        #         if time_desc:
-                        #             lines.append(f" ({time_desc})")
+        # 构建最终抽卡结果消息
+        message = [Comp.At(qq=user_id), Comp.Plain("\n【武器抽卡结果】：\n", message)]
+        # 分离高星（5/4星）和三星结果，优先显示高星
+        high_star = [r for r in draw_results if r["star"] in ["五星武器", "四星武器"]]
+        three_star = [r for r in draw_results if r["star"] == "三星武器"]
 
-                        #     await e.reply("".join(lines))
-                    # 更新用户数据
-                    await self.update_data(
-                        user_id, target_weapon_id, user_data, user_backpack
-                    )
-                return message
+        # 显示高星结果
+        if high_star:
+            for res in high_star:
+                star = res["star"]
+                info = res["info"]
+                rarity = 5 if star == "五星武器" else 4
+                total_count = user_backpack["weapon"]["武器详细"][star]["数量"]
+                message.extend(
+                    [
+                        Comp.Plain(f"🎉 恭喜获得{'⭐' * rarity} {rarity}星武器！\n"),
+                        Comp.Plain(f"⚔️ 名称：{info['name']}\n"),
+                        Comp.Plain(f"📦 累计拥有：第{total_count}把{rarity}星武器\n\n"),
+                    ]
+                )
+
+        # 显示三星结果
+        if three_star:
+            three_star_names = [res["info"]["name"] for res in three_star]
+            total_three_star = user_backpack["weapon"]["武器详细"]["三星武器"]["数量"]
+            message.extend(
+                [
+                    Comp.Plain(f"⭐⭐⭐ 获得三星武器共{len(three_star)}把：\n"),
+                    Comp.Plain(f"⚔️ {', '.join(three_star_names)}\n"),
+                    Comp.Plain(f"📦 累计拥有：{total_three_star}把三星武器\n\n"),
+                ]
+            )
+
+        # 显示保底进度与剩余资源
+        message.extend(
+            [
+                Comp.Plain(f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}\n"),
+                Comp.Plain(
+                    f"🎯 五星保底进度：{five_star_miss}/80（当前概率：{self.five_star_prob:.1f}%）\n"
+                ),
+                Comp.Plain(f"🎯 四星保底进度：{four_star_miss}/10"),
+            ]
+        )
+
+        # if image_path:
+        #     message.append(Comp.Image.fromFileSystem(image_path))  # 从本地文件目录发送图片
+        # if total_luck_bonus > 0:
+        #     lines.append(f"\n🍀 幸运加成：+{total_luck_bonus}%")
+        # if location_desc:
+        #     lines.append(f" ({location_desc})")
+        # if love_bonus > 0:
+        #     lines.append(f" ({wife_name}的祝福)")
+        # if time_desc:
+        #     lines.append(f" ({time_desc})")
+        # 更新用户数据
+        return message
