@@ -170,15 +170,19 @@ class Lottery:
         # 初始化保底计数（从用户数据读取，无则为0）
         five_star_miss = weapon_data.get("未出五星计数", 0)  # 累计未出5星次数
         four_star_miss = weapon_data.get("未出四星计数", 0)  # 累计未出4星次数
+        # 用于每次抽卡的基础概率
+        base_five_star_prob = self.five_star_prob
+        base_four_star_prob = self.four_star_prob
         draw_results = []  # 存储每抽结果
 
         # 循环处理每一次抽卡（逐抽计算保底概率）
-        message = []
+        message = [Comp.At(qq=user_id), Comp.Plain("\n【武器抽卡结果】：\n")]
         for _ in range(count):
             # 计算本次5星概率（阶梯保底：64抽后每抽+6.5%）
+            current_five_star_prob = base_five_star_prob
             if five_star_miss > 64:
-                self.five_star_prob = self.five_star_prob + (five_star_miss - 64) * 6.5
-                self.five_star_prob = min(self.five_star_prob, 100)  # 上限100%
+                current_five_star_prob += (five_star_miss - 64) * 6.5
+                current_five_star_prob = min(current_five_star_prob, 100)  # 上限100%
 
             # 判断是否触发4星保底（每10抽必出，即连续9抽未出则第10抽保底）
             is_four_star_guarantee = four_star_miss >= 9
@@ -188,11 +192,11 @@ class Lottery:
             weapon_star = None
 
             # 优先判定5星（基础1%+阶梯保底）
-            if rand_val <= self.five_star_prob:
+            if rand_val <= current_five_star_prob:
                 weapon_star = "五星武器"
             # 再判定4星（基础5%或保底强制）：五星已排除，剩余5%四星
             elif is_four_star_guarantee or rand_val <= (
-                self.five_star_prob + self.four_star_prob
+                current_five_star_prob + base_four_star_prob
             ):
                 weapon_star = "四星武器"
             # 否则为3星（基础94%）
@@ -208,12 +212,21 @@ class Lottery:
                 target_weapon_id = str(random.choice(self.weapon_all_data[weapon_star]))
                 target_weapon_info = await self.get_weapon_info(target_weapon_id)
                 draw_results.append({"star": weapon_star, "info": target_weapon_info})
+                spouse_name = str(user_data.get("home", {}).get("spouse_name"))
                 # 更新保底计数（关键：根据抽中结果重置/累加计数）
                 if weapon_star == "五星武器":
                     five_star_miss = 0  # 中5星：双计数重置
                     four_star_miss = 0
                     message.append("\n🎉 恭喜获得传说武器！")
-                    spouse_name = str(user_data.get("home", {}).get("spouse_name"))
+                    if spouse_name:
+                        user_data["home"]["love"] = (
+                            user_data.get("home", {}).get("love", 0) + 30
+                        )
+                        message.append(
+                            f"💖 {spouse_name}为你的好运感到高兴！好感度+30\n"
+                        )
+                    else:
+                        message.append("\n💡 你未绑定伴侣，绑定伴侣可提升好感度")
                 elif weapon_star == "四星武器":
                     five_star_miss += 1  # 中4星：5星计数累加，4星计数重置
                     four_star_miss = 0
@@ -248,7 +261,7 @@ class Lottery:
                 )
 
         # 构建最终抽卡结果消息
-        message = [Comp.At(qq=user_id), Comp.Plain("\n【武器抽卡结果】：\n")]
+        message = [Comp.At(qq=user_id), Comp.Plain("\n【武器抽卡结果】：\n", message)]
         # 分离高星（5/4星）和三星结果，优先显示高星
         high_star = [r for r in draw_results if r["star"] in ["五星武器", "四星武器"]]
         three_star = [r for r in draw_results if r["star"] == "三星武器"]
@@ -260,29 +273,35 @@ class Lottery:
                 info = res["info"]
                 rarity = 5 if star == "五星武器" else 4
                 total_count = user_backpack["weapon"]["武器详细"][star]["数量"]
-                message.append(
-                    Comp.Plain(f"🎉 恭喜获得{'⭐' * rarity} {rarity}星武器！\n"),
-                    Comp.Plain(f"⚔️ 名称：{info['name']}\n"),
-                    Comp.Plain(f"📦 累计拥有：第{total_count}把{rarity}星武器\n\n"),
+                message.extend(
+                    [
+                        Comp.Plain(f"🎉 恭喜获得{'⭐' * rarity} {rarity}星武器！\n"),
+                        Comp.Plain(f"⚔️ 名称：{info['name']}\n"),
+                        Comp.Plain(f"📦 累计拥有：第{total_count}把{rarity}星武器\n\n"),
+                    ]
                 )
 
         # 显示三星结果
         if three_star:
             three_star_names = [res["info"]["name"] for res in three_star]
             total_three_star = user_backpack["weapon"]["武器详细"]["三星武器"]["数量"]
-            message.append(
-                Comp.Plain(f"⭐⭐⭐ 获得三星武器共{len(three_star)}把：\n"),
-                Comp.Plain(f"⚔️ {', '.join(three_star_names)}\n"),
-                Comp.Plain(f"📦 累计拥有：{total_three_star}把三星武器\n\n"),
+            message.extend(
+                [
+                    Comp.Plain(f"⭐⭐⭐ 获得三星武器共{len(three_star)}把：\n"),
+                    Comp.Plain(f"⚔️ {', '.join(three_star_names)}\n"),
+                    Comp.Plain(f"📦 累计拥有：{total_three_star}把三星武器\n\n"),
+                ]
             )
 
         # 显示保底进度与剩余资源
-        message.append(
-            Comp.Plain(f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}\n"),
-            Comp.Plain(
-                f"🎯 五星保底进度：{five_star_miss}/80（当前概率：{self.five_star_prob:.1f}%）\n"
-            ),
-            Comp.Plain(f"🎯 四星保底进度：{four_star_miss}/10"),
+        message.extend(
+            [
+                Comp.Plain(f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}\n"),
+                Comp.Plain(
+                    f"🎯 五星保底进度：{five_star_miss}/80（当前概率：{self.five_star_prob:.1f}%）\n"
+                ),
+                Comp.Plain(f"🎯 四星保底进度：{four_star_miss}/10"),
+            ]
         )
 
         # if image_path:
@@ -296,5 +315,4 @@ class Lottery:
         # if time_desc:
         #     lines.append(f" ({time_desc})")
         # 更新用户数据
-        await self.update_data(user_id, target_weapon_id, user_data, user_backpack)
         return message
