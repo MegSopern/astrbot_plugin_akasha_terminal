@@ -351,7 +351,7 @@ class Lottery:
             base_reward += 5
         # 更新签到信息
         last_sign = user_backpack["sign_info"]["last_sign"]
-        if last_sign == (date.today(CN_TIMEZONE) - timedelta(days=1)).strftime(
+        if last_sign == (datetime.now(CN_TIMEZONE).date() - timedelta(days=1)).strftime(
             "%Y-%m-%d"
         ):
             if user_backpack["sign_info"]["streak_days"] <= 30:
