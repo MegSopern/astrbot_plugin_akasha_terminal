@@ -157,8 +157,17 @@ class AkashaTerminal(Star):
         """单抽武器"""
         try:
             user_id = str(event.get_sender_id())
-            message = await self.lottery_system.weapon_draw(user_id, count=1)
-            yield event.plain_result(message)
+            message, weapon_image_path = await self.lottery_system.weapon_draw(
+                user_id, count=1
+            )
+            if weapon_image_path and weapon_image_path.exists():
+                message = [
+                    Comp.Plain(message),
+                    Comp.Image.fromFileSystem(weapon_image_path),
+                ]
+                yield event.chain_result(message)
+            else:
+                yield event.plain_result(message)
         except Exception as e:
             logger.error(f"抽武器失败: {str(e)}")
             yield event.plain_result("抽武器失败，请稍后再试~")
@@ -169,7 +178,9 @@ class AkashaTerminal(Star):
         """十连抽武器"""
         try:
             user_id = str(event.get_sender_id())
-            message = await self.lottery_system.weapon_draw(user_id, count=10)
+            message, weapon_image_path = await self.lottery_system.weapon_draw(
+                user_id, count=10
+            )
             yield event.plain_result(message)
         except Exception as e:
             logger.error(f"十连抽武器失败: {str(e)}")

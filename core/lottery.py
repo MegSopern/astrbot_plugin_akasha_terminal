@@ -163,34 +163,35 @@ class Lottery:
         target_weapon_id = str(random.choice(self.weapon_all_data[weapon_star]))
         target_weapon_info = await self.get_weapon_info(target_weapon_id)
         spouse_name = user_data.get("home", {}).get("spouse_name")
-        message_snippets = []
+        message_snippets = ""
 
         # 更新保底计数和好感度
         if weapon_star == "五星武器":
             five_star_miss = 0
             four_star_miss = 0
-            message_snippets.append("🎉 恭喜获得传说武器！\n")
+            message_snippets += "🎉 恭喜获得传说武器！\n"
             if spouse_name not in [0, None, ""]:
                 user_data["home"]["love"] += 30
-                message_snippets.append(
-                    f"💖 {spouse_name}为你的好运感到高兴！好感度+30\n"
-                )
+                message_snippets += f"💖 {spouse_name}为你的好运感到高兴！好感度+30\n"
             else:
-                message_snippets.append("💡 你未绑定伴侣，绑定伴侣可提升好感度\n")
+                message_snippets += "💡 你未绑定伴侣，绑定伴侣可提升好感度\n"
         elif weapon_star == "四星武器":
             five_star_miss += 1
             four_star_miss = 0
-            message_snippets.append("🎉 恭喜获得稀有武器！\n")
+            message_snippets += "🎉 恭喜获得稀有武器！\n"
             if spouse_name not in [0, None, ""]:
                 user_data["home"]["love"] += 20
-                message_snippets.append(
-                    f"💖 {spouse_name}为你的好运感到高兴！好感度+20\n"
-                )
+                message_snippets += f"💖 {spouse_name}为你的好运感到高兴！好感度+20\n"
             else:
-                message_snippets.append("💡 你未绑定伴侣，绑定伴侣可提升好感度\n")
+                message_snippets += "💡 你未绑定伴侣，绑定伴侣可提升好感度\n"
         else:
             five_star_miss += 1
             four_star_miss += 1
+
+        # 更新用户数据
+        user_backpack["weapon"]["未出五星计数"] = five_star_miss
+        user_backpack["weapon"]["未出四星计数"] = four_star_miss
+        await self.update_data(user_id, target_weapon_id, user_data, user_backpack)
 
         # 添加武器图片
         weapon_image_path = (
@@ -199,13 +200,6 @@ class Lottery:
             / "weapon_images"
             / "gacha.webp"
         )
-        if weapon_image_path.exists():
-            message_snippets.append(Comp.Image.fromFileSystem(weapon_image_path))
-
-        # 更新用户数据
-        user_backpack["weapon"]["未出五星计数"] = five_star_miss
-        user_backpack["weapon"]["未出四星计数"] = four_star_miss
-        await self.update_data(user_id, target_weapon_id, user_data, user_backpack)
 
         return (
             {
@@ -216,6 +210,7 @@ class Lottery:
             five_star_miss,
             four_star_miss,
             current_five_star_prob,
+            weapon_image_path,
         )
 
     async def weapon_draw(self, user_id: str, count: int = 1):
@@ -227,18 +222,17 @@ class Lottery:
 
         # 检查资源是否充足
         if entangled_fate < cost:
-            return [
-                Comp.At(qq=user_id),
-                Comp.Plain(f"\n需要{cost}颗纠缠之缘，你当前只有{entangled_fate}颗\n"),
-                Comp.Plain("💡 可通过[签到]获得更多纠缠之缘"),
-            ]
+            return (
+                f"\n需要{cost}颗纠缠之缘，你当前只有{entangled_fate}颗\n",
+                "💡 可通过[签到]获得更多纠缠之缘",
+            )
         user_backpack["weapon"]["纠缠之缘"] -= cost
 
         # 初始化保底计数
         five_star_miss = weapon_data["未出五星计数"]
         four_star_miss = weapon_data["未出四星计数"]
         draw_results = []
-        all_snippets = []
+        all_snippets = ""
 
         # 处理多次抽卡
         for _ in range(count):
@@ -247,6 +241,7 @@ class Lottery:
                 five_star_miss,
                 four_star_miss,
                 current_five_star_prob,
+                weapon_image_path,
             ) = await self.handle_single_draw(
                 user_id, user_data, user_backpack, five_star_miss, four_star_miss
             )
@@ -255,8 +250,8 @@ class Lottery:
             all_snippets.extend(result["message_snippets"])
 
         # 构建最终消息
-        message = [Comp.At(qq=user_id), Comp.Plain("\n【武器抽卡结果】：\n")]
-        message.extend(all_snippets)
+        message = "\n【武器抽卡结果】：\n"
+        message += all_snippets
 
         # 分离高星和三星结果
         high_star = [r for r in draw_results if r["star"] in ["五星武器", "四星武器"]]
@@ -269,35 +264,27 @@ class Lottery:
                 info = res["info"]
                 rarity = 5 if star == "五星武器" else 4
                 total_count = user_backpack["weapon"]["武器详细"][star]["数量"]
-                message.extend(
-                    [
-                        Comp.Plain(f"🎉 恭喜获得{'⭐' * rarity} {rarity}星武器！\n"),
-                        Comp.Plain(f"⚔️ 名称：{info['name']}\n"),
-                        Comp.Plain(f"📦 累计拥有：第{total_count}把{rarity}星武器\n\n"),
-                    ]
+                message += (
+                    f"🎉 恭喜获得{'⭐' * rarity} {rarity}星武器！\n"
+                    f"⚔️ 名称：{info['name']}\n"
+                    f"📦 累计拥有：第{total_count}把{rarity}星武器\n\n"
                 )
 
         # 添加三星结果
         if three_star:
             three_star_names = [res["info"]["name"] for res in three_star]
             total_three_star = user_backpack["weapon"]["武器详细"]["三星武器"]["数量"]
-            message.extend(
-                [
-                    Comp.Plain(f"⭐⭐⭐ 获得三星武器共{len(three_star)}把：\n"),
-                    Comp.Plain(f"⚔️ {', '.join(three_star_names)}\n"),
-                    Comp.Plain(f"📦 累计拥有：{total_three_star}把三星武器\n\n"),
-                ]
+            message += (
+                f"⭐⭐⭐ 获得三星武器共{len(three_star)}把：\n"
+                f"⚔️ {', '.join(three_star_names)}\n"
+                f"📦 累计拥有：{total_three_star}把三星武器\n\n"
             )
 
         # 添加保底进度和剩余资源
-        message.extend(
-            [
-                Comp.Plain(f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}\n"),
-                Comp.Plain(
-                    f"🎯 五星保底进度：{five_star_miss}/80（当前概率：{five_star_prob:.2f}%）\n"
-                ),
-                Comp.Plain(f"🎯 四星保底进度：{four_star_miss}/10"),
-            ]
+        message += (
+            f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}\n"
+            f"🎯 五星保底进度：{five_star_miss}/80（当前概率：{five_star_prob:.2f}%）\n"
+            f"🎯 四星保底进度：{four_star_miss}/10\n"
         )
 
         # if image_path:
@@ -311,7 +298,7 @@ class Lottery:
         # if time_desc:
         #     lines.append(f" ({time_desc})")
         # 更新用户数据
-        return message
+        return message, weapon_image_path
 
     async def calculate_sign_rewards(self, user_data, user_backpack, base_reward):
         """计算签到奖励及加成"""
@@ -390,10 +377,7 @@ class Lottery:
 
         # 检查是否已签到
         if user_backpack["sign_info"]["last_sign"] == today:
-            return [
-                Comp.At(qq=user_id),
-                Comp.Plain("\n你今天已经签到过啦，明天再来吧~"),
-            ]
+            return "你今天已经签到过啦，明天再来吧~\n"
 
         # 计算奖励
         reward_data = await self.calculate_sign_rewards(
@@ -409,57 +393,41 @@ class Lottery:
         user_backpack["weapon"]["纠缠之缘"] += total_reward
 
         # 构建消息
-        message = [Comp.At(qq=user_id), Comp.Plain("\n")]
+        message = ""
 
         # 新用户提示
         if judge_new_user:
-            message.append(
-                Comp.Plain(
-                    "🎉 欢迎来到虚空武器抽卡系统！\n💎 注册成功，获得初始纠缠之缘5颗\n\n"
-                )
+            message += (
+                "🎉 欢迎来到虚空武器抽卡系统！\n💎 注册成功，获得初始纠缠之缘5颗\n\n"
             )
 
         # 基础奖励消息
-        message.extend(
-            [
-                Comp.Plain(
-                    f"✅ 签到成功！获得{reward_data['total_reward'] - 5 if judge_new_user else reward_data['total_reward']}颗纠缠之缘\n"
-                ),
-                Comp.Plain(
-                    f"💎 当前拥有：{user_backpack['weapon']['纠缠之缘']}颗纠缠之缘\n"
-                ),
-                Comp.Plain(f"📅 当前连续签到{reward_data['streak_count']}天\n"),
-                Comp.Plain("💡 可以使用[抽武器]来获得强力装备！\n"),
-            ]
+        message += (
+            f"✅ 签到成功！获得{reward_data['total_reward'] - 5 if judge_new_user else reward_data['total_reward']}颗纠缠之缘\n"
+            f"💎 当前拥有：{user_backpack['weapon']['纠缠之缘']}颗纠缠之缘\n"
+            f"📅 当前连续签到{reward_data['streak_count']}天\n"
+            f"💡 可以使用[抽武器]来获得强力装备！\n"
         )
 
         # 幸运奖励消息
         if reward_data["lucky_reward"] > 0:
-            message.append(
-                Comp.Plain(
-                    f"🎁 幸运奖励：额外获得{reward_data['lucky_reward']}颗纠缠之缘！\n\n"
-                )
+            message += (
+                f"🎁 幸运奖励：额外获得{reward_data['lucky_reward']}颗纠缠之缘！\n\n"
             )
 
         # 加成信息
-        bonus_messages = []
+        bonus_messages = ""
         if reward_data["location_bonus"] != 0:
-            bonus_messages.append(
-                f"📍 位置加成：{reward_data['location_desc']} +({reward_data['location_bonus']:+d})\n"
-            )
+            bonus_messages += f"📍 位置加成：{reward_data['location_desc']} +({reward_data['location_bonus']:+d})\n"
         if reward_data["house_bonus"] > 0:
-            bonus_messages.append(f"🏠 房屋加成：+{reward_data['house_bonus']}\n")
+            bonus_messages += f"🏠 房屋加成：+{reward_data['house_bonus']}\n"
         if reward_data["love_bonus"] > 0:
-            bonus_messages.append(
-                f"💕 {reward_data['spouse_name']}的爱意加成：+{reward_data['love_bonus']}\n"
-            )
+            bonus_messages += f"💕 {reward_data['spouse_name']}的爱意加成：+{reward_data['love_bonus']}\n"
         if reward_data["streak_bonus"] > 0:
-            bonus_messages.append(
-                f"🔥 连续签到{reward_data['streak_count']}天加成：+{reward_data['streak_bonus']}\n"
-            )
+            bonus_messages += f"🔥 连续签到{reward_data['streak_count']}天加成：+{reward_data['streak_bonus']}\n"
 
         if bonus_messages:
-            message.append(Comp.Plain(" ".join(bonus_messages)))
+            message += bonus_messages
 
         # 保存数据
         await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
@@ -474,11 +442,7 @@ class Lottery:
         # 总武器数量检查
         total_weapons = sum(star_data["数量"] for star_data in weapon_details.values())
         if total_weapons == 0:
-            return [
-                Comp.At(qq=user_id),
-                Comp.Plain("\n你还没有任何武器，快去抽卡吧！\n"),
-                Comp.Plain("💡 使用[抽武器]开始你的冒险之旅吧！"),
-            ]
+            return "你还没有任何武器，快去抽卡吧！\n💡 使用[抽武器]开始你的冒险之旅吧！"
 
         # 基础信息
         location_name = user_data["home"]["place"]
@@ -517,13 +481,13 @@ class Lottery:
         combat_power = (
             five_star_count * 500 + four_star_count * 100 + three_star_count * 20
         )
-        achievements = []
+        achievements = ""
         if five_star_count >= 10:
-            achievements.append("🏆 五星武器收藏家")
+            achievements += "🏆 五星武器收藏家"
         if four_star_count >= 50:
-            achievements.append("💎 四星武器大师")
+            achievements += "💎 四星武器大师"
         if len(weapon_data["武器计数"]) >= 100:
-            achievements.append("🎖️ 武器收集达人")
+            achievements += "🎖️ 武器收集达人"
 
         # 战斗力评级
         if combat_power >= 3000:
@@ -536,70 +500,48 @@ class Lottery:
             combat_rank = "🗡️ 新手战士"
 
         # 构建消息
-        message = [
-            Comp.At(qq=user_id),
-            Comp.Plain("\n🗡️ 你的武器图鉴\n"),
-            Comp.Plain(f"📍 当前位置：{location_name}\n"),
-            Comp.Plain(
-                f"💖 伴侣：{spouse_name}（好感度：{spouse_love}）\n"
-                if spouse_name not in ["", None]
-                else "💡 你还没有伴侣，绑定伴侣可提升好感度\n"
-            ),
-            Comp.Plain(
-                f"🏠 房屋等级：{house_level}\n"
-                if house_level
-                else "💡 你还没有房屋，快去建造吧！\n"
-            ),
-            Comp.Plain(f"💪 战斗力：{combat_power} ({combat_rank})\n\n"),
-        ]
+        message = "\n🗡️ 你的武器图鉴\n"
+        message += f"📍 当前位置：{location_name}\n"
+        if spouse_name not in ["", None]:
+            message += f"💖 伴侣：{spouse_name}（好感度：{spouse_love}）\n"
+        else:
+            message += "💡 你还没有伴侣，绑定伴侣可提升好感度\n"
+        if house_level > 0:
+            message += f"🏠 房屋等级：{house_level}\n"
+        else:
+            message += "💡 你还没有房屋，快去建造吧！\n"
+        message += f"💪 战斗力：{combat_power} ({combat_rank})\n\n"
 
         # 成就展示
-        message.extend(
-            [
-                Comp.Plain("🎖️ 成就徽章\n"),
-                Comp.Plain("━━━━━━━━━━━━━━━━\n"),
-                Comp.Plain(
-                    f"{', '.join(achievements) if achievements else '暂无成就'}\n\n"
-                ),
-            ]
-        )
+        message += "🎖️ 成就徽章\n"
+        message += "━━━━━━━━━━━━━━━━\n"
+        message += f"{', '.join(achievements) if achievements else '暂无成就'}\n\n"
 
         # 武器统计
-        message.extend(
-            [
-                Comp.Plain("━━━━━━━━━━━━━━━━\n"),
-                Comp.Plain("📊 武器统计\n"),
-                Comp.Plain(f"🎯 总计：{total_weapons}把武器\n"),
-                Comp.Plain(f"⭐⭐⭐⭐⭐ 五星：{five_star_count}把\n\n"),
-                Comp.Plain(f"⭐⭐⭐⭐ 四星：{four_star_count}把\n"),
-                Comp.Plain(f"⭐⭐⭐ 三星：{three_star_count}把\n"),
-            ]
-        )
+        message += "━━━━━━━━━━━━━━━━\n"
+        message += "📊 武器统计\n"
+        message += f"🎯 总计：{total_weapons}把武器\n"
+        message += f"⭐⭐⭐⭐⭐ 五星：{five_star_count}把\n\n"
+        message += f"⭐⭐⭐⭐ 四星：{four_star_count}把\n"
+        message += f"⭐⭐⭐ 三星：{three_star_count}把\n"
+        message += "━━━━━━━━━━━━━━━━\n"
 
         # 最爱武器
-        message.extend(
-            [
-                Comp.Plain("💖 你最喜欢的武器是：\n"),
-                Comp.Plain("━━━━━━━━━━━━━━━━\n"),
-                Comp.Plain(
-                    f"{'⭐' * rarity} {favorite_weapon_name}*{favorite_weapon_count}\n\n"
-                ),
-            ]
-        )
+        message += "💖 你最喜欢的武器是：\n"
+        message += "━━━━━━━━━━━━━━━━\n"
+        message += f"{'⭐' * rarity} {favorite_weapon_name}*{favorite_weapon_count}\n\n"
 
         # 各星级武器列表
         for star in ["五星武器", "四星武器", "三星武器"]:
             stars = "⭐" * int(star[0])
             details = weapon_details[star]
             if details["数量"] > 0:
-                message.append(Comp.Plain(f"{stars} {star}列表：\n"))
+                message += f"{stars} {star}列表：\n"
                 for item in details["详细信息"][:5]:  # 显示前5个
                     count = weapon_data["武器计数"].get(item["id"], 0)
-                    message.append(Comp.Plain(f"- {item['name']}（{count}把）\n"))
+                    message += f"- {item['name']}（{count}把）\n"
                 if len(details["详细信息"]) > 5:
-                    message.append(
-                        Comp.Plain(f"... 还有{len(details['详细信息']) - 5}件未显示\n")
-                    )
+                    message += f"... 还有{len(details['详细信息']) - 5}件未显示\n"
 
         # 随机伴侣评论
         if spouse_name not in [None, ""] and random.random() < 0.1:
@@ -610,6 +552,6 @@ class Lottery:
                 f"{spouse_name}想要和你一起战斗",
                 f"你的武器让{spouse_name}也想去冒险了！",
             ]
-            message.append(Comp.Plain(f"\n💬 {random.choice(spouse_comments)}\n"))
+            message += f"\n💬 {random.choice(spouse_comments)}\n"
 
         return message
