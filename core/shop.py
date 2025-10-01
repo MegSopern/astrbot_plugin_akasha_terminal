@@ -1,9 +1,10 @@
-import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
+
+from astrbot.api import logger
 
 from ..utils.utils import read_json, write_json
 
@@ -110,10 +111,14 @@ class Shop:
                 ],  # 每日刷新的商品ID
                 "last_refresh": datetime.now(CN_TIMEZONE).strftime("%Y-%m-%d"),
             }
-            asyncio.run(self._save_data(self.shop_data_path, default_shop))
+            try:
+                with open(self.shop_data_path, "w", encoding="utf-8") as f:
+                    json.dump(default_shop, f, ensure_ascii=False)
+            except Exception as e:
+                logger.error(f"保存默认商店数据失败: {e}")
         # 初始化用户背包路径文件
         if not self.backpack_path.exists():
-            asyncio.run(self._save_data(self.backpack_path, {}))
+            self.backpack_path.mkdir(parents=True, exist_ok=True)
 
     async def _load_data(self, file_path: Path) -> Dict[str, Any]:
         """通用数据加载方法"""
@@ -265,16 +270,19 @@ class Shop:
 
     async def format_shop_items(self) -> str:
         """格式化商店物品列表为展示文本"""
-        items = await self.get_shop_items()
-        if not items:
-            return "商店暂无商品"
-
-        message = "📦 虚空商城\n"
-        for item_name, item in items.items():
-            stock = "无限" if item["stock"] == -1 else item["stock"]
-            message += f"[{item['id']}] {item_name}：{item['price']}金币\n"
-            message += f"描述: {item['description']}\n(库存: {stock})\n"
-        return message
+        try:
+            items = await self.get_shop_items()
+            if not items:
+                return "商店暂无商品"
+            message = "📦 虚空商城\n"
+            for item_name, item in items.items():
+                stock = "无限" if item["stock"] == -1 else item["stock"]
+                message += f"[{item['id']}] {item_name}：{item['price']}金币\n"
+                message += f"描述: {item['description']}\n(库存: {stock})\n"
+            return message
+        except Exception as e:
+            logger.error(f"格式化商店物品失败: {str(e)}")
+            return str(e)
 
     async def handle_buy_command(
         self, user_id: str, input_str: str

@@ -19,7 +19,7 @@ class Lottery:
         self.user_data_path = plugin_data_dir / "user_data"
         self.weapon_path = (
             base_dir
-            / "plugin"
+            / "plugins"
             / "astrbot_plugin_akasha_terminal"
             / "data"
             / "weapon.json"
@@ -34,15 +34,12 @@ class Lottery:
             100 - self.five_star_prob - self.four_star_prob
         )  # 三星武器基础概率94%
 
-    @staticmethod
-    def load_weapon_data(file_path="weapon.json"):
+    def load_weapon_data(self):
         """
         加载武器数据并按星级分类（300-399:三星, 400-499:四星, 500-599:五星）
         """
         try:
-            with open(
-                Path(__file__).parent.parent / file_path, "r", encoding="utf-8"
-            ) as f:
+            with open(self.weapon_path, "r", encoding="utf-8") as f:
                 weapon_data = json.load(f)
 
             # 按ID范围分类武器（300-399:三星, 400-499:四星, 500-599:五星）
@@ -67,10 +64,12 @@ class Lottery:
                 "五星武器": five_star,
             }
         except FileNotFoundError:
-            logger.error(f"未找到武器数据文件: {file_path}")
+            logger.error(
+                f"错误：未找到武器数据文件 {self.weapon_path}，请检查路径是否正确"
+            )
             return None
         except json.JSONDecodeError:
-            logger.error(f"武器数据文件格式错误: {file_path}")
+            logger.error("错误：武器数据文件格式不正确")
             return None
 
     # 根据武器id获取武器详细信息

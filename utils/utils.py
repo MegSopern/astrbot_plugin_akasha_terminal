@@ -80,42 +80,34 @@ async def create_user_data(user_id: str) -> bool:
     )
     default_user_data = {
         "user": {
-            "default": {
-                "id": user_id,
-                "nickname": "",
-                "level": 1,
-                "experience": 0,
-                "created_at": time.time(),
-            }
+            "id": user_id,
+            "nickname": "",
+            "level": 1,
+            "experience": 0,
+            "created_at": time.time(),
         },
         "battle": {
-            "default": {
-                "experience": 0,
-                "level": 0,
-                "levelname": "无等级",
-                "privilege": 0,
-            }
+            "experience": 0,
+            "level": 0,
+            "levelname": "无等级",
+            "privilege": 0,
         },
         "home": {
-            "default": {
-                "spouse_id": "",
-                "spouse_name": "",
-                "wait": 0,
-                "place": "home",
-                "placetime": 0,
-                "money": 100,
-                "love": 0,
-            }
+            "spouse_id": "",
+            "spouse_name": "",
+            "wait": 0,
+            "place": "home",
+            "placetime": 0,
+            "money": 100,
+            "love": 0,
         },
         "quest": {
-            "default": {
-                "daily": {},
-                "weekly": {},
-                "special": {},
-                "quest_points": 0,
-                "last_daily_reset": "",
-                "last_weekly_reset": "",
-            }
+            "daily": {},
+            "weekly": {},
+            "special": {},
+            "quest_points": 0,
+            "last_daily_reset": "",
+            "last_weekly_reset": "",
         },
     }
 

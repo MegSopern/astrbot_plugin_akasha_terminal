@@ -108,12 +108,8 @@ class AkashaTerminal(Star):
     @filter.command("商店", alias={"虚空商店", "商城", "虚空商城"})
     async def show_shop(self, event: AstrMessageEvent):
         """显示商店物品列表"""
-        try:
-            message = await self.shop_system.format_shop_items()
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"显示商店失败: {str(e)}")
-            yield event.plain_result("显示商店失败，请稍后重试")
+        message = await self.shop_system.format_shop_items()
+        yield event.plain_result(message)
 
     @filter.command("购买道具", alias={"买道具", "购买物品", "买物品"})
     async def buy_prop(self, event: AstrMessageEvent):
