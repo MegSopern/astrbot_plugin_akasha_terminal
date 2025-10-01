@@ -428,3 +428,51 @@ class Lottery:
         user_backpack["weapon"]["纠缠之缘"] += total_reward + lucky_reward
         await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
         return message
+
+    # 个人武器库展示功能
+    async def show_my_weapons(self, user_id: str):
+        """展示个人武器的统计信息"""
+        user_backpack = await read_json(self.backpack_path / f"{user_id}.json") or {}
+        weapon_data = user_backpack.get("weapon", {})
+        weapon_details = weapon_data.get("武器详细", {})
+
+        total = sum(star_data.get("数量", 0) for star_data in weapon_details.values())
+        if total == 0:
+            return [
+                Comp.At(qq=user_id),
+                Comp.Plain("\n你还没有任何武器，快去抽卡吧！\n"),
+                Comp.Plain("💡 使用[抽武器]开始你的冒险之旅吧！"),
+            ]
+
+        # 构建消息
+        message = [
+            Comp.At(qq=user_id),
+            Comp.Plain("\n🗡️ 你的武器图鉴\n"),
+            Comp.Plain("━━━━━━━━━━━━━━━━\n"),
+            Comp.Plain(f"🎯 总计：{total}把武器\n"),
+            Comp.Plain(
+                f"⭐⭐⭐ 三星：{weapon_details.get('三星武器', {}).get('数量', 0)}把\n"
+            ),
+            Comp.Plain(
+                f"⭐⭐⭐⭐ 四星：{weapon_details.get('四星武器', {}).get('数量', 0)}把\n"
+            ),
+            Comp.Plain(
+                f"⭐⭐⭐⭐⭐ 五星：{weapon_details.get('五星武器', {}).get('数量', 0)}把\n\n"
+            ),
+        ]
+
+        # 添加各星级武器列表
+        for star in ["五星武器", "四星武器", "三星武器"]:
+            stars = "⭐" * int(star[0])
+            details = weapon_details.get(star, {})
+            if details.get("数量", 0) > 0:
+                message.append(Comp.Plain(f"{stars} {star}列表：\n"))
+                for item in details.get("详细信息", [])[:5]:  # 只显示前5个
+                    count = weapon_data.get("武器计数", {}).get(item["id"], 0)
+                    message.append(Comp.Plain(f"- {item['name']}（{count}把）\n"))
+                if len(details.get("详细信息", [])) > 5:
+                    message.append(
+                        Comp.Plain(f"... 还有{len(details['详细信息']) - 5}件未显示\n")
+                    )
+
+        return message

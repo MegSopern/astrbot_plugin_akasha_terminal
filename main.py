@@ -189,3 +189,14 @@ class AkashaTerminal(Star):
         except Exception as e:
             logger.error(f"每日签到失败: {str(e)}")
             yield event.plain_result("每日签到失败，请稍后再试~")
+
+    @filter.command("我的武器", alias={"武器库", "查看武器"})
+    async def my_weapons(self, event: AstrMessageEvent):
+        """展示背包武器的统计信息"""
+        try:
+            user_id = str(event.get_sender_id())
+            message = await self.lottery_system.show_my_weapons(user_id)
+            yield event.plain_result(message)
+        except Exception as e:
+            logger.error(f"查看武器失败: {str(e)}")
+            yield event.plain_result("查看武器失败，请稍后重试~")
