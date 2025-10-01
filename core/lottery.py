@@ -604,7 +604,7 @@ class Lottery:
                     )
 
         # 随机伴侣评论
-        if spouse_name and random.random() < 0.1:
+        if spouse_name not in [None, ""] and random.random() < 0.1:
             spouse_comments = [
                 f"{spouse_name}想要试试你的武器",
                 f"{spouse_name}觉得你很有安全感",
