@@ -126,13 +126,13 @@ class Lottery:
         user_backpack["weapon"]["武器计数"][target_weapon_id] = (
             user_backpack["weapon"]["武器计数"].get(target_weapon_id, 0) + 1
         )
-        user_backpack["weapon"]["武器详细"][weapon_star]["数量"] += 1
-        # 仅在首次获得该武器时添加详细信息
+        # 仅在首次获得该武器时增加数量及添加武器详细信息
         weapon_ids = [
             item["id"]
             for item in user_backpack["weapon"]["武器详细"][weapon_star]["详细信息"]
         ]
         if target_weapon_id not in weapon_ids:
+            user_backpack["weapon"]["武器详细"][weapon_star]["数量"] += 1
             user_backpack["weapon"]["武器详细"][weapon_star]["详细信息"].append(
                 weapon_new_data
             )
@@ -432,6 +432,7 @@ class Lottery:
     # 个人武器库展示功能
     async def show_my_weapons(self, user_id: str):
         """展示个人武器的统计信息"""
+        user_data = await read_json(self.user_data_path / f"{user_id}.json")
         user_backpack = await read_json(self.backpack_path / f"{user_id}.json") or {}
         weapon_data = user_backpack.get("weapon", {})
         weapon_details = weapon_data.get("武器详细", {})
@@ -444,22 +445,118 @@ class Lottery:
                 Comp.Plain("💡 使用[抽武器]开始你的冒险之旅吧！"),
             ]
 
+        location_name = user_data.get("home", {}).get("place", "home")
+        spouse_name = user_data["home"]["spouse_name"]
+        spouse_love = user_data["home"]["love"]
+        if user_data["house"] and "house_level" in user_data["house"]:
+            house_level = user_data["house"]["house_level"]
+
+        # 计算最爱武器（拥有数量最多的武器）
+        rarity = None
+        favorite_weapon = max(
+            weapon_data.get("武器计数", {}).items(),
+            key=lambda x: x[1],
+            default=(None, 0),
+        )
+        favorite_weapon_id = favorite_weapon[0]
+        favorite_weapon_count = favorite_weapon[1]
+        if 500 <= favorite_weapon_id < 600:
+            rarity = 5
+            for weapon in user_backpack["weapon"]["武器详细"]["五星武器"]["详细信息"]:
+                if weapon["id"] == favorite_weapon_id:
+                    favorite_weapon_name = weapon["name"]
+                    break
+        elif 400 <= favorite_weapon_id < 500:
+            rarity = 4
+            for weapon in user_backpack["weapon"]["武器详细"]["四星武器"]["详细信息"]:
+                if weapon["id"] == favorite_weapon_id:
+                    favorite_weapon_name = weapon["name"]
+                    break
+        elif 300 <= favorite_weapon_id < 400:
+            rarity = 3
+            for weapon in user_backpack["weapon"]["武器详细"]["三星武器"]["详细信息"]:
+                if weapon["id"] == favorite_weapon_id:
+                    favorite_weapon_name = weapon["name"]
+                    break
+        achievements = []
+        # 战斗力评估及判定徽章成就
+        for weapons_by_rarity, weapons_by_data in weapon_details.items():
+            if weapons_by_rarity == "五星武器" and weapons_by_data["数量"] > 0:
+                five_star_combat_power = weapons_by_data["数量"] * 500
+                if weapons_by_data["数量"] >= 10:
+                    achievements.append("🏆 五星武器收藏家")
+            elif weapons_by_rarity == "四星武器" and weapons_by_data["数量"] > 0:
+                four_star_combat_power = weapons_by_data["数量"] * 100
+                if weapons_by_data["数量"] >= 50:
+                    achievements.append("💎 四星武器大师")
+            elif weapons_by_rarity == "三星武器" and weapons_by_data["数量"] > 0:
+                three_star_combat_power = weapons_by_data["数量"] * 20
+            combat_power = (
+                five_star_combat_power
+                + four_star_combat_power
+                + three_star_combat_power
+            )
+        total_weapons = len(weapon_data.get("武器计数", {}))
+        if total_weapons >= 100:
+            achievements.append("🎖️ 武器收集达人")
+        # 战斗力评级
+        if combat_power >= 3000:
+            combat_rank = "🔥 传奇战士"
+        elif combat_power >= 1500:
+            combat_rank = "⚔️ 精英战士"
+        elif combat_power >= 500:
+            combat_rank = "🛡️ 熟练战士"
+        else:
+            combat_rank = "🗡️ 新手战士"
         # 构建消息
         message = [
             Comp.At(qq=user_id),
             Comp.Plain("\n🗡️ 你的武器图鉴\n"),
-            Comp.Plain("━━━━━━━━━━━━━━━━\n"),
-            Comp.Plain(f"🎯 总计：{total}把武器\n"),
+            Comp.Plain(f"📍 当前位置：{location_name}"),
             Comp.Plain(
-                f"⭐⭐⭐ 三星：{weapon_details.get('三星武器', {}).get('数量', 0)}把\n"
+                f"💖 伴侣：{spouse_name}（好感度：{spouse_love}）\n"
+                if spouse_name not in ["", None]
+                else "💡 你还没有伴侣，绑定伴侣可提升好感度\n"
             ),
             Comp.Plain(
-                f"⭐⭐⭐⭐ 四星：{weapon_details.get('四星武器', {}).get('数量', 0)}把\n"
+                f"🏠 房屋等级：{house_level}\n"
+                if house_level
+                else "💡 你还没有房屋，快去建造吧！\n"
             ),
-            Comp.Plain(
-                f"⭐⭐⭐⭐⭐ 五星：{weapon_details.get('五星武器', {}).get('数量', 0)}把\n\n"
-            ),
+            Comp.Plain(f"💪 战斗力：{combat_power} ({combat_rank})\n\n"),
         ]
+        # 成就徽章展示
+
+        message.extend(
+            [
+                Comp.Plain("🎖️ 成就徽章\n"),
+                Comp.Plain("━━━━━━━━━━━━━━━━\n"),
+                Comp.Plain(f"{', '.join(achievements)}\n"),
+            ]
+        )
+        # 基础统计信息
+        message.extend(
+            [
+                Comp.Plain("━━━━━━━━━━━━━━━━\n"),
+                Comp.Plain("📊 武器统计\n"),
+                Comp.Plain(f"🎯 总计：{total}把武器\n"),
+                Comp.Plain(f"⭐⭐⭐ 三星：{weapon_details['三星武器']['数量']}把\n"),
+                Comp.Plain(f"⭐⭐⭐⭐ 四星：{weapon_details['四星武器']['数量']}把\n"),
+                Comp.Plain(
+                    f"⭐⭐⭐⭐⭐ 五星：{weapon_details['五星武器']['数量']}把\n\n"
+                ),
+            ]
+        )
+        # 显示最爱武器
+        message.extend(
+            [
+                Comp.Plain("💖 你最喜欢的武器是：\n"),
+                Comp.Plain("━━━━━━━━━━━━━━━━\n"),
+                Comp.Plain(
+                    f"{'⭐' * rarity} {favorite_weapon_name}*{favorite_weapon_count}\n"
+                ),
+            ]
+        )
 
         # 添加各星级武器列表
         for star in ["五星武器", "四星武器", "三星武器"]:
@@ -474,5 +571,14 @@ class Lottery:
                     message.append(
                         Comp.Plain(f"... 还有{len(details['详细信息']) - 5}件未显示\n")
                     )
-
+        if spouse_name not in ["", None] and random.random() < 0.1:
+            spouse_comments = [
+                f"{spouse_name}想要试试你的武器",
+                f"{spouse_name}觉得你很有安全感",
+                f"{spouse_name}对你的实力很有信心",
+                f"{spouse_name}想要和你一起战斗",
+                f"你的武器让{spouse_name}也想去冒险了！",
+            ]
+            target_comments = random.choice(spouse_comments)
+            message.append(Comp.Plain(f"\n💬 {target_comments}\n"))
         return message
