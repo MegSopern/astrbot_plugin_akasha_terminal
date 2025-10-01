@@ -1,10 +1,12 @@
 import json
 import random
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import astrbot.api.message_components as Comp
 
-from ..utils.utils import read_json, write_json
+from ..utils.utils import create_user_data, read_json, write_json
 
 
 class Lottery:
@@ -151,13 +153,15 @@ class Lottery:
 
         :return: 抽中的奖项
         """
-        user_data = await read_json(self.user_data_path / f"{user_id}.json") or {}
+        if not (self.user_data_path / f"{user_id}.json").exists():
+            await create_user_data(user_id)
+        user_data = await read_json(self.user_data_path / f"{user_id}.json")
         user_backpack = await read_json(self.backpack_path / f"{user_id}.json") or {}
         weapon_data = user_backpack.get("weapon", {})
         entangled_fate = weapon_data.get("纠缠之缘", 0)
 
-        # 检查纠缠之缘是否足够（10颗/次）
-        cost = 10 * count
+        # 检查纠缠之缘是否足够（1颗/次）
+        cost = 1 * count
         if entangled_fate < cost:
             return [
                 Comp.At(qq=user_id),
@@ -315,4 +319,112 @@ class Lottery:
         # if time_desc:
         #     lines.append(f" ({time_desc})")
         # 更新用户数据
+        return message
+
+    async def daily_sign_in(self, user_id: str):
+        """处理每日签到，获取纠缠之缘"""
+        # 设置「中国标准时间」
+        CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
+        if not (self.user_data_path / f"{user_id}.json").exists():
+            await create_user_data(user_id)
+        user_data = await read_json(self.user_data_path / f"{user_id}.json")
+        user_backpack = await read_json(self.backpack_path / f"{user_id}.json") or {}
+        today = datetime.now(CN_TIMEZONE).date().strftime("%Y-%m-%d")
+        message = [Comp.At(qq=user_id), Comp.Plain("\n")]
+        # 初始化签到数据及检测是否为首次签到的新用户
+        if "sign_info" not in user_backpack:
+            user_backpack["sign_info"] = {"last_sign": "", "streak_days": 0}
+            judge_new_user = True
+        # 检查是否已签到
+        if user_backpack["sign_info"]["last_sign"] == today:
+            message.append(Comp.Plain("你今天已经签到过啦，明天再来吧~"))
+            return message
+        base_reward = 1
+        location_bonus, house_bonus, love_bonus, streak_bonus = 0, 0, 0, 0
+        # 新用户奖励
+        if judge_new_user:
+            message.append(
+                Comp.Plain(
+                    "🎉 欢迎来到虚空武器抽卡系统！\n💎 注册成功，获得初始纠缠之缘5颗\n\n"
+                )
+            )
+            base_reward += 5
+        # 更新签到信息
+        last_sign = user_backpack["sign_info"]["last_sign"]
+        if last_sign == (date.today(CN_TIMEZONE) - timedelta(days=1)).strftime(
+            "%Y-%m-%d"
+        ):
+            if user_backpack["sign_info"]["streak_days"] <= 30:
+                user_backpack["sign_info"]["streak_days"] += 1
+            else:
+                user_backpack["sign_info"]["streak_days"] = 1  # 连续签到天数上限30天
+        else:
+            user_backpack["sign_info"]["streak_days"] = 1
+        streak_count = user_backpack["sign_info"]["streak_days"]
+        user_backpack["sign_info"]["last_sign"] = today
+        # 连续签到加成（每3天+1，最多+5）
+        streak_bonus = min(streak_count // 3, 5)
+
+        # 位置加成计算
+        if user_data["home"] and "place" in user_data["home"]:
+            current_place = user_data.get("home", {}).get("place", "home")
+            location_config = {
+                "city": (2, "城市的繁华带来额外收益"),
+                "business": (3, "商业区的商机"),
+                "bank": (1, "银行的稳定收益"),
+                "prison": (-1, "监狱环境恶劣"),
+                "home": (0, "家的温馨"),
+            }
+            if current_place in location_config:
+                location_bonus, location_desc = location_config[current_place]
+            else:
+                location_bonus, location_desc = 0, "未知地点"
+
+        # 房屋等级加成
+        if user_data["house"] and "house_level" in user_data["house"]:
+            house_level = user_data.get("house", {}).get("house_level", 1)
+            house_bonus = house_level // 2  # 每2级+1颗纠缠之缘
+
+        # 好感度加成
+        if user_data["home"] and "spouse_id" in user_data["home"]:
+            spouse_name = user_data["home"].get("spouse_name", "伴侣")
+            spouse_id = user_data["home"].get("spouse_id")
+            if spouse_id and spouse_id not in [0, None, "", "0"]:
+                love_level = user_data["home"].get("love", 0)
+                love_bonus = love_level // 50  # 每50好感度+1
+
+        total_reward = (
+            base_reward + location_bonus + house_bonus + love_bonus + streak_bonus
+        )
+
+        message.extend(
+            [
+                Comp.Plain(f"✅ 签到成功！获得{total_reward - 5}颗纠缠之缘\n"),
+                Comp.Plain(
+                    f"💎 当前拥有：{user_backpack['weapon']['纠缠之缘']}颗纠缠之缘\n"
+                ),
+                Comp.Plain(f"📅 当前连续签到{streak_count}天\n"),
+                Comp.Plain("💡 可以使用[抽武器]来获得强力装备！\n"),
+            ]
+        )
+
+        # 幸运奖励事件（10%概率）
+        lucky_reward = 0
+        if random.random() < 0.1:
+            lucky_reward = 5 + random.randint(0, 10)
+            message.append(
+                Comp.Plain(f"🎁 幸运奖励：额外获得{lucky_reward}颗纠缠之缘！\n\n")
+            )
+        # 添加各种加成信息
+        if location_bonus != 0:
+            message.append(f"📍 位置加成：{location_bonus:+d} ({location_desc})")
+        if house_bonus > 0:
+            message.append(f"🏠 房屋加成：+{house_bonus}")
+        if love_bonus > 0:
+            message.append(f"💕 {spouse_name}的爱意加成：+{love_bonus}")
+        if streak_bonus > 0:
+            message.append(f"🔥 连续签到{streak_count}天加成：+{streak_bonus}")
+        # 更新用户金钱
+        user_backpack["weapon"]["纠缠之缘"] += total_reward + lucky_reward
+        await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
         return message
