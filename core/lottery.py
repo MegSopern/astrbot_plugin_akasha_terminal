@@ -317,7 +317,6 @@ class Lottery:
     async def calculate_sign_rewards(self, user_data, user_backpack, base_reward):
         """计算签到奖励及加成"""
         CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
-        today = datetime.now(CN_TIMEZONE).date().strftime("%Y-%m-%d")
         last_sign = user_backpack["sign_info"].get("last_sign", "")
         streak_count = user_backpack["sign_info"].get("streak_days", 0)
 
