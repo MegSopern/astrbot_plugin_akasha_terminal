@@ -1,6 +1,6 @@
 import json
 import random
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -329,7 +329,7 @@ class Lottery:
             await create_user_data(user_id)
         user_data = await read_json(self.user_data_path / f"{user_id}.json")
         user_backpack = await read_json(self.backpack_path / f"{user_id}.json") or {}
-        today = date.today(CN_TIMEZONE).strftime("%Y-%m-%d")
+        today = datetime.now(CN_TIMEZONE).date().strftime("%Y-%m-%d")
         message = [Comp.At(qq=user_id), Comp.Plain("\n")]
         # 初始化签到数据及检测是否为首次签到的新用户
         if "sign_info" not in user_backpack:
@@ -409,6 +409,7 @@ class Lottery:
         )
 
         # 幸运奖励事件（10%概率）
+        lucky_reward = 0
         if random.random() < 0.1:
             lucky_reward = 5 + random.randint(0, 10)
             message.append(
@@ -427,11 +428,3 @@ class Lottery:
         user_backpack["weapon"]["纠缠之缘"] += total_reward + lucky_reward
         await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
         return message
-
-    async def _get_streak_info(self, user_id: str, group_id: str) -> tuple[int, int]:
-        """获取连续签到信息（连续天数，加成值）"""
-        user_backpack = await read_json(self.backpack_path / f"{user_id}.json") or {}
-        sign_info = user_backpack.get("sign_info", {})
-        group_signs = sign_info.get("group_signs", {})
-        group_data = group_signs.get(group_id, {"last_sign": "", "streak_days": 0})
-        return group_data["streak_days"], group_data["last_sign"]
