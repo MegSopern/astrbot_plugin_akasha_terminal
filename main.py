@@ -178,3 +178,14 @@ class AkashaTerminal(Star):
         except Exception as e:
             logger.error(f"十连抽武器失败: {str(e)}")
             yield event.plain_result("十连抽武器失败，请稍后再试~")
+
+    @filter.command("签到", alias={"每日签到"})
+    async def sign_in(self, event: AstrMessageEvent):
+        """进行每日签到"""
+        try:
+            user_id = str(event.get_sender_id())
+            message = await self.lottery_system.daily_sign_in(user_id)
+            yield event.plain_result(message)
+        except Exception as e:
+            logger.error(f"每日签到失败: {str(e)}")
+            yield event.plain_result("每日签到失败，请稍后再试~")

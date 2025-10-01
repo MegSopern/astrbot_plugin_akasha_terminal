@@ -46,6 +46,8 @@ class User:
                     "spouse_id": "",
                     "spouse_name": "",
                     "wait": 0,
+                    "place": "home",
+                    "placetime": 0,
                     "money": 100,
                     "love": 0,
                 }

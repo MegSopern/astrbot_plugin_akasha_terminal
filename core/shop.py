@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from ..utils.utils import read_json, write_json
 
@@ -24,6 +25,8 @@ class Shop:
 
     def _init_default_data(self) -> None:
         """初始化默认商店数据和用户背包（仅当文件不存在时）"""
+        # 设置「中国标准时间」
+        CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
         # 初始化商店数据
         if not self.shop_data_path.exists():
             default_shop = {
@@ -105,7 +108,7 @@ class Shop:
                     "金币袋",
                     "双倍经验卡",
                 ],  # 每日刷新的商品ID
-                "last_refresh": datetime.now().strftime("%Y-%m-%d"),
+                "last_refresh": datetime.now(CN_TIMEZONE).strftime("%Y-%m-%d"),
             }
             asyncio.run(self._save_data(self.shop_data_path, default_shop))
         # 初始化用户背包路径文件
