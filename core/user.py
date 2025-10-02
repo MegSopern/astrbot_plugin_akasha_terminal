@@ -65,10 +65,6 @@ class User:
         }
 
         # 创建必要目录和初始化文件
-        self._init_dirs()
-
-    def _init_dirs(self):
-        """初始化数据目录"""
         try:
             self.user_data_path.mkdir(parents=True, exist_ok=True)
             logger.info("用户系统数据目录初始化完成")
@@ -258,4 +254,4 @@ class User:
             return message
         except Exception as e:
             logger.error(f"获取所有用户信息失败: {str(e)}")
-            return f"操作失败: {str(e)}"
+            return "获取用户列表失败，请稍后再试~"

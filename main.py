@@ -1,9 +1,9 @@
-import random
 import re
+from pathlib import Path
 
-import aiohttp  # noqa: F401
+import aiohttp
 import astrbot.api.message_components as Comp
-from aiocqhttp import CQHttp  # noqa: F401
+from aiocqhttp import CQHttp
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
@@ -19,7 +19,7 @@ from .utils.utils import get_nickname, logo_AATP
     "astrbot_plugin_akasha_terminal",
     "Xinhaihai & Xinhaihai/wbndm1234 & MegSopern",
     "一个功能丰富的astrbot插件，提供完整的游戏系统",
-    "1.0.0",
+    "2.0.0",
 )
 class AkashaTerminal(Star):
     def __init__(self, context: Context):
@@ -108,12 +108,8 @@ class AkashaTerminal(Star):
     @filter.command("商店", alias={"虚空商店", "商城", "虚空商城"})
     async def show_shop(self, event: AstrMessageEvent):
         """显示商店物品列表"""
-        try:
-            message = await self.shop_system.format_shop_items()
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"显示商店失败: {str(e)}")
-            yield event.plain_result("显示商店失败，请稍后重试")
+        message = await self.shop_system.format_shop_items()
+        yield event.plain_result(message)
 
     @filter.command("购买道具", alias={"买道具", "购买物品", "买物品"})
     async def buy_prop(self, event: AstrMessageEvent):
@@ -125,6 +121,13 @@ class AkashaTerminal(Star):
         success, message = await self.shop_system.handle_buy_command(user_id, input_str)
         yield event.plain_result(message)
 
+    @filter.command("背包", alias="我的背包")
+    async def show_backpack(self, event: AstrMessageEvent):
+        """查看我的背包"""
+        user_id = str(event.get_sender_id())
+        message = await self.shop_system.format_backpack(user_id)
+        yield event.plain_result(message)
+
     @filter.command("使用道具", alias={"用道具", "使用物品", "用物品"})
     async def use_item(self, event: AstrMessageEvent):
         """使用道具，使用方法: /使用道具 物品名称"""
@@ -133,17 +136,6 @@ class AkashaTerminal(Star):
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         success, message = await self.shop_system.handle_use_command(user_id, input_str)
         yield event.plain_result(message)
-
-    @filter.command("背包", alias="我的背包")
-    async def show_backpack(self, event: AstrMessageEvent):
-        """查看我的背包"""
-        try:
-            user_id = str(event.get_sender_id())
-            message = await self.shop_system.format_backpack(user_id)
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"查看背包失败: {str(e)}")
-            yield event.plain_result("查看背包失败，请稍后重试~")
 
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
     async def gift_item(self, event: AstrMessageEvent):
@@ -161,8 +153,17 @@ class AkashaTerminal(Star):
         """单抽武器"""
         try:
             user_id = str(event.get_sender_id())
-            message = await self.lottery_system.weapon_draw(user_id, count=1)
-            yield event.plain_result(message)
+            message, weapon_image_path = await self.lottery_system.weapon_draw(
+                user_id, count=1
+            )
+            if weapon_image_path and weapon_image_path.exists():
+                message = [
+                    Comp.Plain(message),
+                    Comp.Image.fromFileSystem(weapon_image_path),
+                ]
+                yield event.chain_result(message)
+            else:
+                yield event.plain_result(message)
         except Exception as e:
             logger.error(f"抽武器失败: {str(e)}")
             yield event.plain_result("抽武器失败，请稍后再试~")
@@ -173,7 +174,9 @@ class AkashaTerminal(Star):
         """十连抽武器"""
         try:
             user_id = str(event.get_sender_id())
-            message = await self.lottery_system.weapon_draw(user_id, count=10)
+            message, weapon_image_path = await self.lottery_system.weapon_draw(
+                user_id, count=10
+            )
             yield event.plain_result(message)
         except Exception as e:
             logger.error(f"十连抽武器失败: {str(e)}")

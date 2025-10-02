@@ -83,13 +83,13 @@ class Task:
                 await self.user_system.update_quest_data(user_id, quest_data)
 
                 # 构建进度消息
-                progress_msg = f"【{task['name']}】进度更新：{progress['current']}/{progress['target']}"
+                progress_msg = f"【{task['name']}】进度更新：{progress['current']}/{progress['target']}\n"
                 result["progress_msg"] = progress_msg
 
                 if progress["current"] >= progress["target"]:
                     result["completed"] = True
                     result["task_id"] = task_key
-                    result["message"] = f"恭喜完成任务【{task['name']}】！"
+                    result["message"] = f"恭喜完成任务【{task['name']}】！\n"
                     break
         return result
 
@@ -141,8 +141,7 @@ class Task:
             # 保存更新后的数据
             await self.user_system.update_home_data(user_id, home_data)
             await self.user_system.update_quest_data(user_id, quest_data)
-
-            logger.info(f"用户 {user_id} 成功领取任务 {task_id} 奖励")
+            reward_msg += f"用户 {user_id} 成功领取任务 {task_id} 奖励\n"
             return True, reward_msg.strip()
         except Exception as e:
             error_msg = f"发放任务奖励失败: {str(e)}"
@@ -181,7 +180,7 @@ class Task:
                         f"【{active_task['name']}】\n"
                         f"描述：{active_task['description']}\n"
                         f"奖励：{active_task['reward']}\n"
-                        f"请完成当前任务后再领取新的任务"
+                        f"请完成当前任务后再领取新的任务\n"
                     )
 
             # 分配新任务
@@ -191,12 +190,11 @@ class Task:
                     f"已为你分配日常任务：\n"
                     f"【{task['name']}】\n"
                     f"描述：{task['description']}\n"
-                    f"奖励：{task['reward']}"
+                    f"奖励：{task['reward']}\n"
                 )
-            return "获取任务失败，请稍后再试"
         except Exception as e:
             logger.error(f"处理日常任务领取失败: {str(e)}")
-            return "处理任务时发生错误，请稍后再试"
+            return "处理任务时发生错误，请稍后再试~"
 
     async def format_user_tasks(self, user_id: str) -> str:
         """格式化用户当前任务进度为字符串"""
@@ -207,39 +205,39 @@ class Task:
             special_tasks = quest_data.get("special", {})
             if not any([daily_tasks, weekly_tasks, special_tasks]):
                 return "你当前没有任何任务，快去领取新任务吧！"
-            msg_parts = ["你的当前任务："]
+            msg_parts = "你的当前任务：\n"
             # 处理日常任务
             if daily_tasks:
-                msg_parts.append("\n【日常任务】")
+                msg_parts += "【日常任务】\n"
                 for task_id, progress in daily_tasks.items():
                     task = await self.get_task_by_id(task_id)
                     if task:
-                        msg_parts.append(
-                            f"{task['name']}：{progress['current']}/{progress['target']} "
-                            f"({task['description']})"
+                        msg_parts += (
+                            f"{task['name']}：{progress['current']}/{progress['target']}\n"
+                            f"({task['description']})\n\n"
                         )
             # 处理周任务
             if weekly_tasks:
-                msg_parts.append("\n【周任务】")
+                msg_parts += "【周任务】\n"
                 for task_id, progress in weekly_tasks.items():
                     task = await self.get_task_by_id(task_id)
                     if task:
-                        msg_parts.append(
-                            f"{task['name']}：{progress['current']}/{progress['target']} "
-                            f"({task['description']})"
+                        msg_parts += (
+                            f"{task['name']}：{progress['current']}/{progress['target']}\n"
+                            f"({task['description']})\n\n"
                         )
 
             # 处理特殊任务
             if special_tasks:
-                msg_parts.append("\n【特殊任务】")
+                msg_parts += "【特殊任务】\n"
                 for task_id, progress in special_tasks.items():
                     task = await self.get_task_by_id(task_id)
                     if task:
-                        msg_parts.append(
-                            f"{task['name']}：{progress['current']}/{progress['target']} "
-                            f"({task['description']})"
+                        msg_parts += (
+                            f"{task['name']}：{progress['current']}/{progress['target']} \n"
+                            f"({task['description']})\n\n"
                         )
             return "\n".join(msg_parts)
         except Exception as e:
             logger.error(f"格式化用户任务失败: {str(e)}")
-            return "查询任务时发生错误，请稍后再试"
+            return "查询任务时发生错误，请稍后再试~"

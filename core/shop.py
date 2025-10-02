@@ -1,11 +1,12 @@
-import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
-from ..utils.utils import read_json, write_json
+from astrbot.api import logger
+
+from ..utils.utils import read_json, read_json_sync, write_json, write_json_sync
 
 
 class Shop:
@@ -110,10 +111,10 @@ class Shop:
                 ],  # 每日刷新的商品ID
                 "last_refresh": datetime.now(CN_TIMEZONE).strftime("%Y-%m-%d"),
             }
-            asyncio.run(self._save_data(self.shop_data_path, default_shop))
+            write_json_sync(self.shop_data_path, default_shop)
         # 初始化用户背包路径文件
         if not self.backpack_path.exists():
-            asyncio.run(self._save_data(self.backpack_path, {}))
+            self.backpack_path.mkdir(parents=True, exist_ok=True)
 
     async def _load_data(self, file_path: Path) -> Dict[str, Any]:
         """通用数据加载方法"""
@@ -197,9 +198,9 @@ class Shop:
         backpack = await self._load_data(file_path)
         return backpack or {}
 
-    async def use_item(
-        self, user_id: str, item_name: str, quantity: int = 1
-    ) -> Tuple[bool, Any]:
+    async def handle_use_command(
+        self, user_id: str, input_str: str
+    ) -> Tuple[bool, str]:
         """
         使用背包中的物品
         :param user_id: 用户ID
@@ -207,6 +208,20 @@ class Shop:
         :param quantity: 使用数量（默认1）
         :return: (是否成功, 物品效果或错误消息)
         """
+        parts = input_str.strip().split()
+        if not parts:
+            return (
+                False,
+                "请指定物品名称，使用方法: /使用道具 物品名称\n"
+                "或：/使用道具 物品名称 数量",
+            )
+        item_name = parts[0]
+        try:
+            quantity = int(parts[1]) if len(parts) > 1 else 1
+        except ValueError:
+            return False, "数量必须为整数，请重新输入"
+        if quantity <= 0:
+            return False, "使用数量必须为正整数"
         file_path = self.backpack_path / f"{user_id}.json"
         backpack = await self.get_user_backpack(user_id)
         # 物品存在性与数量校验
@@ -231,8 +246,8 @@ class Shop:
 
         return True, item["effect"]
 
-    async def gift_item(
-        self, from_user_id: str, to_user_id: str, item_name: str, amount: int = 1
+    async def handle_gift_command(
+        self, from_user_id: str, input_str: str
     ) -> Tuple[bool, str]:
         """
         赠送物品给其他用户
@@ -242,6 +257,21 @@ class Shop:
         :param amount: 赠送数量（默认1）
         :return: (是否成功, 结果消息)
         """
+        parts = input_str.strip().split()
+        if len(parts) < 2:
+            return (
+                False,
+                "请指定物品名称和接收者，使用方法: /赠送道具 物品名称 @用户\n"
+                "或：/赠送道具 物品名称 @用户 数量",
+            )
+        item_name = parts[0]
+        to_user_id = parts[1]
+        try:
+            amount = int(parts[2]) if len(parts) > 2 else 1
+        except ValueError:
+            return False, "赠送数量必须为整数"
+        if amount <= 0:
+            return False, "赠送数量必须为正整数"
         from_file_path = self.backpack_path / f"{from_user_id}.json"
         to_file_path = self.backpack_path / f"{to_user_id}.json"
         from_backpack = await self.get_user_backpack(from_user_id)
@@ -265,16 +295,19 @@ class Shop:
 
     async def format_shop_items(self) -> str:
         """格式化商店物品列表为展示文本"""
-        items = await self.get_shop_items()
-        if not items:
-            return "商店暂无商品"
-
-        message = "📦 虚空商城\n"
-        for item_name, item in items.items():
-            stock = "无限" if item["stock"] == -1 else item["stock"]
-            message += f"[{item['id']}] {item_name}：{item['price']}金币\n"
-            message += f"描述: {item['description']}\n(库存: {stock})\n"
-        return message
+        try:
+            items = await self.get_shop_items()
+            if not items:
+                return "商店暂无商品"
+            message = "📦 虚空商城\n"
+            for item_name, item in items.items():
+                stock = "无限" if item["stock"] == -1 else item["stock"]
+                message += f"[{item['id']}] {item_name}：{item['price']}金币\n"
+                message += f"描述: {item['description']}\n(库存: {stock})\n"
+            return message
+        except Exception as e:
+            logger.error(f"格式化商店物品失败: {str(e)}")
+            return "获取商店物品失败，请稍后再试~"
 
     async def handle_buy_command(
         self, user_id: str, input_str: str
@@ -296,7 +329,8 @@ class Shop:
 
             item_name = parts[0]
             quantity = int(parts[1]) if len(parts) > 1 else 1
-
+            if quantity <= 0:
+                return False, "购买数量必须为正整数"
             # 导入用户系统获取金钱（避免循环导入）
             from .user import User
 
@@ -312,13 +346,19 @@ class Shop:
 
     async def format_backpack(self, user_id: str) -> str:
         """格式化用户背包为展示文本"""
-        user_backpack = await self.get_user_backpack(user_id)
-        if not user_backpack:
-            return "你的背包是空的，快去商店买点东西吧~"
+        try:
+            user_backpack = await self.get_user_backpack(user_id)
+            if not user_backpack:
+                return "你的背包是空的，快去商店买点东西吧~"
 
-        message = "🎒 你的背包\n"
-        for item_name, count in user_backpack.items():
-            target_item = await self.get_item_detail(item_name)
-            if target_item:
-                message += f"- {item_name} x {count}\n  {target_item['description']}\n"
-        return message
+            message = "🎒 你的背包\n"
+            for item_name, count in user_backpack.items():
+                target_item = await self.get_item_detail(item_name)
+                if target_item:
+                    message += (
+                        f"- {item_name} x {count}\n  {target_item['description']}\n"
+                    )
+            return message
+        except Exception as e:
+            logger.error(f"格式化背包失败: {str(e)}")
+            return "查看背包失败，请稍后再试~"
