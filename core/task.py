@@ -205,7 +205,7 @@ class Task:
             special_tasks = quest_data.get("special", {})
             if not any([daily_tasks, weekly_tasks, special_tasks]):
                 return "你当前没有任何任务，快去领取新任务吧！"
-            msg_parts = ["你的当前任务：\n"]
+            msg_parts = "你的当前任务：\n"
             # 处理日常任务
             if daily_tasks:
                 msg_parts += "【日常任务】\n"

@@ -1,9 +1,9 @@
-import random
 import re
+from pathlib import Path
 
-import aiohttp  # noqa: F401
+import aiohttp
 import astrbot.api.message_components as Comp
-from aiocqhttp import CQHttp  # noqa: F401
+from aiocqhttp import CQHttp
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register

@@ -209,14 +209,17 @@ class Shop:
         :return: (是否成功, 物品效果或错误消息)
         """
         parts = input_str.strip().split()
-        if len(parts) < 1:
+        if not parts:
             return (
                 False,
                 "请指定物品名称，使用方法: /使用道具 物品名称\n"
                 "或：/使用道具 物品名称 数量",
             )
         item_name = parts[0]
-        quantity = int(parts[1]) if len(parts) > 1 else 1
+        try:
+            quantity = int(parts[1]) if len(parts) > 1 else 1
+        except ValueError:
+            return False, "数量必须为整数，请重新输入"
         if quantity <= 0:
             return False, "使用数量必须为正整数"
         file_path = self.backpack_path / f"{user_id}.json"
@@ -263,7 +266,10 @@ class Shop:
             )
         item_name = parts[0]
         to_user_id = parts[1]
-        amount = int(parts[2]) if len(parts) > 2 else 1
+        try:
+            amount = int(parts[2]) if len(parts) > 2 else 1
+        except ValueError:
+            return False, "赠送数量必须为整数"
         if amount <= 0:
             return False, "赠送数量必须为正整数"
         from_file_path = self.backpack_path / f"{from_user_id}.json"
@@ -323,7 +329,8 @@ class Shop:
 
             item_name = parts[0]
             quantity = int(parts[1]) if len(parts) > 1 else 1
-
+            if quantity <= 0:
+                return False, "购买数量必须为正整数"
             # 导入用户系统获取金钱（避免循环导入）
             from .user import User
 
