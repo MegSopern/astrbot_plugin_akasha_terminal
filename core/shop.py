@@ -198,9 +198,9 @@ class Shop:
         backpack = await self._load_data(file_path)
         return backpack or {}
 
-    async def use_item(
-        self, user_id: str, item_name: str, quantity: int = 1
-    ) -> Tuple[bool, Any]:
+    async def handle_use_command(
+        self, user_id: str, input_str: str
+    ) -> Tuple[bool, str]:
         """
         使用背包中的物品
         :param user_id: 用户ID
@@ -208,6 +208,17 @@ class Shop:
         :param quantity: 使用数量（默认1）
         :return: (是否成功, 物品效果或错误消息)
         """
+        parts = input_str.strip().split()
+        if len(parts) < 1:
+            return (
+                False,
+                "请指定物品名称，使用方法: /使用道具 物品名称\n"
+                "或：/使用道具 物品名称 数量",
+            )
+        item_name = parts[0]
+        quantity = int(parts[1]) if len(parts) > 1 else 1
+        if quantity <= 0:
+            return False, "使用数量必须为正整数"
         file_path = self.backpack_path / f"{user_id}.json"
         backpack = await self.get_user_backpack(user_id)
         # 物品存在性与数量校验
@@ -232,8 +243,8 @@ class Shop:
 
         return True, item["effect"]
 
-    async def gift_item(
-        self, from_user_id: str, to_user_id: str, item_name: str, amount: int = 1
+    async def handle_gift_command(
+        self, from_user_id: str, input_str: str
     ) -> Tuple[bool, str]:
         """
         赠送物品给其他用户
@@ -243,6 +254,18 @@ class Shop:
         :param amount: 赠送数量（默认1）
         :return: (是否成功, 结果消息)
         """
+        parts = input_str.strip().split()
+        if len(parts) < 2:
+            return (
+                False,
+                "请指定物品名称和接收者，使用方法: /赠送道具 物品名称 @用户\n"
+                "或：/赠送道具 物品名称 @用户 数量",
+            )
+        item_name = parts[0]
+        to_user_id = parts[1]
+        amount = int(parts[2]) if len(parts) > 2 else 1
+        if amount <= 0:
+            return False, "赠送数量必须为正整数"
         from_file_path = self.backpack_path / f"{from_user_id}.json"
         to_file_path = self.backpack_path / f"{to_user_id}.json"
         from_backpack = await self.get_user_backpack(from_user_id)
@@ -316,13 +339,19 @@ class Shop:
 
     async def format_backpack(self, user_id: str) -> str:
         """格式化用户背包为展示文本"""
-        user_backpack = await self.get_user_backpack(user_id)
-        if not user_backpack:
-            return "你的背包是空的，快去商店买点东西吧~"
+        try:
+            user_backpack = await self.get_user_backpack(user_id)
+            if not user_backpack:
+                return "你的背包是空的，快去商店买点东西吧~"
 
-        message = "🎒 你的背包\n"
-        for item_name, count in user_backpack.items():
-            target_item = await self.get_item_detail(item_name)
-            if target_item:
-                message += f"- {item_name} x {count}\n  {target_item['description']}\n"
-        return message
+            message = "🎒 你的背包\n"
+            for item_name, count in user_backpack.items():
+                target_item = await self.get_item_detail(item_name)
+                if target_item:
+                    message += (
+                        f"- {item_name} x {count}\n  {target_item['description']}\n"
+                    )
+            return message
+        except Exception as e:
+            logger.error(f"格式化背包失败: {str(e)}")
+            return "查看背包失败，请稍后再试~"

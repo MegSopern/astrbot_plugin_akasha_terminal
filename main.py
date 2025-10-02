@@ -121,6 +121,13 @@ class AkashaTerminal(Star):
         success, message = await self.shop_system.handle_buy_command(user_id, input_str)
         yield event.plain_result(message)
 
+    @filter.command("背包", alias="我的背包")
+    async def show_backpack(self, event: AstrMessageEvent):
+        """查看我的背包"""
+        user_id = str(event.get_sender_id())
+        message = await self.shop_system.format_backpack(user_id)
+        yield event.plain_result(message)
+
     @filter.command("使用道具", alias={"用道具", "使用物品", "用物品"})
     async def use_item(self, event: AstrMessageEvent):
         """使用道具，使用方法: /使用道具 物品名称"""
@@ -129,17 +136,6 @@ class AkashaTerminal(Star):
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         success, message = await self.shop_system.handle_use_command(user_id, input_str)
         yield event.plain_result(message)
-
-    @filter.command("背包", alias="我的背包")
-    async def show_backpack(self, event: AstrMessageEvent):
-        """查看我的背包"""
-        try:
-            user_id = str(event.get_sender_id())
-            message = await self.shop_system.format_backpack(user_id)
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"查看背包失败: {str(e)}")
-            yield event.plain_result("查看背包失败，请稍后重试~")
 
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
     async def gift_item(self, event: AstrMessageEvent):

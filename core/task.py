@@ -240,4 +240,4 @@ class Task:
             return "\n".join(msg_parts)
         except Exception as e:
             logger.error(f"格式化用户任务失败: {str(e)}")
-            return "查询任务时发生错误，请稍后再试"
+            return "查询任务时发生错误，请稍后再试~"
