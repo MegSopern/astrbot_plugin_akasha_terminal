@@ -118,6 +118,56 @@ async def create_user_data(user_id: str) -> bool:
     return True
 
 
+def read_json_sync(file_path: Path) -> Dict[str, Any]:
+    """同步原子读取JSON文件"""
+    # 原子读：加共享锁 -> 读 -> 解锁
+    if not file_path.exists():
+        return {}
+
+    def read_json_atomic() -> Dict[str, Any]:
+        fd = os.open(file_path, os.O_RDONLY | os.O_CLOEXEC)
+        try:
+            # 加共享锁（非阻塞）
+            fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            with os.fdopen(fd, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                # 读取完成后，释放锁
+                fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            pass
+        return data
+
+    try:
+        return read_json_atomic()
+    except Exception as e:
+        logger.error(f"读取文件 {file_path} 失败: {str(e)}")
+        return {}
+
+
+def write_json_sync(file_path: Path, data: Dict[str, Any]) -> bool:
+    """同步原子写入JSON文件"""
+
+    def write_json_atomic() -> None:
+        # 生成唯一的临时文件
+        with tempfile.NamedTemporaryFile(
+            "w", dir=file_path.parent, delete=False, suffix=".json"
+        ) as tmp_file:
+            json.dump(data, tmp_file, ensure_ascii=False)
+            tmp_file.flush()
+            os.fsync(tmp_file.fileno())
+            temp_name = tmp_file.name
+        # 原子替换
+        os.replace(temp_name, file_path)
+
+    try:
+        # 直接调用原子写入方法
+        write_json_atomic()
+        return True
+    except Exception as e:
+        logger.error(f"写入文件 {file_path} 失败: {str(e)}")
+        return False
+
+
 async def read_json(file_path: Path) -> Dict[str, Any]:
     """异步原子读取JSON文件"""
     # 原子读：加共享锁 -> 读 -> 解锁
