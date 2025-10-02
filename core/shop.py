@@ -301,7 +301,7 @@ class Shop:
             return message
         except Exception as e:
             logger.error(f"格式化商店物品失败: {str(e)}")
-            return str(e)
+            return "获取商店物品失败，请稍后再试~"
 
     async def handle_buy_command(
         self, user_id: str, input_str: str
