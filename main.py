@@ -19,7 +19,7 @@ from .utils.utils import get_nickname, logo_AATP
     "astrbot_plugin_akasha_terminal",
     "Xinhaihai & Xinhaihai/wbndm1234 & MegSopern",
     "一个功能丰富的astrbot插件，提供完整的游戏系统",
-    "1.0.0",
+    "2.0.0",
 )
 class AkashaTerminal(Star):
     def __init__(self, context: Context):
