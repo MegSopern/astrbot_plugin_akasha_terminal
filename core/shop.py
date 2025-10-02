@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 from astrbot.api import logger
 
-from ..utils.utils import read_json, write_json
+from ..utils.utils import read_json, read_json_sync, write_json, write_json_sync
 
 
 class Shop:
@@ -111,11 +111,7 @@ class Shop:
                 ],  # 每日刷新的商品ID
                 "last_refresh": datetime.now(CN_TIMEZONE).strftime("%Y-%m-%d"),
             }
-            try:
-                with open(self.shop_data_path, "w", encoding="utf-8") as f:
-                    json.dump(default_shop, f, ensure_ascii=False)
-            except Exception as e:
-                logger.error(f"保存默认商店数据失败: {e}")
+            write_json_sync(self.shop_data_path, default_shop)
         # 初始化用户背包路径文件
         if not self.backpack_path.exists():
             self.backpack_path.mkdir(parents=True, exist_ok=True)

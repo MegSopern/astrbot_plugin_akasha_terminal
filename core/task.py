@@ -192,10 +192,10 @@ class Task:
                     f"描述：{task['description']}\n"
                     f"奖励：{task['reward']}\n"
                 )
-            return "获取任务失败，请稍后再试"
+            return "获取任务失败，请稍后再试~"
         except Exception as e:
             logger.error(f"处理日常任务领取失败: {str(e)}")
-            return "处理任务时发生错误，请稍后再试"
+            return "处理任务时发生错误，请稍后再试~"
 
     async def format_user_tasks(self, user_id: str) -> str:
         """格式化用户当前任务进度为字符串"""

@@ -71,51 +71,55 @@ def logo_AATP():
 # 初始化用户数据的工具函数
 async def create_user_data(user_id: str) -> bool:
     """创建user系统初始数据"""
-    # 创建默认用户数据
-    user_data_path = (
-        Path(__file__).resolve().parent.parent.parent.parent
-        / "plugin_data"
-        / "astrbot_plugin_akasha_terminal"
-        / "user_data"
-    )
-    default_user_data = {
-        "user": {
-            "id": user_id,
-            "nickname": "",
-            "level": 1,
-            "experience": 0,
-            "created_at": time.time(),
-        },
-        "battle": {
-            "experience": 0,
-            "level": 0,
-            "levelname": "无等级",
-            "privilege": 0,
-        },
-        "home": {
-            "spouse_id": "",
-            "spouse_name": "",
-            "wait": 0,
-            "place": "home",
-            "placetime": 0,
-            "money": 100,
-            "love": 0,
-        },
-        "quest": {
-            "daily": {},
-            "weekly": {},
-            "special": {},
-            "quest_points": 0,
-            "last_daily_reset": "",
-            "last_weekly_reset": "",
-        },
-    }
+    try:
+        # 创建默认用户数据
+        user_data_path = (
+            Path(__file__).resolve().parent.parent.parent.parent
+            / "plugin_data"
+            / "astrbot_plugin_akasha_terminal"
+            / "user_data"
+        )
+        default_user_data = {
+            "user": {
+                "id": user_id,
+                "nickname": "",
+                "level": 1,
+                "experience": 0,
+                "created_at": time.time(),
+            },
+            "battle": {
+                "experience": 0,
+                "level": 0,
+                "levelname": "无等级",
+                "privilege": 0,
+            },
+            "home": {
+                "spouse_id": "",
+                "spouse_name": "",
+                "wait": 0,
+                "place": "home",
+                "placetime": 0,
+                "money": 100,
+                "love": 0,
+            },
+            "quest": {
+                "daily": {},
+                "weekly": {},
+                "special": {},
+                "quest_points": 0,
+                "last_daily_reset": "",
+                "last_weekly_reset": "",
+            },
+        }
 
-    # 确保目录存在
-    user_data_path.mkdir(parents=True, exist_ok=True)
-    # 写入用户数据
-    await write_json(user_data_path / f"{user_id}.json", default_user_data)
-    return True
+        # 确保目录存在
+        user_data_path.mkdir(parents=True, exist_ok=True)
+        # 写入用户数据
+        await write_json(user_data_path / f"{user_id}.json", default_user_data)
+        return True
+    except Exception as e:
+        logger.error(f"创建用户数据失败: {str(e)}")
+        return False
 
 
 def read_json_sync(file_path: Path) -> Dict[str, Any]:

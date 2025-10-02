@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-import astrbot.api.message_components as Comp
 from astrbot.api import logger
 
 from ..utils.utils import create_user_data, read_json, write_json
@@ -110,108 +109,120 @@ class Lottery:
         self, user_id: str, target_weapon_id: str, user_data, user_backpack
     ) -> bool:
         """更新用户背包和武器数据"""
-        weapon_info = await self.get_weapon_info(target_weapon_id)
-        if not weapon_info:
+        try:
+            weapon_info = await self.get_weapon_info(target_weapon_id)
+            if not weapon_info:
+                return False
+
+            weapon_star = weapon_info["class"]
+            weapon_detail = user_backpack["weapon"]["武器详细"][weapon_star]
+
+            # 更新抽卡次数和武器计数
+            user_backpack["weapon"]["总抽卡次数"] += 1
+            user_backpack["weapon"]["武器计数"][target_weapon_id] = (
+                user_backpack["weapon"]["武器计数"].get(target_weapon_id, 0) + 1
+            )
+
+            # 首次获得该武器时添加详细信息
+            if not any(
+                item["id"] == target_weapon_id for item in weapon_detail["详细信息"]
+            ):
+                weapon_detail["数量"] += 1
+                weapon_detail["详细信息"].append(weapon_info)
+
+            # 保存数据
+            await write_json(self.user_data_path / f"{user_id}.json", user_data)
+            await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
+            return True
+        except Exception as e:
+            logger.error(f"更新用户数据失败: {str(e)}")
             return False
-
-        weapon_star = weapon_info["class"]
-        weapon_detail = user_backpack["weapon"]["武器详细"][weapon_star]
-
-        # 更新抽卡次数和武器计数
-        user_backpack["weapon"]["总抽卡次数"] += 1
-        user_backpack["weapon"]["武器计数"][target_weapon_id] = (
-            user_backpack["weapon"]["武器计数"].get(target_weapon_id, 0) + 1
-        )
-
-        # 首次获得该武器时添加详细信息
-        if not any(
-            item["id"] == target_weapon_id for item in weapon_detail["详细信息"]
-        ):
-            weapon_detail["数量"] += 1
-            weapon_detail["详细信息"].append(weapon_info)
-
-        # 保存数据
-        await write_json(self.user_data_path / f"{user_id}.json", user_data)
-        await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
-        return True
 
     async def handle_single_draw(
         self, user_id, user_data, user_backpack, five_star_miss, four_star_miss
     ):
         """处理单次抽卡逻辑，返回抽卡结果和更新后的计数"""
-        # 计算五星概率（64抽后每抽+6.5%）
-        current_five_star_prob = self.five_star_prob
-        if five_star_miss > 64:
-            current_five_star_prob += (five_star_miss - 64) * 6.5
-            current_five_star_prob = min(current_five_star_prob, 100)
+        try:
+            # 计算五星概率（64抽后每抽+6.5%）
+            current_five_star_prob = self.five_star_prob
+            if five_star_miss > 64:
+                current_five_star_prob += (five_star_miss - 64) * 6.5
+                current_five_star_prob = min(current_five_star_prob, 100)
 
-        # 四星保底判定（每10抽必出）
-        is_four_star_guarantee = four_star_miss > 9
+            # 四星保底判定（每10抽必出）
+            is_four_star_guarantee = four_star_miss > 9
 
-        # 随机判定星级
-        rand_val = random.uniform(0, 100)
-        if rand_val <= current_five_star_prob:
-            weapon_star = "五星武器"
-        elif is_four_star_guarantee or rand_val <= (
-            current_five_star_prob + self.four_star_prob
-        ):
-            weapon_star = "四星武器"
-        else:
-            weapon_star = "三星武器"
-
-        # 随机选择武器
-        target_weapon_id = str(random.choice(self.weapon_all_data[weapon_star]))
-        target_weapon_info = await self.get_weapon_info(target_weapon_id)
-        spouse_name = user_data.get("home", {}).get("spouse_name")
-        message_snippets = ""
-
-        # 更新保底计数和好感度
-        if weapon_star == "五星武器":
-            five_star_miss = 0
-            four_star_miss = 0
-            message_snippets += "🎉 恭喜获得传说武器！\n"
-            if spouse_name not in [0, None, ""]:
-                user_data["home"]["love"] += 30
-                message_snippets += f"💖 {spouse_name}为你的好运感到高兴！好感度+30\n"
+            # 随机判定星级
+            rand_val = random.uniform(0, 100)
+            if rand_val <= current_five_star_prob:
+                weapon_star = "五星武器"
+            elif is_four_star_guarantee or rand_val <= (
+                current_five_star_prob + self.four_star_prob
+            ):
+                weapon_star = "四星武器"
             else:
-                message_snippets += "💡 你未绑定伴侣，绑定伴侣可提升好感度\n"
-        elif weapon_star == "四星武器":
-            five_star_miss += 1
-            four_star_miss = 0
-            message_snippets += "🎉 恭喜获得稀有武器！\n"
-            if spouse_name not in [0, None, ""]:
-                user_data["home"]["love"] += 20
-                message_snippets += f"💖 {spouse_name}为你的好运感到高兴！好感度+20\n"
+                weapon_star = "三星武器"
+
+            # 随机选择武器
+            target_weapon_id = str(random.choice(self.weapon_all_data[weapon_star]))
+            target_weapon_info = await self.get_weapon_info(target_weapon_id)
+            spouse_name = user_data.get("home", {}).get("spouse_name")
+            message_snippets = ""
+
+            # 更新保底计数和好感度
+            if weapon_star == "五星武器":
+                five_star_miss = 0
+                four_star_miss = 0
+                message_snippets += "🎉 恭喜获得传说武器！\n"
+                if spouse_name not in [0, None, ""]:
+                    user_data["home"]["love"] += 30
+                    message_snippets += (
+                        f"💖 {spouse_name}为你的好运感到高兴！好感度+30\n"
+                    )
+                else:
+                    message_snippets += "💡 你未绑定伴侣，绑定伴侣可提升好感度\n"
+            elif weapon_star == "四星武器":
+                five_star_miss += 1
+                four_star_miss = 0
+                message_snippets += "🎉 恭喜获得稀有武器！\n"
+                if spouse_name not in [0, None, ""]:
+                    user_data["home"]["love"] += 20
+                    message_snippets += (
+                        f"💖 {spouse_name}为你的好运感到高兴！好感度+20\n"
+                    )
+                else:
+                    message_snippets += "💡 你未绑定伴侣，绑定伴侣可提升好感度\n"
             else:
-                message_snippets += "💡 你未绑定伴侣，绑定伴侣可提升好感度\n"
-        else:
-            five_star_miss += 1
-            four_star_miss += 1
+                five_star_miss += 1
+                four_star_miss += 1
 
-        # 更新用户数据
-        user_backpack["weapon"]["未出五星计数"] = five_star_miss
-        user_backpack["weapon"]["未出四星计数"] = four_star_miss
-        await self.update_data(user_id, target_weapon_id, user_data, user_backpack)
+            # 更新用户数据
+            user_backpack["weapon"]["未出五星计数"] = five_star_miss
+            user_backpack["weapon"]["未出四星计数"] = four_star_miss
+            await self.update_data(user_id, target_weapon_id, user_data, user_backpack)
 
-        # 添加武器图片
-        weapon_image_path = (
-            Path(__file__).resolve().parent.parent
-            / "resources"
-            / "weapon_images"
-            / "gacha.webp"
-        )
+            # 添加武器图片
+            weapon_image_path = (
+                Path(__file__).resolve().parent.parent
+                / "resources"
+                / "weapon_images"
+                / "gacha.webp"
+            )
 
-        return (
-            {
-                "star": weapon_star,
-                "info": target_weapon_info,
-                "message_snippets": message_snippets,
-            },
-            five_star_miss,
-            four_star_miss,
-            current_five_star_prob,
-            weapon_image_path,
-        )
+            return (
+                {
+                    "star": weapon_star,
+                    "info": target_weapon_info,
+                    "message_snippets": message_snippets,
+                },
+                five_star_miss,
+                four_star_miss,
+                current_five_star_prob,
+                weapon_image_path,
+            )
+        except Exception as e:
+            logger.error(f"处理单次抽卡失败: {str(e)}")
+            return None, None, None, None, None
 
     async def weapon_draw(self, user_id: str, count: int = 1):
         """执行武器抽卡主逻辑"""
@@ -363,195 +374,205 @@ class Lottery:
 
     async def daily_sign_in(self, user_id: str):
         """处理每日签到逻辑"""
-        CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
-        user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
-        today = datetime.now(CN_TIMEZONE).date().strftime("%Y-%m-%d")
+        try:
+            CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
+            user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
+            today = datetime.now(CN_TIMEZONE).date().strftime("%Y-%m-%d")
 
-        # 初始化签到信息
-        judge_new_user = False
-        base_reward = 1
-        if "sign_info" not in user_backpack:
-            user_backpack["sign_info"] = {"last_sign": "", "streak_days": 0}
-            base_reward += 5  # 新用户额外5颗
-            judge_new_user = True
+            # 初始化签到信息
+            judge_new_user = False
+            base_reward = 1
+            if "sign_info" not in user_backpack:
+                user_backpack["sign_info"] = {"last_sign": "", "streak_days": 0}
+                base_reward += 5  # 新用户额外5颗
+                judge_new_user = True
 
-        # 检查是否已签到
-        if user_backpack["sign_info"]["last_sign"] == today:
-            return "你今天已经签到过啦，明天再来吧~\n"
+            # 检查是否已签到
+            if user_backpack["sign_info"]["last_sign"] == today:
+                return "你今天已经签到过啦，明天再来吧~\n"
 
-        # 计算奖励
-        reward_data = await self.calculate_sign_rewards(
-            user_data, user_backpack, base_reward
-        )
-
-        # 更新签到信息
-        user_backpack["sign_info"]["last_sign"] = today
-        user_backpack["sign_info"]["streak_days"] = reward_data["streak_count"]
-
-        # 更新纠缠之缘数量
-        total_reward = reward_data["total_reward"] + reward_data["lucky_reward"]
-        user_backpack["weapon"]["纠缠之缘"] += total_reward
-
-        # 构建消息
-        message = ""
-
-        # 新用户提示
-        if judge_new_user:
-            message += (
-                "🎉 欢迎来到虚空武器抽卡系统！\n💎 注册成功，获得初始纠缠之缘5颗\n\n"
+            # 计算奖励
+            reward_data = await self.calculate_sign_rewards(
+                user_data, user_backpack, base_reward
             )
 
-        # 基础奖励消息
-        message += (
-            f"✅ 签到成功！获得{reward_data['total_reward'] - 5 if judge_new_user else reward_data['total_reward']}颗纠缠之缘\n"
-            f"💎 当前拥有：{user_backpack['weapon']['纠缠之缘']}颗纠缠之缘\n"
-            f"📅 当前连续签到{reward_data['streak_count']}天\n"
-            f"💡 可以使用[抽武器]来获得强力装备！\n"
-        )
+            # 更新签到信息
+            user_backpack["sign_info"]["last_sign"] = today
+            user_backpack["sign_info"]["streak_days"] = reward_data["streak_count"]
 
-        # 幸运奖励消息
-        if reward_data["lucky_reward"] > 0:
+            # 更新纠缠之缘数量
+            total_reward = reward_data["total_reward"] + reward_data["lucky_reward"]
+            user_backpack["weapon"]["纠缠之缘"] += total_reward
+
+            # 构建消息
+            message = ""
+
+            # 新用户提示
+            if judge_new_user:
+                message += "🎉 欢迎来到虚空武器抽卡系统！\n💎 注册成功，获得初始纠缠之缘5颗\n\n"
+
+            # 基础奖励消息
             message += (
-                f"🎁 幸运奖励：额外获得{reward_data['lucky_reward']}颗纠缠之缘！\n\n"
+                f"✅ 签到成功！获得{reward_data['total_reward'] - 5 if judge_new_user else reward_data['total_reward']}颗纠缠之缘\n"
+                f"💎 当前拥有：{user_backpack['weapon']['纠缠之缘']}颗纠缠之缘\n"
+                f"📅 当前连续签到{reward_data['streak_count']}天\n"
+                f"💡 可以使用[抽武器]来获得强力装备！\n"
             )
 
-        # 加成信息
-        bonus_messages = ""
-        if reward_data["location_bonus"] != 0:
-            bonus_messages += f"📍 位置加成：{reward_data['location_desc']} +({reward_data['location_bonus']:+d})\n"
-        if reward_data["house_bonus"] > 0:
-            bonus_messages += f"🏠 房屋加成：+{reward_data['house_bonus']}\n"
-        if reward_data["love_bonus"] > 0:
-            bonus_messages += f"💕 {reward_data['spouse_name']}的爱意加成：+{reward_data['love_bonus']}\n"
-        if reward_data["streak_bonus"] > 0:
-            bonus_messages += f"🔥 连续签到{reward_data['streak_count']}天加成：+{reward_data['streak_bonus']}\n"
+            # 幸运奖励消息
+            if reward_data["lucky_reward"] > 0:
+                message += f"🎁 幸运奖励：额外获得{reward_data['lucky_reward']}颗纠缠之缘！\n\n"
 
-        if bonus_messages:
-            message += bonus_messages
+            # 加成信息
+            bonus_messages = ""
+            if reward_data["location_bonus"] != 0:
+                bonus_messages += f"📍 位置加成：{reward_data['location_desc']} +({reward_data['location_bonus']:+d})\n"
+            if reward_data["house_bonus"] > 0:
+                bonus_messages += f"🏠 房屋加成：+{reward_data['house_bonus']}\n"
+            if reward_data["love_bonus"] > 0:
+                bonus_messages += f"💕 {reward_data['spouse_name']}的爱意加成：+{reward_data['love_bonus']}\n"
+            if reward_data["streak_bonus"] > 0:
+                bonus_messages += f"🔥 连续签到{reward_data['streak_count']}天加成：+{reward_data['streak_bonus']}\n"
 
-        # 保存数据
-        await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
-        return message
+            if bonus_messages:
+                message += bonus_messages
+
+            # 保存数据
+            await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
+            return message
+        except Exception as e:
+            logger.error(f"签到失败: {str(e)}")
+            return "签到时发生错误，请稍后再试~"
 
     async def show_my_weapons(self, user_id: str):
         """展示个人武器库统计信息"""
-        user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
-        weapon_data = user_backpack["weapon"]
-        weapon_details = weapon_data["武器详细"]
+        try:
+            user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
+            weapon_data = user_backpack["weapon"]
+            weapon_details = weapon_data["武器详细"]
 
-        # 总武器数量检查
-        total_weapons = sum(star_data["数量"] for star_data in weapon_details.values())
-        if total_weapons == 0:
-            return "你还没有任何武器，快去抽卡吧！\n💡 使用[抽武器]开始你的冒险之旅吧！"
+            # 总武器数量检查
+            total_weapons = sum(
+                star_data["数量"] for star_data in weapon_details.values()
+            )
+            if total_weapons == 0:
+                return "你还没有任何武器，快去抽卡吧！\n💡 使用[抽武器]开始你的冒险之旅吧！"
 
-        # 基础信息
-        location_name = user_data["home"]["place"]
-        spouse_name = user_data["home"]["spouse_name"]
-        spouse_love = user_data["home"]["love"]
-        house_level = user_data["house"]["house_level"]
+            # 基础信息
+            location_name = user_data["home"]["place"]
+            spouse_name = user_data["home"]["spouse_name"]
+            spouse_love = user_data["home"]["love"]
+            house_level = user_data["house"]["house_level"]
 
-        # 计算最爱武器
-        favorite_weapon = max(
-            weapon_data["武器计数"].items(), key=lambda x: x[1], default=(None, 0)
-        )
-        favorite_weapon_id, favorite_weapon_count = favorite_weapon
-        favorite_weapon_name = ""
-        rarity = 0
-        if favorite_weapon_id:
-            weapon_id_int = int(favorite_weapon_id)
-            if 500 <= weapon_id_int < 600:
-                rarity = 5
-                star_key = "五星武器"
-            elif 400 <= weapon_id_int < 500:
-                rarity = 4
-                star_key = "四星武器"
+            # 计算最爱武器
+            favorite_weapon = max(
+                weapon_data["武器计数"].items(), key=lambda x: x[1], default=(None, 0)
+            )
+            favorite_weapon_id, favorite_weapon_count = favorite_weapon
+            favorite_weapon_name = ""
+            rarity = 0
+            if favorite_weapon_id:
+                try:
+                    weapon_id_int = int(favorite_weapon_id)
+                    if 500 <= weapon_id_int < 600:
+                        rarity = 5
+                        star_key = "五星武器"
+                    elif 400 <= weapon_id_int < 500:
+                        rarity = 4
+                        star_key = "四星武器"
+                    else:
+                        rarity = 3
+                        star_key = "三星武器"
+
+                    for weapon in weapon_details[star_key]["详细信息"]:
+                        if weapon["id"] == favorite_weapon_id:
+                            favorite_weapon_name = weapon["name"]
+                            break
+                except Exception as e:
+                    logger.error(f"处理最爱武器时出错: {str(e)}")
+                    return "处理最爱武器时出错，请稍后再试~"
+            # 计算战斗力和成就
+            five_star_count = weapon_details["五星武器"]["数量"]
+            four_star_count = weapon_details["四星武器"]["数量"]
+            three_star_count = weapon_details["三星武器"]["数量"]
+            combat_power = (
+                five_star_count * 500 + four_star_count * 100 + three_star_count * 20
+            )
+            achievements = ""
+            if five_star_count >= 10:
+                achievements += "🏆 五星武器收藏家"
+            if four_star_count >= 50:
+                achievements += "💎 四星武器大师"
+            if len(weapon_data["武器计数"]) >= 100:
+                achievements += "🎖️ 武器收集达人"
+
+            # 战斗力评级
+            if combat_power >= 3000:
+                combat_rank = "🔥 传奇战士"
+            elif combat_power >= 1500:
+                combat_rank = "⚔️ 精英战士"
+            elif combat_power >= 500:
+                combat_rank = "🛡️ 熟练战士"
             else:
-                rarity = 3
-                star_key = "三星武器"
+                combat_rank = "🗡️ 新手战士"
 
-            for weapon in weapon_details[star_key]["详细信息"]:
-                if weapon["id"] == favorite_weapon_id:
-                    favorite_weapon_name = weapon["name"]
-                    break
+            # 构建消息
+            message = "\n🗡️ 你的武器图鉴\n"
+            message += f"📍 当前位置：{location_name}\n"
+            if spouse_name not in ["", None]:
+                message += f"💖 伴侣：{spouse_name}（好感度：{spouse_love}）\n"
+            else:
+                message += "💡 你还没有伴侣，绑定伴侣可提升好感度\n"
+            if house_level > 0:
+                message += f"🏠 房屋等级：{house_level}\n"
+            else:
+                message += "💡 你还没有房屋，快去建造吧！\n"
+            message += f"💪 战斗力：{combat_power} ({combat_rank})\n\n"
 
-        # 计算战斗力和成就
-        five_star_count = weapon_details["五星武器"]["数量"]
-        four_star_count = weapon_details["四星武器"]["数量"]
-        three_star_count = weapon_details["三星武器"]["数量"]
-        combat_power = (
-            five_star_count * 500 + four_star_count * 100 + three_star_count * 20
-        )
-        achievements = ""
-        if five_star_count >= 10:
-            achievements += "🏆 五星武器收藏家"
-        if four_star_count >= 50:
-            achievements += "💎 四星武器大师"
-        if len(weapon_data["武器计数"]) >= 100:
-            achievements += "🎖️ 武器收集达人"
+            # 成就展示
+            message += "🎖️ 成就徽章\n"
+            message += "━━━━━━━━━━━━━━━━\n"
+            message += f"{', '.join(achievements) if achievements else '暂无成就'}\n\n"
 
-        # 战斗力评级
-        if combat_power >= 3000:
-            combat_rank = "🔥 传奇战士"
-        elif combat_power >= 1500:
-            combat_rank = "⚔️ 精英战士"
-        elif combat_power >= 500:
-            combat_rank = "🛡️ 熟练战士"
-        else:
-            combat_rank = "🗡️ 新手战士"
+            # 武器统计
+            message += "━━━━━━━━━━━━━━━━\n"
+            message += "📊 武器统计\n"
+            message += f"🎯 总计：{total_weapons}把武器\n"
+            message += f"⭐⭐⭐⭐⭐ 五星：{five_star_count}把\n\n"
+            message += f"⭐⭐⭐⭐ 四星：{four_star_count}把\n"
+            message += f"⭐⭐⭐ 三星：{three_star_count}把\n"
+            message += "━━━━━━━━━━━━━━━━\n"
 
-        # 构建消息
-        message = "\n🗡️ 你的武器图鉴\n"
-        message += f"📍 当前位置：{location_name}\n"
-        if spouse_name not in ["", None]:
-            message += f"💖 伴侣：{spouse_name}（好感度：{spouse_love}）\n"
-        else:
-            message += "💡 你还没有伴侣，绑定伴侣可提升好感度\n"
-        if house_level > 0:
-            message += f"🏠 房屋等级：{house_level}\n"
-        else:
-            message += "💡 你还没有房屋，快去建造吧！\n"
-        message += f"💪 战斗力：{combat_power} ({combat_rank})\n\n"
+            # 最爱武器
+            message += "💖 你最喜欢的武器是：\n"
+            message += "━━━━━━━━━━━━━━━━\n"
+            message += (
+                f"{'⭐' * rarity} {favorite_weapon_name}*{favorite_weapon_count}\n\n"
+            )
 
-        # 成就展示
-        message += "🎖️ 成就徽章\n"
-        message += "━━━━━━━━━━━━━━━━\n"
-        message += f"{', '.join(achievements) if achievements else '暂无成就'}\n\n"
+            # 各星级武器列表
+            for star in ["五星武器", "四星武器", "三星武器"]:
+                stars = "⭐" * int(star[0])
+                details = weapon_details[star]
+                if details["数量"] > 0:
+                    message += f"{stars} {star}列表：\n"
+                    for item in details["详细信息"][:5]:  # 显示前5个
+                        count = weapon_data["武器计数"].get(item["id"], 0)
+                        message += f"- {item['name']}（{count}把）\n"
+                    if len(details["详细信息"]) > 5:
+                        message += f"... 还有{len(details['详细信息']) - 5}件未显示\n"
 
-        # 武器统计
-        message += "━━━━━━━━━━━━━━━━\n"
-        message += "📊 武器统计\n"
-        message += f"🎯 总计：{total_weapons}把武器\n"
-        message += f"⭐⭐⭐⭐⭐ 五星：{five_star_count}把\n\n"
-        message += f"⭐⭐⭐⭐ 四星：{four_star_count}把\n"
-        message += f"⭐⭐⭐ 三星：{three_star_count}把\n"
-        message += "━━━━━━━━━━━━━━━━\n"
-
-        # 最爱武器
-        message += "💖 你最喜欢的武器是：\n"
-        message += "━━━━━━━━━━━━━━━━\n"
-        message += f"{'⭐' * rarity} {favorite_weapon_name}*{favorite_weapon_count}\n\n"
-
-        # 各星级武器列表
-        for star in ["五星武器", "四星武器", "三星武器"]:
-            stars = "⭐" * int(star[0])
-            details = weapon_details[star]
-            if details["数量"] > 0:
-                message += f"{stars} {star}列表：\n"
-                for item in details["详细信息"][:5]:  # 显示前5个
-                    count = weapon_data["武器计数"].get(item["id"], 0)
-                    message += f"- {item['name']}（{count}把）\n"
-                if len(details["详细信息"]) > 5:
-                    message += f"... 还有{len(details['详细信息']) - 5}件未显示\n"
-
-        # 随机伴侣评论
-        if spouse_name not in [None, ""] and random.random() < 0.1:
-            spouse_comments = [
-                f"{spouse_name}想要试试你的武器",
-                f"{spouse_name}觉得你很有安全感",
-                f"{spouse_name}对你的实力很有信心",
-                f"{spouse_name}想要和你一起战斗",
-                f"你的武器让{spouse_name}也想去冒险了！",
-            ]
-            message += f"\n💬 {random.choice(spouse_comments)}\n"
-
-        return message
+            # 随机伴侣评论
+            if spouse_name not in [None, ""] and random.random() < 0.1:
+                spouse_comments = [
+                    f"{spouse_name}想要试试你的武器",
+                    f"{spouse_name}觉得你很有安全感",
+                    f"{spouse_name}对你的实力很有信心",
+                    f"{spouse_name}想要和你一起战斗",
+                    f"你的武器让{spouse_name}也想去冒险了！",
+                ]
+                message += f"\n💬 {random.choice(spouse_comments)}\n"
+            return message
+        except Exception as e:
+            logger.error(f"展示武器库失败: {str(e)}")
+            return "获取武器库信息时出错，请稍后再试~"
