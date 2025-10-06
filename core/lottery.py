@@ -5,6 +5,9 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from astrbot.api import logger
+from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
+    AiocqhttpMessageEvent,
+)
 
 from ..utils.utils import create_user_data, read_json, write_json
 
@@ -224,92 +227,101 @@ class Lottery:
             logger.error(f"处理单次抽卡失败: {str(e)}")
             return None, None, None, None, None
 
-    async def weapon_draw(self, user_id: str, count: int = 1):
+    async def weapon_draw(self, event: AiocqhttpMessageEvent, count: int = 1):
         """执行武器抽卡主逻辑"""
-        user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
-        weapon_data = user_backpack["weapon"]
-        entangled_fate = weapon_data["纠缠之缘"]
-        cost = count  # 每次消耗1颗纠缠之缘
+        try:
+            user_id = str(event.get_sender_id())
+            user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
+            weapon_data = user_backpack["weapon"]
+            entangled_fate = weapon_data["纠缠之缘"]
+            cost = count  # 每次消耗1颗纠缠之缘
 
-        # 检查资源是否充足
-        if entangled_fate < cost:
-            return (
-                f"\n需要{cost}颗纠缠之缘，你当前只有{entangled_fate}颗\n",
-                "💡 可通过[签到]获得更多纠缠之缘",
-            )
-        user_backpack["weapon"]["纠缠之缘"] -= cost
+            # 检查资源是否充足
+            if entangled_fate < cost:
+                return (
+                    f"\n需要{cost}颗纠缠之缘，你当前只有{entangled_fate}颗\n",
+                    "💡 可通过[签到]获得更多纠缠之缘",
+                )
+            user_backpack["weapon"]["纠缠之缘"] -= cost
 
-        # 初始化保底计数
-        five_star_miss = weapon_data["未出五星计数"]
-        four_star_miss = weapon_data["未出四星计数"]
-        draw_results = []
-        all_snippets = ""
+            # 初始化保底计数
+            five_star_miss = weapon_data["未出五星计数"]
+            four_star_miss = weapon_data["未出四星计数"]
+            draw_results = []
+            all_snippets = ""
 
-        # 处理多次抽卡
-        for _ in range(count):
-            (
-                result,
-                five_star_miss,
-                four_star_miss,
-                current_five_star_prob,
-                weapon_image_path,
-            ) = await self.handle_single_draw(
-                user_id, user_data, user_backpack, five_star_miss, four_star_miss
-            )
-            five_star_prob = current_five_star_prob
-            draw_results.append(result)
-            all_snippets.extend(result["message_snippets"])
+            # 处理多次抽卡
+            for _ in range(count):
+                (
+                    result,
+                    five_star_miss,
+                    four_star_miss,
+                    current_five_star_prob,
+                    weapon_image_path,
+                ) = await self.handle_single_draw(
+                    user_id, user_data, user_backpack, five_star_miss, four_star_miss
+                )
+                five_star_prob = current_five_star_prob
+                draw_results.append(result)
+                all_snippets.extend(result["message_snippets"])
 
-        # 构建最终消息
-        message = "\n【武器抽卡结果】：\n"
-        message += all_snippets
+            # 构建最终消息
+            message = "\n【武器抽卡结果】：\n"
+            message += all_snippets
 
-        # 分离高星和三星结果
-        high_star = [r for r in draw_results if r["star"] in ["五星武器", "四星武器"]]
-        three_star = [r for r in draw_results if r["star"] == "三星武器"]
+            # 分离高星和三星结果
+            high_star = [
+                r for r in draw_results if r["star"] in ["五星武器", "四星武器"]
+            ]
+            three_star = [r for r in draw_results if r["star"] == "三星武器"]
 
-        # 添加高星结果
-        if high_star:
-            for res in high_star:
-                star = res["star"]
-                info = res["info"]
-                rarity = 5 if star == "五星武器" else 4
-                total_count = user_backpack["weapon"]["武器详细"][star]["数量"]
+            # 添加高星结果
+            if high_star:
+                for res in high_star:
+                    star = res["star"]
+                    info = res["info"]
+                    rarity = 5 if star == "五星武器" else 4
+                    total_count = user_backpack["weapon"]["武器详细"][star]["数量"]
+                    message += (
+                        f"🎉 恭喜获得{'⭐' * rarity} {rarity}星武器！\n"
+                        f"⚔️ 名称：{info['name']}\n"
+                        f"📦 累计拥有：第{total_count}把{rarity}星武器\n\n"
+                    )
+
+            # 添加三星结果
+            if three_star:
+                three_star_names = [res["info"]["name"] for res in three_star]
+                total_three_star = user_backpack["weapon"]["武器详细"]["三星武器"][
+                    "数量"
+                ]
                 message += (
-                    f"🎉 恭喜获得{'⭐' * rarity} {rarity}星武器！\n"
-                    f"⚔️ 名称：{info['name']}\n"
-                    f"📦 累计拥有：第{total_count}把{rarity}星武器\n\n"
+                    f"⭐⭐⭐ 获得三星武器共{len(three_star)}把：\n"
+                    f"⚔️ {', '.join(three_star_names)}\n"
+                    f"📦 累计拥有：{total_three_star}把三星武器\n\n"
                 )
 
-        # 添加三星结果
-        if three_star:
-            three_star_names = [res["info"]["name"] for res in three_star]
-            total_three_star = user_backpack["weapon"]["武器详细"]["三星武器"]["数量"]
+            # 添加保底进度和剩余资源
             message += (
-                f"⭐⭐⭐ 获得三星武器共{len(three_star)}把：\n"
-                f"⚔️ {', '.join(three_star_names)}\n"
-                f"📦 累计拥有：{total_three_star}把三星武器\n\n"
+                f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}\n"
+                f"🎯 五星保底进度：{five_star_miss}/80（当前概率：{five_star_prob:.2f}%）\n"
+                f"🎯 四星保底进度：{four_star_miss}/10\n"
             )
 
-        # 添加保底进度和剩余资源
-        message += (
-            f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}\n"
-            f"🎯 五星保底进度：{five_star_miss}/80（当前概率：{five_star_prob:.2f}%）\n"
-            f"🎯 四星保底进度：{four_star_miss}/10\n"
-        )
-
-        # if image_path:
-        #     message.append(Comp.Image.fromFileSystem(image_path))  # 从本地文件目录发送图片
-        # if total_luck_bonus > 0:
-        #     lines.append(f"\n🍀 幸运加成：+{total_luck_bonus}%")
-        # if location_desc:
-        #     lines.append(f" ({location_desc})")
-        # if love_bonus > 0:
-        #     lines.append(f" ({wife_name}的祝福)")
-        # if time_desc:
-        #     lines.append(f" ({time_desc})")
-        # 更新用户数据
-        return message, weapon_image_path
+            # if image_path:
+            #     message.append(Comp.Image.fromFileSystem(image_path))  # 从本地文件目录发送图片
+            # if total_luck_bonus > 0:
+            #     lines.append(f"\n🍀 幸运加成：+{total_luck_bonus}%")
+            # if location_desc:
+            #     lines.append(f" ({location_desc})")
+            # if love_bonus > 0:
+            #     lines.append(f" ({wife_name}的祝福)")
+            # if time_desc:
+            #     lines.append(f" ({time_desc})")
+            # 更新用户数据
+            return message, weapon_image_path
+        except Exception as e:
+            logger.error(f"武器抽卡失败: {str(e)}")
+            return "抽武器时发生错误，请稍后再试~", None
 
     async def calculate_sign_rewards(self, user_data, user_backpack, base_reward):
         """计算签到奖励及加成"""
@@ -372,9 +384,10 @@ class Lottery:
             "total_reward": total_reward,
         }
 
-    async def daily_sign_in(self, user_id: str):
+    async def daily_sign_in(self, event: AiocqhttpMessageEvent):
         """处理每日签到逻辑"""
         try:
+            user_id = str(event.get_sender_id())
             CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
             user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
             today = datetime.now(CN_TIMEZONE).date().strftime("%Y-%m-%d")
@@ -422,18 +435,19 @@ class Lottery:
             # 幸运奖励消息
             if reward_data["lucky_reward"] > 0:
                 message += f"🎁 幸运奖励：额外获得{reward_data['lucky_reward']}颗纠缠之缘！\n\n"
-
-            # 加成信息
-            bonus_messages = ""
-            if reward_data["location_bonus"] != 0:
-                bonus_messages += f"📍 位置加成：{reward_data['location_desc']} +({reward_data['location_bonus']:+d})\n"
-            if reward_data["house_bonus"] > 0:
-                bonus_messages += f"🏠 房屋加成：+{reward_data['house_bonus']}\n"
-            if reward_data["love_bonus"] > 0:
-                bonus_messages += f"💕 {reward_data['spouse_name']}的爱意加成：+{reward_data['love_bonus']}\n"
-            if reward_data["streak_bonus"] > 0:
-                bonus_messages += f"🔥 连续签到{reward_data['streak_count']}天加成：+{reward_data['streak_bonus']}\n"
-
+            try:
+                # 加成信息
+                bonus_messages = ""
+                if reward_data["location_bonus"] != 0:
+                    bonus_messages += f"📍 位置加成：{reward_data['location_desc']} +({reward_data['location_bonus']:+d})\n"
+                if reward_data["house_bonus"] > 0:
+                    bonus_messages += f"🏠 房屋加成：+{reward_data['house_bonus']}\n"
+                if reward_data["love_bonus"] > 0:
+                    bonus_messages += f"💕 {reward_data['spouse_name']}的爱意加成：+{reward_data['love_bonus']}\n"
+                if reward_data["streak_bonus"] > 0:
+                    bonus_messages += f"🔥 连续签到{reward_data['streak_count']}天加成：+{reward_data['streak_bonus']}\n"
+            except Exception as e:
+                logger.error(f"构建加成信息失败: {str(e)}")
             if bonus_messages:
                 message += bonus_messages
 
@@ -444,10 +458,12 @@ class Lottery:
             logger.error(f"签到失败: {str(e)}")
             return "签到时发生错误，请稍后再试~"
 
-    async def show_my_weapons(self, user_id: str):
+    async def show_my_weapons(self, event: AiocqhttpMessageEvent):
         """展示个人武器库统计信息"""
         try:
-            user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
+            user_data, user_backpack = await self.get_user_data_and_backpack(
+                event.get_sender_id()
+            )
             weapon_data = user_backpack["weapon"]
             weapon_details = weapon_data["武器详细"]
 

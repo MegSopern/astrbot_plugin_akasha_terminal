@@ -104,27 +104,24 @@ class AkashaTerminal(Star):
     @filter.command("购买道具", alias={"买道具", "购买物品", "买物品"})
     async def buy_prop(self, event: AiocqhttpMessageEvent):
         """/购买道具 物品名称 数量"""
-        user_id = event.get_sender_id()
         # 提取命令后的参数部分
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop_system.handle_buy_command(user_id, input_str)
+        success, message = await self.shop_system.handle_buy_command(event, input_str)
         yield event.plain_result(message)
 
-    @filter.command("背包", alias="我的背包")
+    @filter.command("背包", alias="查看背包")
     async def show_backpack(self, event: AiocqhttpMessageEvent):
         """查看我的背包"""
-        user_id = str(event.get_sender_id())
-        message = await self.shop_system.format_backpack(user_id)
+        message = await self.shop_system.format_backpack(event)
         yield event.plain_result(message)
 
     @filter.command("使用道具", alias={"用道具", "使用物品", "用物品"})
     async def use_item(self, event: AiocqhttpMessageEvent):
         """使用道具，使用方法: /使用道具 物品名称"""
-        user_id = str(event.get_sender_id())
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop_system.handle_use_command(user_id, input_str)
+        success, message = await self.shop_system.handle_use_command(event, input_str)
         yield event.plain_result(message)
 
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
@@ -142,9 +139,8 @@ class AkashaTerminal(Star):
     async def draw_weapon(self, event: AiocqhttpMessageEvent):
         """单抽武器"""
         try:
-            user_id = str(event.get_sender_id())
             message, weapon_image_path = await self.lottery_system.weapon_draw(
-                user_id, count=1
+                event, count=1
             )
             if weapon_image_path and weapon_image_path.exists():
                 message = [
@@ -175,21 +171,11 @@ class AkashaTerminal(Star):
     @filter.command("签到", alias={"每日签到"})
     async def sign_in(self, event: AiocqhttpMessageEvent):
         """进行每日签到"""
-        try:
-            user_id = str(event.get_sender_id())
-            message = await self.lottery_system.daily_sign_in(user_id)
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"每日签到失败: {str(e)}")
-            yield event.plain_result("每日签到失败，请稍后再试~")
+        message = await self.lottery_system.daily_sign_in(event)
+        yield event.plain_result(message)
 
     @filter.command("我的武器", alias={"武器库", "查看武器"})
     async def my_weapons(self, event: AiocqhttpMessageEvent):
         """展示背包武器的统计信息"""
-        try:
-            user_id = str(event.get_sender_id())
-            message = await self.lottery_system.show_my_weapons(user_id)
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"查看武器失败: {str(e)}")
-            yield event.plain_result("查看武器失败，请稍后重试~")
+        message = await self.lottery_system.show_my_weapons(event)
+        yield event.plain_result(message)

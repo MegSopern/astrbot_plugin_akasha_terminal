@@ -4,8 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from astrbot.api import logger
-from astrbot.core import AstrBotConfig
-from astrbot.core.message.components import At, Plain, Reply
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
