@@ -176,6 +176,15 @@ def write_json_sync(file_path: Path, data: Dict[str, Any]) -> bool:
         return False
 
 
+def get_at_ids(event: AiocqhttpMessageEvent) -> list[str]:
+    """获取QQ被at用户的id列表"""
+    return [
+        str(seg.qq)
+        for seg in event.get_messages()
+        if (isinstance(seg, At) and str(seg.qq) != event.get_self_id())
+    ]
+
+
 async def read_json(file_path: Path) -> Dict[str, Any]:
     """异步原子读取JSON文件"""
     # 原子读：加共享锁 -> 读 -> 解锁
@@ -244,12 +253,3 @@ async def get_nickname(event: AiocqhttpMessageEvent, user_id) -> str:
         group_id=int(group_id), user_id=int(user_id)
     )
     return all_info.get("card") or all_info.get("nickname")
-
-
-def get_at_ids(event: AiocqhttpMessageEvent) -> list[str]:
-    """获取QQ被at用户的id列表"""
-    return [
-        str(seg.qq)
-        for seg in event.get_messages()
-        if (isinstance(seg, At) and str(seg.qq) != event.get_self_id())
-    ]
