@@ -462,7 +462,7 @@ class Lottery:
             location_name = user_data["home"]["place"]
             spouse_name = user_data["home"]["spouse_name"]
             spouse_love = user_data["home"]["love"]
-            house_level = user_data["house"]["house_level"]
+            house_level = user_data["home"]["house_level"]
 
             # 计算最爱武器
             favorite_weapon = max(

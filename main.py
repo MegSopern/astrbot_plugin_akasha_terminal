@@ -60,14 +60,14 @@ class AkashaTerminal(Star):
             yield event.plain_result("获取用户信息失败，请稍后再试~")
 
     @filter.permission_type(filter.PermissionType.ADMIN)
-    @filter.command("增加金钱", alias="添加金钱")
-    async def add_user_money(
-        self, event: AstrMessageEvent, input_id: int | str | None = None
-    ):
+    @filter.command("增加金钱", alias=["添加金钱", "加钱"])
+    async def add_user_money(self, event: AstrMessageEvent):
         """增加用户金钱，使用方法: /增加金钱 金额"""
         user_id = event.get_sender_id()
         cmd_prefix = event.message_str.split()[0]
+        logger.error(f"cmd_prefix: {cmd_prefix}")
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        logger.error(f"input_str: {input_str}")
         success, message = await self.user_system.add_money(user_id, input_str)
         yield event.plain_result(message)
 

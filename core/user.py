@@ -4,6 +4,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from astrbot.api import logger
+from astrbot.core import AstrBotConfig
+from astrbot.core.message.components import At, Plain, Reply
+from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
+    AiocqhttpMessageEvent,
+)
 
 # 导入工具函数
 from ..utils.utils import read_json, write_json
@@ -45,11 +50,15 @@ class User:
                 "default": lambda uid: {
                     "spouse_id": "",
                     "spouse_name": "",
+                    "love": 0,
                     "wait": 0,
                     "place": "home",
                     "placetime": 0,
                     "money": 100,
-                    "love": 0,
+                    "house_name": "小破屋",
+                    "house_space": 6,
+                    "house_price": 500,
+                    "house_level": 1,
                 }
             },
             "quest": {

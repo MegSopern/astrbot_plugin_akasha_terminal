@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from astrbot.api import logger
-from astrbot.core.message.components import Reply
+from astrbot.core.message.components import At, BaseMessageComponent, Image, Reply
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -96,11 +96,15 @@ async def create_user_data(user_id: str) -> bool:
             "home": {
                 "spouse_id": "",
                 "spouse_name": "",
+                "love": 0,
                 "wait": 0,
                 "place": "home",
                 "placetime": 0,
                 "money": 100,
-                "love": 0,
+                "house_name": "小破屋",
+                "house_space": 6,
+                "house_price": 500,
+                "house_level": 1,
             },
             "quest": {
                 "daily": {},
@@ -240,3 +244,12 @@ async def get_nickname(event: AiocqhttpMessageEvent, user_id) -> str:
         group_id=int(group_id), user_id=int(user_id)
     )
     return all_info.get("card") or all_info.get("nickname")
+
+
+def get_at_ids(event: AiocqhttpMessageEvent) -> list[str]:
+    """获取QQ被at用户的id列表"""
+    return [
+        str(seg.qq)
+        for seg in event.get_messages()
+        if (isinstance(seg, At) and str(seg.qq) != event.get_self_id())
+    ]
