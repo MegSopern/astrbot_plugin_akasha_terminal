@@ -26,6 +26,9 @@ class Lottery:
             / "data"
             / "weapon.json"
         )
+        self.image_base_path = Path(
+            "data/plugins/astrbot_plugin_akasha_terminal/resources/weapon_image"
+        )
         # 加载武器数据（按星级分类）{weapon_star: [weapon_id1,weapon_id2, ...]}
         self.weapon_all_data = self.load_weapon_data() or {}
 
@@ -205,12 +208,9 @@ class Lottery:
             await self.update_data(user_id, target_weapon_id, user_data, user_backpack)
 
             # 添加武器图片
-            weapon_image_path = (
-                Path(__file__).resolve().parent.parent
-                / "resources"
-                / "weapon_images"
-                / "gacha.webp"
-            )
+            weapon_name = target_weapon_info["name"]
+            weapon_image = f"{weapon_name}.png"
+            weapon_image_path = str(self.image_base_path / weapon_star / weapon_image)
 
             return (
                 {
@@ -248,6 +248,7 @@ class Lottery:
             five_star_miss = weapon_data["未出五星计数"]
             four_star_miss = weapon_data["未出四星计数"]
             draw_results = []
+            image_paths = []
             all_snippets = ""
 
             # 处理多次抽卡
@@ -264,7 +265,9 @@ class Lottery:
                 five_star_prob = current_five_star_prob
                 draw_results.append(result)
                 all_snippets += result["message_snippets"]
-
+                image_paths.append(weapon_image_path)
+            if count == 1:
+                image_paths = str(image_paths[:1])  # 单抽只返回一张图片
             # 构建最终消息
             message = "\n【武器抽卡结果】：\n"
             message += all_snippets
@@ -284,7 +287,7 @@ class Lottery:
                     total_count = user_backpack["weapon"]["武器详细"][star]["数量"]
                     message += (
                         f"🎉 恭喜获得{'⭐' * rarity} {rarity}星武器！\n"
-                        f"⚔️ 名称：{info['name']}\n"
+                        f"⚔️ 武器名称：{info['name']}\n"
                         f"📦 累计拥有：第{total_count}把{rarity}星武器\n\n"
                     )
 
@@ -296,7 +299,7 @@ class Lottery:
                 ]
                 message += (
                     f"⭐⭐⭐ 获得三星武器共{len(three_star)}把：\n"
-                    f"⚔️ {', '.join(three_star_names)}\n"
+                    f"⚔️ 名称：{', '.join(three_star_names)}\n"
                     f"📦 累计拥有：{total_three_star}把三星武器\n\n"
                 )
 
@@ -318,7 +321,7 @@ class Lottery:
             # if time_desc:
             #     lines.append(f" ({time_desc})")
             # 更新用户数据
-            return message, weapon_image_path
+            return message, image_paths
         except Exception as e:
             logger.error(f"武器抽卡失败: {str(e)}")
             return "抽武器时发生错误，请稍后再试~", None
@@ -547,28 +550,30 @@ class Lottery:
 
             # 成就展示
             message += "🎖️ 成就徽章\n"
-            message += "━━━━━━━━━━━━━━━━\n"
-            message += f"{', '.join(achievements) if achievements else '暂无成就'}\n\n"
+            message += "━━━━━━━━━━━━━━━\n"
+            message += f"{', '.join(achievements) if achievements else '暂无成就'}\n"
+            message += "━━━━━━━━━━━━━━━\n\n"
 
             # 武器统计
-            message += "━━━━━━━━━━━━━━━━\n"
             message += "📊 武器统计\n"
+            message += "━━━━━━━━━━━━━━━\n"
             message += f"🎯 总计：{total_weapons}把武器\n"
-            message += f"⭐⭐⭐⭐⭐ 五星：{five_star_count}把\n\n"
+            message += f"⭐⭐⭐⭐⭐ 五星：{five_star_count}把\n"
             message += f"⭐⭐⭐⭐ 四星：{four_star_count}把\n"
-            message += f"⭐⭐⭐ 三星：{three_star_count}把\n"
-            message += "━━━━━━━━━━━━━━━━\n"
+            message += f"⭐⭐⭐ 三星：{three_star_count}把\n\n"
 
             # 最爱武器
             message += "💖 你最喜欢的武器是：\n"
-            message += "━━━━━━━━━━━━━━━━\n"
+            message += "━━━━━━━━━━━━━━━\n"
             message += (
-                f"{'⭐' * rarity} {favorite_weapon_name}*{favorite_weapon_count}\n\n"
+                f"{'⭐' * rarity} {favorite_weapon_name}*{favorite_weapon_count}\n"
             )
+            message += "━━━━━━━━━━━━━━━\n\n"
 
             # 各星级武器列表
+            star_to_num = {"三": 3, "四": 4, "五": 5}
             for star in ["五星武器", "四星武器", "三星武器"]:
-                stars = "⭐" * int(star[0])
+                stars = "⭐" * int(star_to_num[star[0]])
                 details = weapon_details[star]
                 if details["数量"] > 0:
                     message += f"{stars} {star}列表：\n"
