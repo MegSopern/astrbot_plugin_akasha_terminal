@@ -47,30 +47,18 @@ class AkashaTerminal(Star):
     @filter.command("我的信息", alias={"个人信息", "查看信息"})
     async def get_user_info(self, event: AiocqhttpMessageEvent):
         """查看个人信息"""
-        try:
-            # 获取用户ID，默认为发送者ID
-            user_id = str(event.get_sender_id())
-            # 获取群用户昵称
-            nickname = await get_nickname(event, user_id)
-            cmd_prefix = event.message_str.split()[0]
-            input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-            message = await self.user_system.format_user_info(
-                user_id, nickname, input_str
-            )
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"获取用户信息失败: {str(e)}")
-            yield event.plain_result("获取用户信息失败，请稍后再试~")
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        message = await self.user_system.format_user_info(event, input_str)
+        yield event.plain_result(message)
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command("增加金钱", alias=["添加金钱", "加钱"])
     async def add_user_money(self, event: AiocqhttpMessageEvent):
         """增加用户金钱，使用方法: /增加金钱 金额"""
-        user_id = event.get_sender_id()
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        logger.error(f"input_str: {input_str}")
-        success, message = await self.user_system.add_money(event, user_id, input_str)
+        success, message = await self.user_system.add_money(event, input_str)
         yield event.plain_result(message)
 
     @filter.permission_type(filter.PermissionType.ADMIN)

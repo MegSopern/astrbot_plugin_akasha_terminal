@@ -11,7 +11,7 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 )
 
 # 导入工具函数
-from ..utils.utils import get_at_ids, read_json, write_json
+from ..utils.utils import get_at_ids, get_nickname, read_json, write_json
 
 # 数据存储路径：插件目录上一层的plugin_data/astrbot_plugin_akasha_terminal
 BASE_DIR = (
@@ -202,39 +202,50 @@ class User:
             return []
 
     async def format_user_info(
-        self, user_id: str, nickname: str, input_str: str
+        self, event: AiocqhttpMessageEvent, input_str: str
     ) -> str:
         """格式化用户信息为字符串"""
-        parts = input_str.strip().split()
-        if len(parts) >= 1 and parts[0].isdigit():
-            user_id = parts[0]
-        user_data = await self.get_user(user_id, nickname)
-        battle_data = await self.get_battle_data(user_id)
-        home_data = await self.get_home_data(user_id)
-        return (
-            f"用户信息:\n"
-            f"昵称：{user_data.get('nickname')}\n"
-            f"ID: {user_id}\n"
-            f"等级: {user_data.get('level', 1)}\n"
-            f"经验: {battle_data.get('experience', 0)}\n"
-            f"金钱: {home_data.get('money', 0)}\n"
-            f"好感度: {home_data.get('love', 0)}"
-        )
+        try:
+            user_id = await get_at_ids(event)
+            parts = input_str.strip().split()
+            if len(parts) >= 1 and parts[0].isdigit():
+                user_id = parts[0]
+            if not user_id:
+                user_id = event.get_sender_id()
+            nickname = await get_nickname(event, user_id)
+            user_data = await self.get_user(user_id, nickname)
+            battle_data = await self.get_battle_data(user_id)
+            home_data = await self.get_home_data(user_id)
+            return (
+                f"用户信息:\n"
+                f"昵称：{user_data.get('nickname')}\n"
+                f"ID: {user_id}\n"
+                f"等级: {user_data.get('level', 1)}\n"
+                f"经验: {battle_data.get('experience', 0)}\n"
+                f"金钱: {home_data.get('money', 0)}\n"
+                f"好感度: {home_data.get('love', 0)}"
+            )
+        except Exception as e:
+            logger.error(f"格式化用户信息失败: {str(e)}")
+            return "获取用户信息失败，请稍后再试~"
 
     async def add_money(
-        self, event: AiocqhttpMessageEvent, user_id: str, input_str: str
+        self, event: AiocqhttpMessageEvent, input_str: str
     ) -> tuple[bool, str]:
         """增加用户金钱"""
-        target_user_id = get_at_ids(event)
         try:
+            to_user_id = await get_at_ids(event)
             parts = input_str.strip().split()
-            if len(parts) < 1:
+            if not parts:
                 return (
                     False,
-                    "请指定增加的金额，使用方法:/增加金钱 金额 qq\n或：/增加金钱 金额 @用户",
+                    "请指定增加的金额，使用方法:/增加金钱 金额 \n或：/增加金钱 金额 @用户/qq号",
                 )
             amount = int(parts[0])
-            to_user_id = parts[1] if len(parts) > 1 else user_id
+            if len(parts) > 1 and parts[1].isdigit():
+                to_user_id = parts[1]
+            if to_user_id is None:
+                to_user_id = event.get_sender_id()
 
             if amount <= 0:
                 return False, "增加的金额必须为正整数"
