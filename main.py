@@ -138,35 +138,29 @@ class AkashaTerminal(Star):
     @filter.command("抽武器", alias={"单抽武器", "单抽"})
     async def draw_weapon(self, event: AiocqhttpMessageEvent):
         """单抽武器"""
-        try:
-            message, weapon_image_path = await self.lottery_system.weapon_draw(
-                event, count=1
-            )
-            if weapon_image_path and weapon_image_path.exists():
-                message = [
-                    Comp.Plain(message),
-                    Comp.Image.fromFileSystem(weapon_image_path),
-                ]
-                yield event.chain_result(message)
-            else:
-                yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"抽武器失败: {str(e)}")
-            yield event.plain_result("抽武器失败，请稍后再试~")
-            return
+        message, image_path = await self.lottery_system.weapon_draw(event, count=1)
+        if image_path and Path(image_path).exists():
+            message = [
+                Comp.Plain(message),
+                Comp.Image.fromFileSystem(image_path),
+            ]
+            yield event.chain_result(message)
+        else:
+            yield event.plain_result(message)
 
-    @filter.command("十连抽武器", alias={"十连武器", "十连"})
+    @filter.command("十连抽武器", alias={"十连武器", "十连抽", "十连"})
     async def draw_ten_weapons(self, event: AiocqhttpMessageEvent):
         """十连抽武器"""
-        try:
-            user_id = str(event.get_sender_id())
-            message, weapon_image_path = await self.lottery_system.weapon_draw(
-                user_id, count=10
-            )
-            yield event.plain_result(message)
-        except Exception as e:
-            logger.error(f"十连抽武器失败: {str(e)}")
-            yield event.plain_result("十连抽武器失败，请稍后再试~")
+        message, weapon_image_paths = await self.lottery_system.weapon_draw(
+            event, count=10
+        )
+        components = [Comp.Plain(message)]
+        # 添加所有武器图片
+        for path in weapon_image_paths:
+            path = str(path)
+            if path and Path(path).exists():
+                components.append(Comp.Image.fromFileSystem(path))
+        yield event.chain_result(components)
 
     @filter.command("签到", alias={"每日签到"})
     async def sign_in(self, event: AiocqhttpMessageEvent):
