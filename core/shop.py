@@ -5,8 +5,17 @@ from typing import Any, Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 from astrbot.api import logger
+from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
+    AiocqhttpMessageEvent,
+)
 
-from ..utils.utils import read_json, read_json_sync, write_json, write_json_sync
+from ..utils.utils import (
+    get_at_ids,
+    read_json,
+    read_json_sync,
+    write_json,
+    write_json_sync,
+)
 
 
 class Shop:
@@ -140,6 +149,100 @@ class Shop:
         items = await self.get_shop_items()
         return items.get(item_name)
 
+    async def get_user_backpack(self, user_id: str) -> Dict[str, int]:
+        """获取用户背包物品列表"""
+        file_path = self.backpack_path / f"{user_id}.json"
+        backpack = await self._load_data(file_path)
+        return backpack or {}
+
+    async def handle_use_command(
+        self, event: AiocqhttpMessageEvent, input_str: str
+    ) -> Tuple[bool, str]:
+        """
+        使用背包中的物品
+        :param user_id: 用户ID
+        :param item_name: 物品名称
+        :param quantity: 使用数量（默认1）
+        :return: (是否成功, 物品效果或错误消息)
+        """
+        try:
+            user_id = str(event.get_sender_id())
+            parts = input_str.strip().split()
+            if not parts:
+                return (
+                    False,
+                    "请指定物品名称，使用方法: /使用道具 物品名称\n"
+                    "或：/使用道具 物品名称 数量",
+                )
+            item_name = parts[0]
+            try:
+                quantity = int(parts[1]) if len(parts) >= 2 else 1
+            except ValueError:
+                return False, "数量必须为整数，请重新输入"
+            if quantity <= 0:
+                return False, "使用数量必须为正整数"
+            file_path = self.backpack_path / f"{user_id}.json"
+            backpack = await self.get_user_backpack(user_id)
+            # 物品存在性与数量校验
+            if item_name not in backpack:
+                return False, "物品不存在"
+            if backpack[item_name] < quantity:
+                return (
+                    False,
+                    f"您所需{item_name}的数量不足\n当前持有数量：{backpack[item_name]}",
+                )
+
+            # 获取物品效果
+            item = await self.get_item_detail(item_name)
+            if not item:
+                return False, "物品信息不存在"
+
+            # 更新背包
+            backpack[item_name] -= quantity
+            if backpack[item_name] == 0:
+                del backpack[item_name]
+            await self._save_data(file_path, backpack)
+
+            return True, item["effect"]
+        except Exception as e:
+            logger.error(f"使用物品失败: {str(e)}")
+            return False, "使用物品失败，请稍后再试~"
+
+    async def handle_buy_command(
+        self, event: AiocqhttpMessageEvent, input_str: str
+    ) -> Tuple[bool, str]:
+        """
+        处理购买命令解析
+        :param user_id: 用户ID
+        :param input_str: 命令参数（物品名称 [数量]）
+        :return: (是否成功, 结果消息)
+        """
+        try:
+            user_id = str(event.get_sender_id())
+            parts = input_str.strip().split()
+            if not parts:
+                return (
+                    False,
+                    "请指定物品名称，使用方法: /购买道具 物品名称\n"
+                    "或：/购买道具 物品名称 数量",
+                )
+            item_name = parts[0]
+            quantity = int(parts[1]) if len(parts) >= 2 else 1
+            if quantity <= 0:
+                return False, "购买数量必须为正整数"
+            # 导入用户系统获取金钱
+            from .user import User
+
+            user_system = User()
+            home_data = await user_system.get_home_data(user_id)
+            user_money = home_data.get("money", 0)
+
+            return await self.buy_item(user_id, item_name, user_money, quantity)
+        except ValueError:
+            return False, "数量必须是数字"
+        except Exception as e:
+            return False, f"购买失败: {str(e)}"
+
     async def buy_item(
         self, user_id: str, item_name: str, user_money: int, quantity: int = 1
     ) -> Tuple[bool, str]:
@@ -192,62 +295,8 @@ class Shop:
             f"成功购买{target_item['name']} x {quantity}\n花费{total_price}金币",
         )
 
-    async def get_user_backpack(self, user_id: str) -> Dict[str, int]:
-        """获取用户背包物品列表"""
-        file_path = self.backpack_path / f"{user_id}.json"
-        backpack = await self._load_data(file_path)
-        return backpack or {}
-
-    async def handle_use_command(
-        self, user_id: str, input_str: str
-    ) -> Tuple[bool, str]:
-        """
-        使用背包中的物品
-        :param user_id: 用户ID
-        :param item_name: 物品名称
-        :param quantity: 使用数量（默认1）
-        :return: (是否成功, 物品效果或错误消息)
-        """
-        parts = input_str.strip().split()
-        if not parts:
-            return (
-                False,
-                "请指定物品名称，使用方法: /使用道具 物品名称\n"
-                "或：/使用道具 物品名称 数量",
-            )
-        item_name = parts[0]
-        try:
-            quantity = int(parts[1]) if len(parts) > 1 else 1
-        except ValueError:
-            return False, "数量必须为整数，请重新输入"
-        if quantity <= 0:
-            return False, "使用数量必须为正整数"
-        file_path = self.backpack_path / f"{user_id}.json"
-        backpack = await self.get_user_backpack(user_id)
-        # 物品存在性与数量校验
-        if item_name not in backpack:
-            return False, "物品不存在"
-        if backpack[item_name] < quantity:
-            return (
-                False,
-                f"您所需{item_name}的数量不足\n当前持有数量：{backpack[item_name]}",
-            )
-
-        # 获取物品效果
-        item = await self.get_item_detail(item_name)
-        if not item:
-            return False, "物品信息不存在"
-
-        # 更新背包
-        backpack[item_name] -= quantity
-        if backpack[item_name] == 0:
-            del backpack[item_name]
-        await self._save_data(file_path, backpack)
-
-        return True, item["effect"]
-
     async def handle_gift_command(
-        self, from_user_id: str, input_str: str
+        self, event: AiocqhttpMessageEvent, input_str: str
     ) -> Tuple[bool, str]:
         """
         赠送物品给其他用户
@@ -257,21 +306,43 @@ class Shop:
         :param amount: 赠送数量（默认1）
         :return: (是否成功, 结果消息)
         """
+        from_user_id = None
+        to_user_id = None
+        amount = 1
         parts = input_str.strip().split()
-        if len(parts) < 2:
+        if len(parts) <= 1:
             return (
                 False,
-                "请指定物品名称和接收者，使用方法: /赠送道具 物品名称 @用户\n"
-                "或：/赠送道具 物品名称 @用户 数量",
+                "请指定物品名称和接收者，使用方法:\n"
+                " /赠送道具 物品名称 @用户/qq号\n"
+                "或：/赠送道具 物品名称 @用户/qq号 数量",
             )
         item_name = parts[0]
-        to_user_id = parts[1]
+        to_user_ids = get_at_ids(event)
+        if isinstance(to_user_ids, list) and to_user_ids:
+            to_user_id = to_user_ids[0]
         try:
-            amount = int(parts[2]) if len(parts) > 2 else 1
+            if to_user_id:
+                if len(parts) >= 3:
+                    amount = int(parts[2])
+            else:
+                if len(parts) >= 3 and parts[1].isdigit():
+                    to_user_id = parts[1]
+                    amount = int(parts[2])
         except ValueError:
             return False, "赠送数量必须为整数"
         if amount <= 0:
             return False, "赠送数量必须为正整数"
+        if not to_user_id:
+            return (
+                False,
+                "请指定接收者，使用@用户或直接输入QQ号\n"
+                "使用方法: /赠送道具 物品名称 @用户/qq号\n"
+                "或：/赠送道具 物品名称 @用户/qq号 数量",
+            )
+        from_user_id = str(event.get_sender_id())
+        if from_user_id == to_user_id:
+            return False, "不能赠送物品给自己"
         from_file_path = self.backpack_path / f"{from_user_id}.json"
         to_file_path = self.backpack_path / f"{to_user_id}.json"
         from_backpack = await self.get_user_backpack(from_user_id)
@@ -288,7 +359,6 @@ class Shop:
 
         # 增加接收者物品
         to_backpack[item_name] = to_backpack.get(item_name, 0) + amount
-
         await self._save_data(from_file_path, from_backpack)
         await self._save_data(to_file_path, to_backpack)
         return True, f"成功给用户{to_user_id}：\n赠送{item_name} x {amount}"
@@ -309,45 +379,10 @@ class Shop:
             logger.error(f"格式化商店物品失败: {str(e)}")
             return "获取商店物品失败，请稍后再试~"
 
-    async def handle_buy_command(
-        self, user_id: str, input_str: str
-    ) -> Tuple[bool, str]:
-        """
-        处理购买命令解析
-        :param user_id: 用户ID
-        :param input_str: 命令参数（物品名称 [数量]）
-        :return: (是否成功, 结果消息)
-        """
-        try:
-            parts = input_str.strip().split()
-            if not parts:
-                return (
-                    False,
-                    "请指定物品名称，使用方法: /购买道具 物品名称\n"
-                    "或：/购买道具 物品名称 数量",
-                )
-
-            item_name = parts[0]
-            quantity = int(parts[1]) if len(parts) > 1 else 1
-            if quantity <= 0:
-                return False, "购买数量必须为正整数"
-            # 导入用户系统获取金钱（避免循环导入）
-            from .user import User
-
-            user_system = User()
-            home_data = await user_system.get_home_data(user_id)
-            user_money = home_data.get("money", 0)
-
-            return await self.buy_item(user_id, item_name, user_money, quantity)
-        except ValueError:
-            return False, "数量必须是数字"
-        except Exception as e:
-            return False, f"购买失败: {str(e)}"
-
-    async def format_backpack(self, user_id: str) -> str:
+    async def format_backpack(self, event: AiocqhttpMessageEvent) -> str:
         """格式化用户背包为展示文本"""
         try:
-            user_backpack = await self.get_user_backpack(user_id)
+            user_backpack = await self.get_user_backpack(event.get_sender_id())
             if not user_backpack:
                 return "你的背包是空的，快去商店买点东西吧~"
 
