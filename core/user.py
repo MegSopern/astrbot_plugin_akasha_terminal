@@ -4,9 +4,14 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from astrbot.api import logger
+from astrbot.core import AstrBotConfig
+from astrbot.core.message.components import At, Plain, Reply
+from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
+    AiocqhttpMessageEvent,
+)
 
 # 导入工具函数
-from ..utils.utils import read_json, write_json
+from ..utils.utils import get_at_ids, get_nickname, read_json, write_json
 
 # 数据存储路径：插件目录上一层的plugin_data/astrbot_plugin_akasha_terminal
 BASE_DIR = (
@@ -45,11 +50,15 @@ class User:
                 "default": lambda uid: {
                     "spouse_id": "",
                     "spouse_name": "",
+                    "love": 0,
                     "wait": 0,
                     "place": "home",
                     "placetime": 0,
                     "money": 100,
-                    "love": 0,
+                    "house_name": "小破屋",
+                    "house_space": 6,
+                    "house_price": 500,
+                    "house_level": 1,
                 }
             },
             "quest": {
@@ -193,36 +202,71 @@ class User:
             return []
 
     async def format_user_info(
-        self, user_id: str, nickname: str, input_str: str
+        self, event: AiocqhttpMessageEvent, input_str: str
     ) -> str:
         """格式化用户信息为字符串"""
-        parts = input_str.strip().split()
-        if len(parts) >= 1 and parts[0].isdigit():
-            user_id = parts[0]
-        user_data = await self.get_user(user_id, nickname)
-        battle_data = await self.get_battle_data(user_id)
-        home_data = await self.get_home_data(user_id)
-        return (
-            f"用户信息:\n"
-            f"昵称：{user_data.get('nickname')}\n"
-            f"ID: {user_id}\n"
-            f"等级: {user_data.get('level', 1)}\n"
-            f"经验: {battle_data.get('experience', 0)}\n"
-            f"金钱: {home_data.get('money', 0)}\n"
-            f"好感度: {home_data.get('love', 0)}"
-        )
+        try:
+            to_user_id = await get_at_ids(event)
+            if isinstance(to_user_id, list) and to_user_id:
+                user_id = to_user_id[0]
+            else:
+                user_id = to_user_id
+            parts = input_str.strip().split()
+            if parts and parts[0].isdigit():
+                user_id = parts[0]
+            if not user_id:
+                user_id = event.get_sender_id()
+            nickname = await get_nickname(event, user_id)
+            user_data = await self.get_user(user_id, nickname)
+            battle_data = await self.get_battle_data(user_id)
+            home_data = await self.get_home_data(user_id)
+            return (
+                f"用户信息:\n"
+                f"昵称：{user_data.get('nickname')}\n"
+                f"ID: {user_id}\n"
+                f"等级: {user_data.get('level', 1)}\n"
+                f"经验: {battle_data.get('experience', 0)}\n"
+                f"金钱: {home_data.get('money', 0)}\n"
+                f"好感度: {home_data.get('love', 0)}"
+            )
+        except Exception as e:
+            logger.error(f"格式化用户信息失败: {str(e)}")
+            return "获取用户信息失败，请稍后再试~"
 
-    async def add_money(self, user_id: str, input_str: str) -> tuple[bool, str]:
+    async def add_money(
+        self, event: AiocqhttpMessageEvent, input_str: str
+    ) -> tuple[bool, str]:
         """增加用户金钱"""
         try:
             parts = input_str.strip().split()
-            if len(parts) < 1:
+            if not parts:
                 return (
                     False,
-                    "请指定增加的金额，使用方法:/增加金钱 金额 qq\n或：/增加金钱 金额 @用户",
+                    "请指定增加的金额，使用方法:/增加金钱 金额 \n或：/增加金钱 @用户/qq号 金额",
                 )
-            amount = int(parts[0])
-            to_user_id = parts[1] if len(parts) > 1 else user_id
+            to_user_id = await get_at_ids(event)
+            if isinstance(to_user_id, list) and to_user_id:
+                to_user_id = to_user_id[0]
+            amount = None
+            try:
+                if to_user_id is not None:
+                    if len(parts) >= 2:
+                        amount = int(parts[1])
+                    else:
+                        return (
+                            False,
+                            "请指定增加的金额，使用方法:\n/增加金钱 @用户/qq号 金额",
+                        )
+                else:
+                    if len(parts) >= 2 and parts[0].isdigit():
+                        to_user_id = parts[0]
+                        amount = int(parts[1])
+                    else:
+                        amount = int(parts[0])
+            except ValueError:
+                return (False, "金额必须是整数，请重新输入")
+            if to_user_id is None:
+                to_user_id = event.get_sender_id()
 
             if amount <= 0:
                 return False, "增加的金额必须为正整数"
@@ -230,10 +274,7 @@ class User:
             home_data = await self.get_home_data(to_user_id)
             home_data["money"] = home_data.get("money", 0) + amount
             await self.update_home_data(to_user_id, home_data)
-
             return True, f"成功增加 {amount} 金钱\n当前金钱: {home_data['money']}"
-        except ValueError:
-            return False, "金额必须是整数"
         except Exception as e:
             logger.error(f"增加用户金钱失败: {str(e)}")
             return False, "操作失败，请稍后再试~"
