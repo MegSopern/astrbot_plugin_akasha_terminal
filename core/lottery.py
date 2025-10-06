@@ -263,7 +263,7 @@ class Lottery:
                 )
                 five_star_prob = current_five_star_prob
                 draw_results.append(result)
-                all_snippets.extend(result["message_snippets"])
+                all_snippets += result["message_snippets"]
 
             # 构建最终消息
             message = "\n【武器抽卡结果】：\n"
