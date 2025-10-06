@@ -11,7 +11,7 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 )
 
 # 导入工具函数
-from ..utils.utils import read_json, write_json
+from ..utils.utils import get_at_ids, read_json, write_json
 
 # 数据存储路径：插件目录上一层的plugin_data/astrbot_plugin_akasha_terminal
 BASE_DIR = (
@@ -221,8 +221,11 @@ class User:
             f"好感度: {home_data.get('love', 0)}"
         )
 
-    async def add_money(self, user_id: str, input_str: str) -> tuple[bool, str]:
+    async def add_money(
+        self, event: AiocqhttpMessageEvent, user_id: str, input_str: str
+    ) -> tuple[bool, str]:
         """增加用户金钱"""
+        target_user_id = get_at_ids(event)
         try:
             parts = input_str.strip().split()
             if len(parts) < 1:
