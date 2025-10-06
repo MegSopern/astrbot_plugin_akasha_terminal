@@ -206,9 +206,13 @@ class User:
     ) -> str:
         """格式化用户信息为字符串"""
         try:
-            user_id = await get_at_ids(event)
+            to_user_id = await get_at_ids(event)
+            if isinstance(to_user_id, list) and to_user_id:
+                user_id = to_user_id[0]
+            else:
+                user_id = to_user_id
             parts = input_str.strip().split()
-            if len(parts) >= 1 and parts[0].isdigit():
+            if parts and parts[0].isdigit():
                 user_id = parts[0]
             if not user_id:
                 user_id = event.get_sender_id()
@@ -234,16 +238,33 @@ class User:
     ) -> tuple[bool, str]:
         """增加用户金钱"""
         try:
-            to_user_id = await get_at_ids(event)
             parts = input_str.strip().split()
             if not parts:
                 return (
                     False,
-                    "请指定增加的金额，使用方法:/增加金钱 金额 \n或：/增加金钱 金额 @用户/qq号",
+                    "请指定增加的金额，使用方法:/增加金钱 金额 \n或：/增加金钱 @用户/qq号 金额",
                 )
-            amount = int(parts[0])
-            if len(parts) > 1 and parts[1].isdigit():
-                to_user_id = parts[1]
+            to_user_id = await get_at_ids(event)
+            if isinstance(to_user_id, list) and to_user_id:
+                to_user_id = to_user_id[0]
+            amount = None
+            try:
+                if to_user_id is not None:
+                    if len(parts) >= 2:
+                        amount = int(parts[1])
+                    else:
+                        return (
+                            False,
+                            "请指定增加的金额，使用方法:\n/增加金钱 @用户/qq号 金额",
+                        )
+                else:
+                    if len(parts) >= 2 and parts[0].isdigit():
+                        to_user_id = parts[0]
+                        amount = int(parts[1])
+                    else:
+                        amount = int(parts[0])
+            except ValueError:
+                return (False, "金额必须是整数，请重新输入")
             if to_user_id is None:
                 to_user_id = event.get_sender_id()
 
@@ -253,10 +274,7 @@ class User:
             home_data = await self.get_home_data(to_user_id)
             home_data["money"] = home_data.get("money", 0) + amount
             await self.update_home_data(to_user_id, home_data)
-
             return True, f"成功增加 {amount} 金钱\n当前金钱: {home_data['money']}"
-        except ValueError:
-            return False, "金额必须是整数"
         except Exception as e:
             logger.error(f"增加用户金钱失败: {str(e)}")
             return False, "操作失败，请稍后再试~"
