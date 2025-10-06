@@ -267,7 +267,7 @@ class Lottery:
                 all_snippets += result["message_snippets"]
                 image_paths.append(weapon_image_path)
             if count == 1:
-                image_paths = str(image_paths[:1])  # 单抽只返回一张图片
+                image_paths = str(image_paths[0])  # 单抽只返回一张图片
             # 构建最终消息
             message = "\n【武器抽卡结果】：\n"
             message += all_snippets
