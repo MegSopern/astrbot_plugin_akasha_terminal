@@ -273,7 +273,11 @@ class User:
             home_data = await self.get_home_data(to_user_id)
             home_data["money"] = home_data.get("money", 0) + amount
             await self.update_home_data(to_user_id, home_data)
-            return True, f"成功增加 {amount} 金钱\n当前金钱: {home_data['money']}"
+            return (
+                True,
+                f"成功为用户{to_user_id}增加 {amount} 金钱\n"
+                f"当前金钱: {home_data['money']}",
+            )
         except Exception as e:
             logger.error(f"增加用户金钱失败: {str(e)}")
             return False, "增加用户金钱失败，请稍后再试~"
