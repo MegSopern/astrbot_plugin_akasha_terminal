@@ -117,9 +117,9 @@ class Lottery:
                     "未出五星计数": 0,
                     "未出四星计数": 0,
                 }
-        if user_data == "user_data":
+        if only_data_or_backpack == "user_data":
             return user_data
-        elif user_backpack == "user_backpack":
+        elif only_data_or_backpack == "user_backpack":
             return user_backpack
         return user_data, user_backpack
 
