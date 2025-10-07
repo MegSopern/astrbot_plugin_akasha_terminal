@@ -177,7 +177,7 @@ class AkashaTerminal(Star):
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command("开挂", alias={"增加纠缠之缘", "添加纠缠之缘"})
     async def cheat(self, event: AiocqhttpMessageEvent):
-        """增添纠缠之缘，使用方法: /增加金钱 金额"""
+        """增添纠缠之缘，使用方法: /开挂 数量"""
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         success, message = await self.lottery_system.handle_cheat_command(
