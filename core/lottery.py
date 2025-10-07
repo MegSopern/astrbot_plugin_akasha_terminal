@@ -9,7 +9,7 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
 
-from ..utils.utils import create_user_data, read_json, write_json
+from ..utils.utils import create_user_data, get_at_ids, read_json, write_json
 
 
 class Lottery:
@@ -87,28 +87,40 @@ class Lottery:
         weapon_data = await read_json(self.weapon_path)
         return weapon_data.get(weapon_id)
 
-    async def get_user_data_and_backpack(self, user_id: str):
+    async def get_user_data_and_backpack(
+        self, user_id: str, only_data_or_backpack: str | None = None
+    ) -> dict | tuple[dict, dict]:
         """获取用户数据和背包数据（不存在则创建）"""
-        user_data_file = self.user_data_path / f"{user_id}.json"
-        if not user_data_file.exists():
-            await create_user_data(user_id)
-        user_data = await read_json(user_data_file)
-        user_backpack = await read_json(self.backpack_path / f"{user_id}.json") or {}
+        user_data = None
+        user_backpack = None
+        if only_data_or_backpack in (None, "user_data"):
+            user_data_file = self.user_data_path / f"{user_id}.json"
+            if not user_data_file.exists():
+                await create_user_data(user_id)
+            user_data = await read_json(user_data_file)
 
-        # 初始化武器背包结构
-        if "weapon" not in user_backpack:
-            user_backpack["weapon"] = {
-                "纠缠之缘": 0,
-                "总抽卡次数": 0,
-                "武器计数": {},
-                "武器详细": {
-                    "三星武器": {"数量": 0, "详细信息": []},
-                    "四星武器": {"数量": 0, "详细信息": []},
-                    "五星武器": {"数量": 0, "详细信息": []},
-                },
-                "未出五星计数": 0,
-                "未出四星计数": 0,
-            }
+        if only_data_or_backpack in (None, "user_backpack"):
+            user_backpack = (
+                await read_json(self.backpack_path / f"{user_id}.json") or {}
+            )
+            # 初始化武器背包结构
+            if "weapon" not in user_backpack:
+                user_backpack["weapon"] = {
+                    "纠缠之缘": 0,
+                    "总抽卡次数": 0,
+                    "武器计数": {},
+                    "武器详细": {
+                        "三星武器": {"数量": 0, "详细信息": []},
+                        "四星武器": {"数量": 0, "详细信息": []},
+                        "五星武器": {"数量": 0, "详细信息": []},
+                    },
+                    "未出五星计数": 0,
+                    "未出四星计数": 0,
+                }
+        if only_data_or_backpack == "user_data":
+            return user_data
+        elif only_data_or_backpack == "user_backpack":
+            return user_backpack
         return user_data, user_backpack
 
     async def update_data(
@@ -597,3 +609,55 @@ class Lottery:
         except Exception as e:
             logger.error(f"展示武器库失败: {str(e)}")
             return "获取武器库信息时出错，请稍后再试~"
+
+    async def handle_cheat_command(self, event: AiocqhttpMessageEvent, input_str: str):
+        """处理开挂命令"""
+        try:
+            to_user_id = None
+            amount = None
+            parts = input_str.strip().split()
+            if not parts:
+                return (
+                    False,
+                    "请指定增加的纠缠之缘数量，使用方法:\n"
+                    "/开挂 数量 \n"
+                    "或：/开挂 @用户/qq号 数量",
+                )
+            to_user_ids = get_at_ids(event)
+            if isinstance(to_user_ids, list) and to_user_ids:
+                to_user_id = to_user_ids[0]
+            try:
+                if to_user_id:
+                    if len(parts) >= 2:
+                        amount = int(parts[1])
+                    else:
+                        return (
+                            False,
+                            "请指定增加的纠缠之缘数量，使用方法:\n"
+                            "/开挂 @用户/qq号 数量",
+                        )
+                else:
+                    if len(parts) >= 2 and parts[0].isdigit():
+                        to_user_id = parts[0]
+                        amount = int(parts[1])
+                    else:
+                        amount = int(parts[0])
+            except ValueError:
+                return (False, "金额必须是整数，请重新输入")
+            if not to_user_id:
+                to_user_id = str(event.get_sender_id())
+            if amount <= 0:
+                return False, "增加的金额必须为正整数"
+            user_backpack = await self.get_user_data_and_backpack(
+                to_user_id, only_data_or_backpack="user_backpack"
+            )
+            user_backpack["weapon"]["纠缠之缘"] += amount
+            await write_json(self.backpack_path / f"{to_user_id}.json", user_backpack)
+            return (
+                True,
+                f"成功为用户{to_user_id}增加 {amount} 颗纠缠之缘\n"
+                f"当前纠缠之缘: {user_backpack['weapon']['纠缠之缘']}颗",
+            )
+        except Exception as e:
+            logger.error(f"处理开挂命令失败: {str(e)}")
+            return False, "处理开挂命令时发生错误，请稍后再试~"
