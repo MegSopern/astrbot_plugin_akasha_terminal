@@ -9,12 +9,19 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
 
-from ..utils.utils import create_user_data, get_at_ids, read_json, write_json
+from ..utils.utils import (
+    create_user_data,
+    get_at_ids,
+    read_json,
+    seconds_to_duration,
+    write_json,
+)
 
 
 class Lottery:
     def __init__(self):
         """初始化抽奖系统，设置路径和概率参数"""
+        # 设置文件路径
         base_dir = Path(__file__).resolve().parent.parent.parent.parent
         plugin_data_dir = base_dir / "plugin_data" / "astrbot_plugin_akasha_terminal"
         self.backpack_path = plugin_data_dir / "user_backpack"
@@ -29,6 +36,10 @@ class Lottery:
         self.image_base_path = Path(
             "data/plugins/astrbot_plugin_akasha_terminal/resources/weapon_image"
         )
+
+        # 存储群冷却时间
+        self.group_cooldowns = {}  # {group_id: 下次可抽卡时间}
+
         # 加载武器数据（按星级分类）{weapon_star: [weapon_id1,weapon_id2, ...]}
         self.weapon_all_data = self.load_weapon_data() or {}
 
@@ -38,6 +49,24 @@ class Lottery:
         self.three_star_prob = (
             100 - self.five_star_prob - self.four_star_prob
         )  # 三星武器基础概率94%
+
+    def check_group_cooldown(self, group_id: str) -> int:
+        """检查群冷却时间，返回剩余冷却秒数，0表示无冷却"""
+        if not group_id:
+            return 0  # 私聊无冷却
+
+        current_time = datetime.now(ZoneInfo("Asia/Shanghai")).timestamp()
+        next_available_time = self.group_cooldowns.get(group_id, 0)
+        remaining = int(next_available_time - current_time)
+        return max(remaining, 0)
+
+    def update_group_cooldown(self, group_id: str, draw_card_cooldown: int):
+        """更新群冷却时间"""
+        if not group_id or draw_card_cooldown <= 0:
+            return
+
+        current_time = datetime.now(ZoneInfo("Asia/Shanghai")).timestamp()
+        self.group_cooldowns[group_id] = current_time + draw_card_cooldown
 
     def load_weapon_data(self):
         """
@@ -239,9 +268,18 @@ class Lottery:
             logger.error(f"处理单次抽卡失败: {str(e)}")
             return None, None, None, None, None
 
-    async def weapon_draw(self, event: AiocqhttpMessageEvent, count: int = 1):
+    async def weapon_draw(
+        self, event: AiocqhttpMessageEvent, draw_card_cooldown: int, count: int = 1
+    ):
         """执行武器抽卡主逻辑"""
         try:
+            group_id = event.get_group_id() if event.is_group() else None
+            remaining_time = self.check_group_cooldown(group_id)
+            if remaining_time > 0:
+                return (
+                    f"抽卡冷却中，还剩{seconds_to_duration(remaining_time)}",
+                    None,
+                )
             user_id = str(event.get_sender_id())
             user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
             weapon_data = user_backpack["weapon"]
@@ -278,6 +316,10 @@ class Lottery:
                 draw_results.append(result)
                 all_snippets += result["message_snippets"]
                 image_paths.append(weapon_image_path)
+
+            # 抽卡完成后更新冷却时间
+            self.update_group_cooldown(group_id, draw_card_cooldown)
+
             if count == 1:
                 image_paths = str(image_paths[0])  # 单抽只返回一张图片
             # 构建最终消息
@@ -333,6 +375,7 @@ class Lottery:
             # if time_desc:
             #     lines.append(f" ({time_desc})")
             # 更新用户数据
+
             return message, image_paths
         except Exception as e:
             logger.error(f"武器抽卡失败: {str(e)}")
