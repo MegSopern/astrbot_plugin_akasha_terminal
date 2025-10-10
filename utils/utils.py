@@ -280,7 +280,4 @@ def seconds_to_duration(seconds) -> str:
             break
 
     # 处理0秒的情况
-    if not parts:
-        return "0秒"
-
-    return "".join(parts)
+    return "0秒" if not parts else "".join(parts)
