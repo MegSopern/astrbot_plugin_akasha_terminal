@@ -155,58 +155,46 @@
             }
         }
     },
-    "other_systems": {
+    "other_system": {
         "description": "其他系统",
         "type": "object",
         "hint": "",
         "items": {
-            "gacha_cooldown": {
+            "draw_card_cooldown": {
                 "description": "抽卡冷却时间",
                 "type": "int",
                 "hint": "抽卡系统的冷却时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 3600
+                "default": 10
             },
             "duel_cooldown": {
                 "description": "决斗冷却时间",
                 "type": "int",
                 "hint": "决斗系统的冷却时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 3600
+                "default": 5
             },
             "exercise_cooldown": {
                 "description": "修炼冷却时间",
                 "type": "int",
                 "hint": "修炼系统的冷却时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 7200
+                "default": 5
             },
             "breakthrough_cooldown": {
                 "description": "突破冷却时间",
                 "type": "int",
                 "hint": "突破系统的冷却时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 7200
+                "default": 5
             },
             "idcard_cooldown": {
                 "description": "身份证查询冷却时间",
                 "type": "int",
                 "hint": "身份证查询的冷却时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 300
+                "default": 10
             },
             "cpwsc_cooldown": {
                 "description": "猜拳冷却时间",
                 "type": "int",
                 "hint": "猜拳系统的冷却时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 300
+                "default": 10
             }
         }
     },

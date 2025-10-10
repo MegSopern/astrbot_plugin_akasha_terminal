@@ -253,3 +253,31 @@ async def get_nickname(event: AiocqhttpMessageEvent, user_id) -> str:
         group_id=int(group_id), user_id=int(user_id)
     )
     return all_info.get("card") or all_info.get("nickname")
+
+
+def seconds_to_duration(seconds) -> str:
+    """将秒数转换为友好的时长字符串，如将秒数转换为"1天2小时3分4秒"""
+    if not isinstance(seconds, (int, float)) or seconds < 0:
+        return "输入必须是非负的数字"
+
+    # 定义时间单位及其对应的秒数
+    units = [
+        ("天", 86400),
+        ("小时", 3600),
+        ("分", 60),
+        ("秒", 1),
+    ]
+    parts = []
+    remaining = int(round(seconds))  # 四舍五入到整数
+
+    for unit_name, unit_seconds in units:
+        if remaining >= unit_seconds:
+            count = remaining // unit_seconds
+            parts.append(f"{count}{unit_name}")
+            remaining %= unit_seconds
+
+        if remaining == 0:
+            break
+
+    # 处理0秒的情况
+    return "0秒" if not parts else "".join(parts)

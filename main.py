@@ -7,6 +7,7 @@ from aiocqhttp import CQHttp
 from astrbot.api import logger
 from astrbot.api.event import filter
 from astrbot.api.star import Context, Star, register
+from astrbot.core import AstrBotConfig
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -25,7 +26,7 @@ from .utils.utils import get_nickname, logo_AATP
     "2.0.0",
 )
 class AkashaTerminal(Star):
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         try:
             # 用户系统
@@ -39,6 +40,10 @@ class AkashaTerminal(Star):
             logger.info("Akasha Terminal插件初始化完成")
         except Exception as e:
             logger.error(f"Akasha Terminal插件初始化失败:{str(e)}")
+
+        other_system_config = config.get("other_system", {})
+        # 抽卡冷却时间
+        self.draw_card_cooldown = other_system_config.get("draw_card_cooldown", 10)
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
@@ -138,7 +143,9 @@ class AkashaTerminal(Star):
     @filter.command("抽武器", alias={"单抽武器", "单抽"})
     async def draw_weapon(self, event: AiocqhttpMessageEvent):
         """单抽武器"""
-        message, image_path = await self.lottery_system.weapon_draw(event, count=1)
+        message, image_path = await self.lottery_system.weapon_draw(
+            event, self.draw_card_cooldown, count=1
+        )
         if image_path and Path(image_path).exists():
             message = [
                 Comp.Plain(message),
@@ -152,7 +159,7 @@ class AkashaTerminal(Star):
     async def draw_ten_weapons(self, event: AiocqhttpMessageEvent):
         """十连抽武器"""
         message, weapon_image_paths = await self.lottery_system.weapon_draw(
-            event, count=10
+            event, self.draw_card_cooldown, count=10
         )
         components = [Comp.Plain(message)]
         # 添加所有武器图片
