@@ -16,7 +16,7 @@ class Task:
         """初始化任务系统，加载任务配置路径"""
         self.task_file_path = Path(__file__).parent.parent / "data" / "task.json"
         self.task_data: Dict[str, Dict[str, Any]] = {}
-        self.user_system = User()  # 关联用户系统
+        self.user = User()  # 关联用户系统
 
     async def _load_task_data(self) -> None:
         """加载任务配置数据,从JSON文件读取任务定义并初始化"""
@@ -58,7 +58,7 @@ class Task:
             "progress_msg": "",
         }
 
-        quest_data = await self.user_system.get_quest_data(user_id)
+        quest_data = await self.user.get_quest_data(user_id)
         current_tasks = quest_data.get("daily", {})
 
         # 任务类型与动作映射关系
@@ -80,7 +80,7 @@ class Task:
             if action in action_mapping.get(task["id"], []):
                 progress["current"] += 1
                 quest_data["daily"][task_key] = progress
-                await self.user_system.update_quest_data(user_id, quest_data)
+                await self.user.update_quest_data(user_id, quest_data)
 
                 # 构建进度消息
                 progress_msg = f"【{task['name']}】进度更新：{progress['current']}/{progress['target']}\n"
@@ -103,8 +103,8 @@ class Task:
 
         try:
             # 获取用户数据
-            home_data = await self.user_system.get_home_data(user_id)
-            quest_data = await self.user_system.get_quest_data(user_id)
+            home_data = await self.user.get_home_data(user_id)
+            quest_data = await self.user.get_quest_data(user_id)
 
             # 奖励处理映射
             reward_handlers = {
@@ -139,8 +139,8 @@ class Task:
                         reward_msg += f"  物品 {item_id} ×{count}\n"
 
             # 保存更新后的数据
-            await self.user_system.update_home_data(user_id, home_data)
-            await self.user_system.update_quest_data(user_id, quest_data)
+            await self.user.update_home_data(user_id, home_data)
+            await self.user.update_quest_data(user_id, quest_data)
             reward_msg += f"用户 {user_id} 成功领取任务 {task_id} 奖励\n"
             return True, reward_msg.strip()
         except Exception as e:
@@ -159,15 +159,15 @@ class Task:
         target = int(match.group()) if match else 1
 
         # 更新用户任务数据
-        quest_data = await self.user_system.get_quest_data(user_id)
+        quest_data = await self.user.get_quest_data(user_id)
         quest_data["daily"][task["id"]] = {"current": 0, "target": target}
-        await self.user_system.update_quest_data(user_id, quest_data)
+        await self.user.update_quest_data(user_id, quest_data)
         return task
 
     async def get_user_daily_task(self, user_id: str) -> str:
         """处理用户领取日常任务的逻辑并返回消息"""
         try:
-            quest_data = await self.user_system.get_quest_data(user_id)
+            quest_data = await self.user.get_quest_data(user_id)
             daily_tasks = quest_data.get("daily", {})
 
             # 检查是否有活跃任务
@@ -199,7 +199,7 @@ class Task:
     async def format_user_tasks(self, user_id: str) -> str:
         """格式化用户当前任务进度为字符串"""
         try:
-            quest_data = await self.user_system.get_quest_data(user_id)
+            quest_data = await self.user.get_quest_data(user_id)
             daily_tasks = quest_data.get("daily", {})
             weekly_tasks = quest_data.get("weekly", {})
             special_tasks = quest_data.get("special", {})
