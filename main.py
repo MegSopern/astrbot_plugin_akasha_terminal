@@ -148,9 +148,7 @@ class AkashaTerminal(Star):
     @filter.command("抽武器", alias={"单抽武器", "单抽"})
     async def draw_weapon(self, event: AiocqhttpMessageEvent):
         """单抽武器"""
-        message, image_path = await self.lottery.weapon_draw(
-            event, self.draw_card_cooldown, count=1
-        )
+        message, image_path = await self.lottery.weapon_draw(event, count=1)
         if image_path and Path(image_path).exists():
             message = [
                 Comp.Plain(message),
@@ -163,9 +161,7 @@ class AkashaTerminal(Star):
     @filter.command("十连抽武器", alias={"十连武器", "十连抽", "十连"})
     async def draw_ten_weapons(self, event: AiocqhttpMessageEvent):
         """十连抽武器"""
-        message, weapon_image_paths = await self.lottery.weapon_draw(
-            event, self.draw_card_cooldown, count=10
-        )
+        message, weapon_image_paths = await self.lottery.weapon_draw(event, count=10)
         components = [Comp.Plain(message)]
         # 添加所有武器图片
         for path in weapon_image_paths:
