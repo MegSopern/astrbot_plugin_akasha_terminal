@@ -16,7 +16,7 @@ from .core.lottery import Lottery
 from .core.shop import Shop
 from .core.task import Task
 from .core.user import User
-from .utils.utils import get_nickname, logo_AATP
+from .utils.utils import logo_AATP
 
 
 @register(
@@ -28,22 +28,29 @@ from .utils.utils import get_nickname, logo_AATP
 class AkashaTerminal(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
+        self.config = config
+        self.initialize_subsystems()
+        # 读取抽卡冷却配置
+        try:
+            other_system_config = config.get("other_system", {})
+            self.draw_card_cooldown = other_system_config.get("draw_card_cooldown", 10)
+        except Exception as e:
+            logger.error(f"读取冷却配置失败: {str(e)}")
+
+    # 初始化各个子系统
+    def initialize_subsystems(self):
         try:
             # 用户系统
-            self.user_system = User()
+            self.user = User()
             # 任务系统
-            self.task_system = Task()
+            self.task = Task()
             # 商店系统
-            self.shop_system = Shop()
+            self.shop = Shop()
             # 抽奖系统
-            self.lottery_system = Lottery()
+            self.lottery = Lottery(self.draw_card_cooldown)
             logger.info("Akasha Terminal插件初始化完成")
         except Exception as e:
             logger.error(f"Akasha Terminal插件初始化失败:{str(e)}")
-
-        other_system_config = config.get("other_system", {})
-        # 抽卡冷却时间
-        self.draw_card_cooldown = other_system_config.get("draw_card_cooldown", 10)
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
@@ -54,7 +61,7 @@ class AkashaTerminal(Star):
         """查看个人信息"""
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        message = await self.user_system.format_user_info(event, input_str)
+        message = await self.user.format_user_info(event, input_str)
         yield event.plain_result(message)
 
     @filter.permission_type(filter.PermissionType.ADMIN)
@@ -63,14 +70,14 @@ class AkashaTerminal(Star):
         """增加用户金钱，使用方法: /增加金钱 金额"""
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.user_system.add_money(event, input_str)
+        success, message = await self.user.add_money(event, input_str)
         yield event.plain_result(message)
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command("用户列表")
     async def list_all_users(self, event: AiocqhttpMessageEvent):
         """获取所有用户列表"""
-        message = await self.user_system.get_all_users_info()
+        message = await self.user.get_all_users_info()
         yield event.plain_result(message)
 
     async def terminate(self):
@@ -81,21 +88,21 @@ class AkashaTerminal(Star):
     async def get_daily_task(self, event: AiocqhttpMessageEvent):
         """领取日常任务"""
         user_id = str(event.get_sender_id())
-        message = await self.task_system.get_user_daily_task(user_id)
+        message = await self.task.get_user_daily_task(user_id)
         yield event.plain_result(message)
 
     @filter.command("我的任务", alias="查看任务")
     async def check_my_tasks(self, event: AiocqhttpMessageEvent):
         """查看当前任务进度"""
         user_id: str = event.get_sender_id()
-        message = await self.task_system.format_user_tasks(user_id)
+        message = await self.task.format_user_tasks(user_id)
         yield event.plain_result(message)
 
     @filter.command("打工")
     async def work_action(self, event: AiocqhttpMessageEvent):
         """处理打工动作并检查任务进度"""
         user_id: str = event.get_sender_id()
-        messages = await self.task_system.handle_work_action(user_id)
+        messages = await self.task.handle_work_action(user_id)
         for msg in messages:
             yield event.plain_result(msg)
 
@@ -103,7 +110,7 @@ class AkashaTerminal(Star):
     @filter.command("商店", alias={"虚空商店", "商城", "虚空商城"})
     async def show_shop(self, event: AiocqhttpMessageEvent):
         """显示商店物品列表"""
-        message = await self.shop_system.format_shop_items()
+        message = await self.shop.format_shop_items()
         yield event.plain_result(message)
 
     @filter.command("购买道具", alias={"买道具", "购买物品", "买物品"})
@@ -112,13 +119,13 @@ class AkashaTerminal(Star):
         # 提取命令后的参数部分
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop_system.handle_buy_command(event, input_str)
+        success, message = await self.shop.handle_buy_command(event, input_str)
         yield event.plain_result(message)
 
     @filter.command("背包", alias="查看背包")
     async def show_backpack(self, event: AiocqhttpMessageEvent):
         """查看我的背包"""
-        message = await self.shop_system.format_backpack(event)
+        message = await self.shop.format_backpack(event)
         yield event.plain_result(message)
 
     @filter.command("使用道具", alias={"用道具", "使用物品", "用物品"})
@@ -126,7 +133,7 @@ class AkashaTerminal(Star):
         """使用道具，使用方法: /使用道具 物品名称"""
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop_system.handle_use_command(event, input_str)
+        success, message = await self.shop.handle_use_command(event, input_str)
         yield event.plain_result(message)
 
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
@@ -135,15 +142,13 @@ class AkashaTerminal(Star):
         from_user_id = str(event.get_sender_id())
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop_system.handle_gift_command(
-            from_user_id, input_str
-        )
+        success, message = await self.shop.handle_gift_command(from_user_id, input_str)
         yield event.plain_result(message)
 
     @filter.command("抽武器", alias={"单抽武器", "单抽"})
     async def draw_weapon(self, event: AiocqhttpMessageEvent):
         """单抽武器"""
-        message, image_path = await self.lottery_system.weapon_draw(
+        message, image_path = await self.lottery.weapon_draw(
             event, self.draw_card_cooldown, count=1
         )
         if image_path and Path(image_path).exists():
@@ -158,7 +163,7 @@ class AkashaTerminal(Star):
     @filter.command("十连抽武器", alias={"十连武器", "十连抽", "十连"})
     async def draw_ten_weapons(self, event: AiocqhttpMessageEvent):
         """十连抽武器"""
-        message, weapon_image_paths = await self.lottery_system.weapon_draw(
+        message, weapon_image_paths = await self.lottery.weapon_draw(
             event, self.draw_card_cooldown, count=10
         )
         components = [Comp.Plain(message)]
@@ -172,13 +177,13 @@ class AkashaTerminal(Star):
     @filter.command("签到", alias={"每日签到"})
     async def sign_in(self, event: AiocqhttpMessageEvent):
         """进行每日签到"""
-        message = await self.lottery_system.daily_sign_in(event)
+        message = await self.lottery.daily_sign_in(event)
         yield event.plain_result(message)
 
     @filter.command("我的武器", alias={"武器库", "查看武器"})
     async def my_weapons(self, event: AiocqhttpMessageEvent):
         """展示背包武器的统计信息"""
-        message = await self.lottery_system.show_my_weapons(event)
+        message = await self.lottery.show_my_weapons(event)
         yield event.plain_result(message)
 
     @filter.permission_type(filter.PermissionType.ADMIN)
@@ -187,7 +192,5 @@ class AkashaTerminal(Star):
         """增添纠缠之缘，使用方法: /开挂 数量"""
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.lottery_system.handle_cheat_command(
-            event, input_str
-        )
+        success, message = await self.lottery.handle_cheat_command(event, input_str)
         yield event.plain_result(message)

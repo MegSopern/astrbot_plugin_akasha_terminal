@@ -19,8 +19,10 @@ from ..utils.utils import (
 
 
 class Lottery:
-    def __init__(self):
+    def __init__(self, draw_card_cooldown: int):
         """初始化抽奖系统，设置路径和概率参数"""
+        # 从配置接收抽卡冷却时间
+        self.draw_card_cooldown = draw_card_cooldown
         # 设置文件路径
         base_dir = Path(__file__).resolve().parent.parent.parent.parent
         plugin_data_dir = base_dir / "plugin_data" / "astrbot_plugin_akasha_terminal"
@@ -60,13 +62,13 @@ class Lottery:
         remaining = int(next_available_time - current_time)
         return max(remaining, 0)
 
-    def update_group_cooldown(self, group_id: str, draw_card_cooldown: int):
+    def update_group_cooldown(self, group_id: str):
         """更新群冷却时间"""
-        if not group_id or draw_card_cooldown <= 0:
+        if not group_id or self.draw_card_cooldown <= 0:
             return
 
         current_time = datetime.now(ZoneInfo("Asia/Shanghai")).timestamp()
-        self.group_cooldowns[group_id] = current_time + draw_card_cooldown
+        self.group_cooldowns[group_id] = current_time + self.draw_card_cooldown
 
     def load_weapon_data(self):
         """
@@ -268,9 +270,7 @@ class Lottery:
             logger.error(f"处理单次抽卡失败: {str(e)}")
             return None, None, None, None, None
 
-    async def weapon_draw(
-        self, event: AiocqhttpMessageEvent, draw_card_cooldown: int, count: int = 1
-    ):
+    async def weapon_draw(self, event: AiocqhttpMessageEvent, count: int = 1):
         """执行武器抽卡主逻辑"""
         try:
             group_id = event.get_group_id() if event.is_group() else None
@@ -318,7 +318,7 @@ class Lottery:
                 image_paths.append(weapon_image_path)
 
             # 抽卡完成后更新冷却时间
-            self.update_group_cooldown(group_id, draw_card_cooldown)
+            self.update_group_cooldown(group_id)
 
             if count == 1:
                 image_paths = str(image_paths[0])  # 单抽只返回一张图片
