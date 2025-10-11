@@ -36,10 +36,12 @@ class Shop:
     def _init_default_data(self) -> None:
         """初始化默认商店数据和用户背包（仅当文件不存在时）"""
         # 设置「中国标准时间」
-        CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
+        self.CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
         # 初始化商店数据
-        if not self.shop_data_path.exists():
-            default_shop = {
+        if not self.shop_data_path.exists() or not read_json_sync(
+            self.shop_data_path
+        ).get("last_refresh"):
+            self.default_shop = {
                 "items": {
                     "爱心巧克力": {
                         "id": 1,
@@ -118,9 +120,9 @@ class Shop:
                     "金币袋",
                     "双倍经验卡",
                 ],  # 每日刷新的商品ID
-                "last_refresh": datetime.now(CN_TIMEZONE).strftime("%Y-%m-%d"),
+                "last_refresh": datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d"),
             }
-            write_json_sync(self.shop_data_path, default_shop)
+            write_json_sync(self.shop_data_path, self.default_shop)
         # 初始化用户背包路径文件
         if not self.backpack_path.exists():
             self.backpack_path.mkdir(parents=True, exist_ok=True)
@@ -136,11 +138,12 @@ class Shop:
     async def get_shop_items(self) -> Dict[str, Any]:
         """获取商店物品列表，自动处理每日刷新"""
         shop_data = await self._load_data(self.shop_data_path)
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d")
 
         # 检查并执行每日刷新
         if shop_data["last_refresh"] != today:
-            shop_data["last_refresh"] = today
+            # 刷新每日商品
+            shop_data = self.default_shop
             await self._save_data(self.shop_data_path, shop_data)
         return shop_data["items"]
 
