@@ -16,7 +16,7 @@ from .core.lottery import Lottery
 from .core.shop import Shop
 from .core.task import Task
 from .core.user import User
-from .utils.utils import get_nickname, logo_AATP
+from .utils.utils import logo_AATP
 
 
 @register(
@@ -28,6 +28,17 @@ from .utils.utils import get_nickname, logo_AATP
 class AkashaTerminal(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
+        self.config = config
+        self.initialize_subsystems()
+        # 读取抽卡冷却配置
+        try:
+            other_system_config = config.get("other_system", {})
+            self.draw_card_cooldown = other_system_config.get("draw_card_cooldown", 10)
+        except Exception as e:
+            logger.error(f"读取冷却配置失败: {str(e)}")
+
+    # 初始化各个子系统
+    def initialize_subsystems(self):
         try:
             # 用户系统
             self.user = User()
@@ -36,14 +47,10 @@ class AkashaTerminal(Star):
             # 商店系统
             self.shop = Shop()
             # 抽奖系统
-            self.lottery = Lottery()
+            self.lottery = Lottery(self.draw_card_cooldown)
             logger.info("Akasha Terminal插件初始化完成")
         except Exception as e:
             logger.error(f"Akasha Terminal插件初始化失败:{str(e)}")
-
-        other_system_config = config.get("other_system", {})
-        # 抽卡冷却时间
-        self.draw_card_cooldown = other_system_config.get("draw_card_cooldown", 10)
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
