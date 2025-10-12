@@ -158,7 +158,7 @@ class AkashaTerminal(Star):
         else:
             yield event.plain_result(message)
 
-    @filter.command("十连抽武器", alias={"十连武器", "十连抽", "十连"})
+    @filter.command("十连抽武器", alias={"十连武器", "武器十连", "十连抽", "十连"})
     async def draw_ten_weapons(self, event: AiocqhttpMessageEvent):
         """十连抽武器"""
         message, weapon_image_paths = await self.lottery.weapon_draw(event, count=10)

@@ -273,7 +273,7 @@ class Lottery:
     async def weapon_draw(self, event: AiocqhttpMessageEvent, count: int = 1):
         """执行武器抽卡主逻辑"""
         try:
-            group_id = event.get_group_id() if event.is_group() else None
+            group_id = event.get_group_id() or None
             remaining_time = self.check_group_cooldown(group_id)
             if remaining_time > 0:
                 return (
