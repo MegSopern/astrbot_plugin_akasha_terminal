@@ -29,13 +29,13 @@ class AkashaTerminal(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         self.config = config
-        self.initialize_subsystems()
         # 读取抽卡冷却配置
         try:
             other_system_config = config.get("other_system", {})
             self.draw_card_cooldown = other_system_config.get("draw_card_cooldown", 10)
         except Exception as e:
             logger.error(f"读取冷却配置失败: {str(e)}")
+        self.initialize_subsystems()
 
     # 初始化各个子系统
     def initialize_subsystems(self):
