@@ -137,7 +137,7 @@ def read_json_sync(file_path: Path) -> Dict[str, Any]:
         try:
             # 加共享锁（非阻塞）
             fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with os.fdopen(fd, "r", encoding="utf-8") as f:
+            with os.fdopen(fd, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
                 # 读取完成后，释放锁
                 fcntl.flock(fd, fcntl.LOCK_UN)
@@ -158,7 +158,11 @@ def write_json_sync(file_path: Path, data: Dict[str, Any]) -> bool:
     def write_json_atomic() -> None:
         # 生成唯一的临时文件
         with tempfile.NamedTemporaryFile(
-            "w", dir=file_path.parent, delete=False, suffix=".json"
+            "w",
+            dir=file_path.parent,
+            delete=False,
+            suffix=".json",
+            encoding="utf-8-sig",
         ) as tmp_file:
             json.dump(data, tmp_file, ensure_ascii=False)
             tmp_file.flush()
@@ -198,7 +202,7 @@ async def read_json(file_path: Path) -> Dict[str, Any]:
         try:
             # 加共享锁（非阻塞）
             fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with os.fdopen(fd, "r", encoding="utf-8") as f:
+            with os.fdopen(fd, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
                 # 读取完成后，释放锁
                 fcntl.flock(fd, fcntl.LOCK_UN)
@@ -220,7 +224,11 @@ async def write_json(file_path: Path, data: Dict[str, Any]) -> bool:
     def write_json_atomic() -> None:
         # 生成唯一的临时文件
         with tempfile.NamedTemporaryFile(
-            "w", dir=file_path.parent, delete=False, suffix=".json"
+            "w",
+            dir=file_path.parent,
+            delete=False,
+            suffix=".json",
+            encoding="utf-8-sig",
         ) as tmp_file:
             json.dump(data, tmp_file, ensure_ascii=False)
             tmp_file.flush()
