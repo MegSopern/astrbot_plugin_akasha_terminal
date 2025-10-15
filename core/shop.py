@@ -9,6 +9,7 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
 
+from ..utils.text_formatter import TextFormatter
 from ..utils.utils import (
     get_at_ids,
     read_json,
@@ -387,15 +388,18 @@ class Shop:
         try:
             user_backpack = await self.get_user_backpack(event.get_sender_id())
             if not user_backpack:
-                return "你的背包是空的，快去商店买点东西吧~"
+                return "你的背包是空的，快去商城购买道具吧！"
 
-            message = "🎒 你的背包\n"
+            message = "🎒 我的背包 🎒\n━━━━━━━━━━━━━\n"
             for item_name, count in user_backpack.items():
                 target_item = await self.get_item_detail(item_name)
                 if target_item:
-                    message += (
-                        f"- {item_name} x {count}\n  {target_item['description']}\n"
-                    )
+                    rarity_emoji = TextFormatter.get_rarity_emoji(target_item["rarity"])
+                    message += f"{rarity_emoji} [{target_item['name']}] x {count}\n"
+                    message += f"📝 {target_item['description']}\n"
+                    message += "━━━━━━━━━━━━━\n"
+            message += "💡 使用 “#使用道具 物品名称” 来使用道具\n"
+            message += "💡 使用 “#赠送道具 物品名称 @用户/qq号” 来赠送道具"
             return message
         except Exception as e:
             logger.error(f"格式化背包失败: {str(e)}")

@@ -58,7 +58,7 @@ class AkashaTerminal(Star):
 
     @filter.command("我的信息", alias={"个人信息", "查看信息"})
     async def get_user_info(self, event: AiocqhttpMessageEvent):
-        """查看个人信息"""
+        """查看个人信息，使用方法: /我的信息 @用户/qq号"""
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         message = await self.user.format_user_info(event, input_str)
