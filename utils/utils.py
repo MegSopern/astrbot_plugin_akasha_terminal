@@ -127,7 +127,7 @@ async def create_user_data(user_id: str) -> bool:
 
 
 def read_json_sync(file_path: Path) -> Dict[str, Any]:
-    """同步原子读取JSON文件"""
+    """同步原子读取JSON文件[读取的文件编码为'utf-8-sig']"""
     # 原子读：加共享锁 -> 读 -> 解锁
     if not file_path.exists():
         return {}
@@ -153,7 +153,7 @@ def read_json_sync(file_path: Path) -> Dict[str, Any]:
 
 
 def write_json_sync(file_path: Path, data: Dict[str, Any]) -> bool:
-    """同步原子写入JSON文件"""
+    """同步原子写入JSON文件[读取的文件编码为'utf-8-sig']"""
 
     def write_json_atomic() -> None:
         # 生成唯一的临时文件
@@ -202,7 +202,7 @@ async def read_json(file_path: Path) -> Dict[str, Any]:
         try:
             # 加共享锁（非阻塞）
             fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with os.fdopen(fd, "r", encoding="utf-8-sig") as f:
+            with os.fdopen(fd, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 # 读取完成后，释放锁
                 fcntl.flock(fd, fcntl.LOCK_UN)
@@ -228,7 +228,7 @@ async def write_json(file_path: Path, data: Dict[str, Any]) -> bool:
             dir=file_path.parent,
             delete=False,
             suffix=".json",
-            encoding="utf-8-sig",
+            encoding="utf-8",
         ) as tmp_file:
             json.dump(data, tmp_file, ensure_ascii=False)
             tmp_file.flush()

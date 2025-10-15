@@ -292,7 +292,7 @@ class Shop:
 
                 # 保护符道具
                 elif "protection" in item["effect"] and item["effect"]["protection"]:
-                    config_data = await read_json(self.config_path)
+                    config_data = read_json_sync(self.config_path)
                     protection_duration = config_data.get("protection_duration", 86400)
                     if user_data["other"].get("imm_num", 0) == 0:
                         user_data["other"]["protection"] = user_data["other"].get(
@@ -525,9 +525,9 @@ class Shop:
         from_backpack[item_name] -= amount
         if from_backpack[item_name] == 0:
             del from_backpack[item_name]
-
         # 增加接收者物品
         to_backpack[item_name] = to_backpack.get(item_name, 0) + amount
+
         await write_json(from_file_path, from_backpack)
         await write_json(to_file_path, to_backpack)
         return True, f"成功给用户{to_user_id}：\n赠送{item_name} x {amount}"
