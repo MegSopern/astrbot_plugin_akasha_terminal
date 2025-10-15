@@ -222,8 +222,7 @@ class Shop:
             # 执行道具效果
             result = await self.execute_item_effect(item, user_id, backpack)
             if not result["success"]:
-                yield event.plain_result(f"❌ {result['message']}")
-                return
+                return False, f"❌ {result['message']}"
             return True, result["message"]
         except Exception as e:
             logger.error(f"使用物品失败: {str(e)}")
@@ -297,9 +296,8 @@ class Shop:
 
                 # 保护符道具
                 elif "protection" in item["effect"] and item["effect"]["protection"]:
-                    protection_duration = await read_json(self.config_path).get(
-                        "protection_duration", 86400
-                    )
+                    config_data = await read_json(self.config_path)
+                    protection_duration = config_data.get("protection_duration", 86400)
                     user_data["other"]["protection"] = user_data.get("other", {}).get(
                         "protection", 0
                     ) + int(protection_duration)

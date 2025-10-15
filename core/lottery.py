@@ -274,7 +274,8 @@ class Lottery:
         """执行武器抽卡主逻辑"""
         try:
             group_id = event.get_group_id() or None
-            remaining_time = self.check_group_cooldown(group_id)
+            if group_id:
+                remaining_time = self.check_group_cooldown(group_id)
             if remaining_time > 0:
                 return (
                     f"抽卡冷却中，还剩{seconds_to_duration(remaining_time)}",
@@ -301,6 +302,9 @@ class Lottery:
             image_paths = []
             all_snippets = ""
 
+            # 更新冷却时间
+            self.update_group_cooldown(group_id)
+
             # 处理多次抽卡
             for _ in range(count):
                 (
@@ -316,9 +320,6 @@ class Lottery:
                 draw_results.append(result)
                 all_snippets += result["message_snippets"]
                 image_paths.append(weapon_image_path)
-
-            # 抽卡完成后更新冷却时间
-            self.update_group_cooldown(group_id)
 
             if count == 1:
                 image_paths = str(image_paths[0])  # 单抽只返回一张图片
