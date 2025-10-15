@@ -139,10 +139,9 @@ class AkashaTerminal(Star):
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
     async def gift_item(self, event: AiocqhttpMessageEvent):
         """赠送道具，使用方法: /赠送道具 物品名称 @用户"""
-        from_user_id = str(event.get_sender_id())
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop.handle_gift_command(from_user_id, input_str)
+        success, message = await self.shop.handle_gift_command(event, input_str)
         yield event.plain_result(message)
 
     @filter.command("抽武器", alias={"单抽武器", "单抽"})

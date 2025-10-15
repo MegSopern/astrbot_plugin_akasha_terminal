@@ -496,6 +496,8 @@ class Shop:
                 if len(parts) >= 3 and parts[1].isdigit():
                     to_user_id = parts[1]
                     amount = int(parts[2])
+                else:
+                    to_user_id = parts[1]
         except ValueError:
             return False, "赠送数量必须为整数"
         if amount <= 0:
