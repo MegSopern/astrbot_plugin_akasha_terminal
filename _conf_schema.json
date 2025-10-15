@@ -86,41 +86,31 @@
                 "description": "签到冷却时间",
                 "type": "int",
                 "hint": "商城系统签到功能的冷却时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 86400
+                "default": 10
             },
             "streak_expire": {
                 "description": "连续签到过期时间",
                 "type": "int",
                 "hint": "连续签到过期时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 604800
+                "default": 86400
             },
             "protection_duration": {
                 "description": "保护效果持续时间",
                 "type": "int",
                 "hint": "保护效果持续时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 604800
+                "default": 86400
             },
             "luck_duration": {
                 "description": "幸运效果持续时间",
                 "type": "int",
                 "hint": "幸运效果持续时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 604800
+                "default": 86400
             },
             "workboost_duration": {
                 "description": "打工加成持续时间",
                 "type": "int",
                 "hint": "打工加成持续时间（秒）",
-                "default": 0,
-                "min": 0,
-                "max": 604800
+                "default": 604800
             }
         }
     },

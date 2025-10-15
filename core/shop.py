@@ -1,4 +1,5 @@
 import json
+import random
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -9,6 +10,7 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
 
+from ..utils.text_formatter import TextFormatter
 from ..utils.utils import (
     get_at_ids,
     read_json,
@@ -29,6 +31,17 @@ class Shop:
             / "plugin_data"
             / "astrbot_plugin_akasha_terminal"
             / "user_backpack"
+        )
+        self.user_data_path = (
+            BASE_DIR.parent.parent
+            / "plugin_data"
+            / "astrbot_plugin_akasha_terminal"
+            / "user_data"
+        )
+        self.config_path = (
+            BASE_DIR.parent.parent
+            / "config"
+            / "astrbot_plugin_akasha_terminal_config.json"
         )
         self.data_dir.mkdir(parents=True, exist_ok=True)  # 确保数据目录存在
         self._init_default_data()
@@ -188,17 +201,17 @@ class Shop:
             backpack = await self.get_user_backpack(user_id)
             # 物品存在性与数量校验
             if item_name not in backpack:
-                return False, "物品不存在"
+                return False, "❌ 你没有这个道具"
             if backpack[item_name] < quantity:
                 return (
                     False,
-                    f"您所需{item_name}的数量不足\n当前持有数量：{backpack[item_name]}",
+                    f"❌ 您所需{item_name}的数量不足\n当前持有数量：{backpack[item_name]}",
                 )
 
             # 获取物品效果
             item = await self.get_item_detail(item_name)
             if not item:
-                return False, "物品信息不存在"
+                return False, "❌ 道具信息不存在"
 
             # 更新背包
             backpack[item_name] -= quantity
@@ -206,10 +219,138 @@ class Shop:
                 del backpack[item_name]
             await self._save_data(file_path, backpack)
 
-            return True, item["effect"]
+            # 执行道具效果
+            result = await self.execute_item_effect(item, user_id, backpack)
+            if not result["success"]:
+                return False, f"❌ {result['message']}"
+            return True, result["message"]
         except Exception as e:
             logger.error(f"使用物品失败: {str(e)}")
             return False, "使用物品失败，请稍后再试~"
+
+    async def execute_item_effect(
+        self,
+        item,
+        user_id,
+        backpack,
+    ) -> Dict[str, Any]:
+        """执行道具效果，返回执行结果"""
+        try:
+            target_user_data_path = self.user_data_path / f"{user_id}.json"
+            user_data = await read_json(target_user_data_path)
+            if item["type"] == "consumable":
+                # 好感度道具
+                if "love" in item["effect"]:
+                    if user_data["home"].get("love", 0) == 0:
+                        return {
+                            "success": False,
+                            "message": "你还没有老婆，无法使用此道具",
+                        }
+                    user_data["home"]["love"] = (
+                        user_data["home"]["love"] + item["effect"]["love"]
+                    )
+                    await write_json(target_user_data_path, user_data)
+
+                    # # 更新任务进度
+                    # quest_system = TaskSystem()
+                    # await quest_system.update_quest_progress(
+                    #     user_id, group_id, "max_love", user_data["home"]["love"]
+                    # )
+                    return {
+                        "success": True,
+                        "message": f"💕 好感度增加 {item['effect']['love']}，当前好感度: {user_data['home']['love']}",
+                    }
+
+                # 金币道具
+                elif "money_min" in item["effect"] and "money_max" in item["effect"]:
+                    money = int(
+                        random.randint(
+                            item["effect"]["money_min"], item["effect"]["money_max"]
+                        )
+                    )
+                    user_data["home"]["money"] = (
+                        user_data["home"].get("money", 0) + money
+                    )
+                    await write_json(target_user_data_path, user_data)
+
+                    # # 更新任务进度
+                    # quest_system = QuestSystem()
+                    # await quest_system.update_quest_progress(
+                    #     user_id, group_id, "max_money", user_data["home"]["money"]
+                    # )
+                    return {
+                        "success": True,
+                        "message": f"💰 获得 {money} 金币，当前余额: {user_data['home']['money']}",
+                    }
+
+                # 冷却重置道具
+                elif (
+                    "reset_cooldown" in item["effect"]
+                    and item["effect"]["reset_cooldown"]
+                ):
+                    return {"success": True, "message": "⏰ 冷却重置道具功能暂未实现"}
+                    # keys =
+                    # for key in keys:
+                    #     await self.context.redis.delete(key)
+                    # return {"success": True, "message": "⏰ 所有技能冷却时间已重置！"}
+
+                # 保护符道具
+                elif "protection" in item["effect"] and item["effect"]["protection"]:
+                    config_data = await read_json(self.config_path)
+                    protection_duration = config_data.get("protection_duration", 86400)
+                    user_data["other"]["protection"] = user_data.get("other", {}).get(
+                        "protection", 0
+                    ) + int(protection_duration)
+                    await write_json(target_user_data_path, user_data)
+                    return {
+                        "success": True,
+                        "message": "🛡️ 获得24小时保护，免疫一次失败惩罚！",
+                    }
+
+            elif item["type"] == "buff":
+                # 幸运加成道具
+                if item["effect"]["luck_boost"]:
+                    user_data["other"]["luck_boost"] = user_data.get("other", {}).get(
+                        "luck_boost", 0
+                    ) + int(item["effect"]["luck_boost"])
+                    user_data["other"]["duration"] = user_data.get("other", {}).get(
+                        "duration", 0
+                    ) + int(item["effect"]["duration"])
+                    return {
+                        "success": True,
+                        "message": f"🍀 获得幸运加成 +{item['effect']['luck_boost']}%，持续{item['effect']['duration']}次使用",
+                    }
+
+                # 打工加成道具
+                elif item["effect"]["work_boost"]:
+                    user_data["other"]["work_boost"] = user_data.get("other", {}).get(
+                        "work_boost", 0
+                    ) + int(item["effect"]["work_boost"])
+                    user_data["other"]["duration"] = user_data.get("other", {}).get(
+                        "duration", 0
+                    ) + int(item["effect"]["duration"])
+                    return {
+                        "success": True,
+                        "message": f"💼 获得打工加成 +{item['effect']['work_boost']}%，持续{item['effect']['duration']}次使用",
+                    }
+            # 神秘礼盒道具
+            elif item["type"] == "mystery" and item["effect"]["mystery_box"]:
+                shop_data = await read_json(self.shop_data_path)
+                available_items = [
+                    i for i in shop_data["items"].keys() if i != str(item["name"])
+                ]
+                random_item_name = random.choice(available_items)
+                backpack[random_item_name] = backpack.get(random_item_name, 0) + 1
+                rarity_emoji = TextFormatter.get_rarity_emoji(item["rarity"])
+                return {
+                    "success": True,
+                    "message": f"🎁 神秘礼盒开启！获得: {rarity_emoji} {random_item_name}",
+                }
+            return {"success": False, "message": "道具效果未定义"}
+
+        except Exception as e:
+            logger.error(f"执行道具效果失败：{str(e)}")
+            return {"success": False, "message": "道具效果执行失败"}
 
     async def handle_buy_command(
         self, event: AiocqhttpMessageEvent, input_str: str
@@ -387,15 +528,18 @@ class Shop:
         try:
             user_backpack = await self.get_user_backpack(event.get_sender_id())
             if not user_backpack:
-                return "你的背包是空的，快去商店买点东西吧~"
+                return "你的背包是空的，快去商城购买道具吧！"
 
-            message = "🎒 你的背包\n"
+            message = "🎒 我的背包 🎒\n━━━━━━━━━━━━━\n"
             for item_name, count in user_backpack.items():
                 target_item = await self.get_item_detail(item_name)
                 if target_item:
-                    message += (
-                        f"- {item_name} x {count}\n  {target_item['description']}\n"
-                    )
+                    rarity_emoji = TextFormatter.get_rarity_emoji(target_item["rarity"])
+                    message += f"{rarity_emoji} [{target_item['name']}] x {count}\n"
+                    message += f"📝 {target_item['description']}\n"
+                    message += "━━━━━━━━━━━━━\n"
+            message += "💡 使用 “#使用道具 物品名称” 来使用道具\n"
+            message += "💡 使用 “#赠送道具 物品名称 @用户/qq号” 来赠送道具"
             return message
         except Exception as e:
             logger.error(f"格式化背包失败: {str(e)}")
