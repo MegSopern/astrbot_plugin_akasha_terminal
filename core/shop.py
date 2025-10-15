@@ -51,90 +51,89 @@ class Shop:
         # 设置「中国标准时间」
         self.CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
         # 初始化商店数据
-        if not self.shop_data_path.exists() or not read_json_sync(
-            self.shop_data_path
-        ).get("last_refresh"):
-            self.default_shop = {
-                "items": {
-                    "爱心巧克力": {
-                        "id": 1,
-                        "name": "爱心巧克力",
-                        "description": "增加与老婆的好感度 +200",
-                        "price": 500,
-                        "type": "consumable",
-                        "effect": {"love": 200},
-                        "rarity": "common",
-                        "stock": -1,  # -1表示无限库存
-                    },
-                    "幸运符": {
-                        "id": 2,
-                        "name": "幸运符",
-                        "description": "提高娶老婆成功率 +20%（持续3次使用）",
-                        "price": 1000,
-                        "type": "buff",
-                        "effect": {"luck_boost": 20, "duration": 3},
-                        "rarity": "rare",
-                        "stock": 10,
-                    },
-                    "金币袋": {
-                        "id": 3,
-                        "name": "金币袋",
-                        "description": "直接获得1000-3000金币",
-                        "price": 800,
-                        "type": "consumable",
-                        "effect": {"money_min": 1000, "money_max": 3000},
-                        "rarity": "common",
-                        "stock": -1,
-                    },
-                    "冷却重置卡": {
-                        "id": 4,
-                        "name": "冷却重置卡",
-                        "description": "重置所有技能冷却时间",
-                        "price": 1500,
-                        "type": "consumable",
-                        "effect": {"reset_cooldown": True},
-                        "rarity": "epic",
-                        "stock": 5,
-                    },
-                    "保护符": {
-                        "id": 5,
-                        "name": "保护符",
-                        "description": "免疫一次抢老婆失败的惩罚",
-                        "price": 2000,
-                        "type": "consumable",
-                        "effect": {"protection": True},
-                        "rarity": "epic",
-                        "stock": 3,
-                    },
-                    "双倍经验卡": {
-                        "id": 6,
-                        "name": "双倍经验卡",
-                        "description": "打工收入翻倍（持续5次）",
-                        "price": 1200,
-                        "type": "buff",
-                        "effect": {"work_boost": 2, "duration": 5},
-                        "rarity": "rare",
-                        "stock": 8,
-                    },
-                    "神秘礼盒": {
-                        "id": 7,
-                        "name": "神秘礼盒",
-                        "description": "随机获得一个道具",
-                        "price": 2500,
-                        "type": "mystery",
-                        "effect": {"mystery_box": True},
-                        "rarity": "legendary",
-                        "stock": 2,
-                    },
+        shop_default_data = read_json_sync(self.shop_data_path)
+        self.default_shop = {
+            "items": {
+                "爱心巧克力": {
+                    "id": 1,
+                    "name": "爱心巧克力",
+                    "description": "增加与老婆的好感度 +200",
+                    "price": 500,
+                    "type": "consumable",
+                    "effect": {"love": 200},
+                    "rarity": "common",
+                    "stock": -1,  # -1表示无限库存
                 },
-                "daily_items": [
-                    "爱心巧克力",
-                    "幸运符",
-                    "金币袋",
-                    "双倍经验卡",
-                ],  # 每日刷新的商品ID
-                "last_refresh": datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d"),
-            }
+                "幸运符": {
+                    "id": 2,
+                    "name": "幸运符",
+                    "description": "提高娶老婆成功率 +20%（持续3次使用）",
+                    "price": 1000,
+                    "type": "buff",
+                    "effect": {"luck_boost": 20, "duration": 3},
+                    "rarity": "rare",
+                    "stock": 10,
+                },
+                "金币袋": {
+                    "id": 3,
+                    "name": "金币袋",
+                    "description": "直接获得1000-3000金币",
+                    "price": 800,
+                    "type": "consumable",
+                    "effect": {"money_min": 1000, "money_max": 3000},
+                    "rarity": "common",
+                    "stock": -1,
+                },
+                "冷却重置卡": {
+                    "id": 4,
+                    "name": "冷却重置卡",
+                    "description": "重置所有技能冷却时间",
+                    "price": 1500,
+                    "type": "consumable",
+                    "effect": {"reset_cooldown": True},
+                    "rarity": "epic",
+                    "stock": 5,
+                },
+                "保护符": {
+                    "id": 5,
+                    "name": "保护符",
+                    "description": "免疫一次抢老婆失败的惩罚",
+                    "price": 2000,
+                    "type": "consumable",
+                    "effect": {"protection": True},
+                    "rarity": "epic",
+                    "stock": 3,
+                },
+                "双倍经验卡": {
+                    "id": 6,
+                    "name": "双倍经验卡",
+                    "description": "打工收入翻倍（持续5次）",
+                    "price": 1200,
+                    "type": "buff",
+                    "effect": {"work_boost": 2, "duration": 5},
+                    "rarity": "rare",
+                    "stock": 8,
+                },
+                "神秘礼盒": {
+                    "id": 7,
+                    "name": "神秘礼盒",
+                    "description": "随机获得一个道具",
+                    "price": 2500,
+                    "type": "mystery",
+                    "effect": {"mystery_box": True},
+                    "rarity": "legendary",
+                    "stock": 2,
+                },
+            },
+            "daily_items": [
+                "爱心巧克力",
+                "幸运符",
+                "金币袋",
+                "双倍经验卡",
+            ],  # 每日刷新的商品ID
+            "last_refresh": datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d"),
+        }
+        if not self.shop_data_path.exists() or not shop_default_data["items"]:
             write_json_sync(self.shop_data_path, self.default_shop)
         # 初始化用户背包路径文件
         if not self.backpack_path.exists():
