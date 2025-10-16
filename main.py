@@ -189,3 +189,10 @@ class AkashaTerminal(Star):
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         success, message = await self.lottery.handle_cheat_command(event, input_str)
         yield event.plain_result(message)
+
+    @filter.command("刷新商城", alias={"刷新商店", "刷新虚空商店", "刷新虚空商城"})
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    async def refresh_shop(self, event: AiocqhttpMessageEvent):
+        """刷新商城物品"""
+        message = await self.shop.refresh_shop_manually()
+        yield event.plain_result(message)

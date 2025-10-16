@@ -569,3 +569,13 @@ class Shop:
         except Exception as e:
             logger.error(f"格式化背包失败: {str(e)}")
             return "查看背包失败，请稍后再试~"
+
+    async def refresh_shop_manually(self) -> str:
+        """管理员手动刷新商店"""
+        try:
+            shop_data = self.default_shop
+            await write_json(self.shop_data_path, shop_data)
+            return "🔄 商城已手动刷新！"
+        except Exception as e:
+            logger.error(f"手动刷新商店失败: {str(e)}")
+            return "手动刷新商店失败，请稍后再试~"
