@@ -58,7 +58,7 @@ class Shop:
                 "爱心巧克力": {
                     "id": 1,
                     "name": "爱心巧克力",
-                    "description": "增加与老婆的好感度 +200",
+                    "description": "增加与伴侣的好感度 +200",
                     "price": 500,
                     "type": "consumable",
                     "effect": {"love": 200},
@@ -68,7 +68,7 @@ class Shop:
                 "幸运符": {
                     "id": 2,
                     "name": "幸运符",
-                    "description": "提高娶老婆成功率 +20%（持续3次使用）",
+                    "description": "提高娶伴侣成功率 +20%（持续3次使用）",
                     "price": 1000,
                     "type": "buff",
                     "effect": {"luck_boost": 20, "luck_streak": 3},
@@ -98,7 +98,7 @@ class Shop:
                 "保护符": {
                     "id": 5,
                     "name": "保护符",
-                    "description": "免疫一次抢老婆失败的惩罚",
+                    "description": "免疫一次抢伴侣失败的惩罚",
                     "price": 2000,
                     "type": "consumable",
                     "effect": {"protection": True, "imm_num": 1},
@@ -235,7 +235,7 @@ class Shop:
                     if user_data["home"].get("love", 0) == 0:
                         return {
                             "success": False,
-                            "message": "你还没有老婆，无法使用此道具",
+                            "message": "你还没有伴侣，无法使用此道具",
                         }
                     user_data["home"]["love"] = (
                         user_data["home"]["love"] + item["effect"]["love"] * quantity
