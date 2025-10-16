@@ -196,3 +196,11 @@ class AkashaTerminal(Star):
         """刷新商城物品"""
         message = await self.shop.refresh_shop_manually()
         yield event.plain_result(message)
+
+    @filter.command("道具详情", alias={"道具详细", "物品详情", "物品详细"})
+    async def item_detail(self, event: AiocqhttpMessageEvent):
+        """查看道具详情，使用方法: /道具详情 物品名称"""
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        message = await self.shop.handle_item_detail_command(input_str)
+        yield event.plain_result(message)

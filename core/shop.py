@@ -579,3 +579,40 @@ class Shop:
         except Exception as e:
             logger.error(f"手动刷新商店失败: {str(e)}")
             return "手动刷新商店失败，请稍后再试~"
+
+    async def handle_item_detail_command(self, input_str: str) -> str:
+        """查看物品详情"""
+        try:
+            parts = input_str.strip().split()
+            if not parts:
+                return "请指定物品名称，使用方法: /道具详情 物品名称"
+            item_name = parts[0]
+            item = await self.get_item_detail(item_name)
+            if not item:
+                return "❌ 道具不存在，请检查道具名称"
+            # 构建道具详情
+            rarity_map = {
+                "common": "普通",
+                "rare": "稀有",
+                "epic": "史诗",
+                "legendary": "传说",
+            }
+            rarity_emoji = TextFormatter.get_rarity_emoji(item["rarity"])
+            rarity_name = rarity_map.get(item["rarity"].lower(), "未知")
+            stock_text = "无限" if item["stock"] == -1 else str(item["stock"])
+            detail_msg = [
+                f"{rarity_emoji} {item['name']}",
+                "━━━━━━━━━━━━━",
+                f"🏷️ 稀有度: {rarity_name}",
+                f"💰 价格: {item['price']}金币",
+                f"📦 库存: {stock_text}",
+                f"📝 描述: {item['description']}",
+                "━━━━━━━━━━━━━",
+            ]
+            message = "\n".join(detail_msg)
+            return message
+        except ValueError:
+            return "❌ 指令格式错误，请使用 /道具详情 物品名称"
+        except Exception as e:
+            logger.error(f"查看物品详情失败: {str(e)}")
+            return "查看物品详情失败，请稍后再试~"
