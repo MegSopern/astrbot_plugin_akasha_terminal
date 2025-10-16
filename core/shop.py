@@ -292,7 +292,7 @@ class Shop:
 
                 # 保护符道具
                 elif "protection" in item["effect"] and item["effect"]["protection"]:
-                    config_data = read_json_sync(self.config_path)
+                    config_data = read_json_sync(self.config_path, "utf-8-sig")
                     protection_duration = config_data.get("protection_duration", 86400)
                     if user_data["other"].get("imm_num", 0) == 0:
                         user_data["other"]["protection"] = user_data["other"].get(
