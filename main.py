@@ -139,10 +139,9 @@ class AkashaTerminal(Star):
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
     async def gift_item(self, event: AiocqhttpMessageEvent):
         """赠送道具，使用方法: /赠送道具 物品名称 @用户"""
-        from_user_id = str(event.get_sender_id())
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop.handle_gift_command(from_user_id, input_str)
+        success, message = await self.shop.handle_gift_command(event, input_str)
         yield event.plain_result(message)
 
     @filter.command("抽武器", alias={"单抽武器", "单抽"})
@@ -189,4 +188,19 @@ class AkashaTerminal(Star):
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         success, message = await self.lottery.handle_cheat_command(event, input_str)
+        yield event.plain_result(message)
+
+    @filter.command("刷新商城", alias={"刷新商店", "刷新虚空商店", "刷新虚空商城"})
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    async def refresh_shop(self, event: AiocqhttpMessageEvent):
+        """刷新商城物品"""
+        message = await self.shop.refresh_shop_manually()
+        yield event.plain_result(message)
+
+    @filter.command("道具详情", alias={"道具详细", "物品详情", "物品详细"})
+    async def item_detail(self, event: AiocqhttpMessageEvent):
+        """查看道具详情，使用方法: /道具详情 物品名称"""
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        message = await self.shop.handle_item_detail_command(input_str)
         yield event.plain_result(message)

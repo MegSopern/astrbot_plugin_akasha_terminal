@@ -1,13 +1,13 @@
 {
     "enhanced_wife_system": {
-        "description": "增强老婆系统",
+        "description": "增强伴侣系统",
         "type": "object",
         "hint": "",
         "items": {
             "date_cooldown": {
                 "description": "约会冷却时间",
                 "type": "int",
-                "hint": "增强老婆系统约会功能的冷却时间（秒）",
+                "hint": "增强伴侣系统约会功能的冷却时间（秒）",
                 "default": 0,
                 "min": 0,
                 "max": 86400
@@ -15,7 +15,7 @@
             "confession_cooldown": {
                 "description": "表白冷却时间",
                 "type": "int",
-                "hint": "增强老婆系统表白功能的冷却时间（秒）",
+                "hint": "增强伴侣系统表白功能的冷却时间（秒）",
                 "default": 0,
                 "min": 0,
                 "max": 86400
@@ -23,7 +23,7 @@
             "propose_cooldown": {
                 "description": "求婚冷却时间",
                 "type": "int",
-                "hint": "增强老婆系统求婚功能的冷却时间（秒）",
+                "hint": "增强伴侣系统求婚功能的冷却时间（秒）",
                 "default": 0,
                 "min": 0,
                 "max": 86400
@@ -189,7 +189,7 @@
         }
     },
     "wife_system": {
-        "description": "老婆系统",
+        "description": "伴侣系统",
         "type": "object",
         "hint": "",
         "items": {
@@ -212,7 +212,7 @@
             "work_cooldown": {
                 "description": "打工冷却时间",
                 "type": "int",
-                "hint": "老婆系统打工功能的冷却时间（秒）",
+                "hint": "伴侣系统打工功能的冷却时间（秒）",
                 "default": 0,
                 "min": 0,
                 "max": 7200
@@ -234,9 +234,9 @@
                 "max": 3600
             },
             "steal_wife_cooldown": {
-                "description": "抢老婆冷却时间",
+                "description": "抢伴侣冷却时间",
                 "type": "int",
-                "hint": "抢老婆功能的冷却时间（秒）",
+                "hint": "抢伴侣功能的冷却时间（秒）",
                 "default": 0,
                 "min": 0,
                 "max": 7200

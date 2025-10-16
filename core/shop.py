@@ -1,5 +1,6 @@
 import json
 import random
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -51,113 +52,104 @@ class Shop:
         # 设置「中国标准时间」
         self.CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
         # 初始化商店数据
-        if not self.shop_data_path.exists() or not read_json_sync(
-            self.shop_data_path
-        ).get("last_refresh"):
-            self.default_shop = {
-                "items": {
-                    "爱心巧克力": {
-                        "id": 1,
-                        "name": "爱心巧克力",
-                        "description": "增加与老婆的好感度 +200",
-                        "price": 500,
-                        "type": "consumable",
-                        "effect": {"love": 200},
-                        "rarity": "common",
-                        "stock": -1,  # -1表示无限库存
-                    },
-                    "幸运符": {
-                        "id": 2,
-                        "name": "幸运符",
-                        "description": "提高娶老婆成功率 +20%（持续3次使用）",
-                        "price": 1000,
-                        "type": "buff",
-                        "effect": {"luck_boost": 20, "duration": 3},
-                        "rarity": "rare",
-                        "stock": 10,
-                    },
-                    "金币袋": {
-                        "id": 3,
-                        "name": "金币袋",
-                        "description": "直接获得1000-3000金币",
-                        "price": 800,
-                        "type": "consumable",
-                        "effect": {"money_min": 1000, "money_max": 3000},
-                        "rarity": "common",
-                        "stock": -1,
-                    },
-                    "冷却重置卡": {
-                        "id": 4,
-                        "name": "冷却重置卡",
-                        "description": "重置所有技能冷却时间",
-                        "price": 1500,
-                        "type": "consumable",
-                        "effect": {"reset_cooldown": True},
-                        "rarity": "epic",
-                        "stock": 5,
-                    },
-                    "保护符": {
-                        "id": 5,
-                        "name": "保护符",
-                        "description": "免疫一次抢老婆失败的惩罚",
-                        "price": 2000,
-                        "type": "consumable",
-                        "effect": {"protection": True},
-                        "rarity": "epic",
-                        "stock": 3,
-                    },
-                    "双倍经验卡": {
-                        "id": 6,
-                        "name": "双倍经验卡",
-                        "description": "打工收入翻倍（持续5次）",
-                        "price": 1200,
-                        "type": "buff",
-                        "effect": {"work_boost": 2, "duration": 5},
-                        "rarity": "rare",
-                        "stock": 8,
-                    },
-                    "神秘礼盒": {
-                        "id": 7,
-                        "name": "神秘礼盒",
-                        "description": "随机获得一个道具",
-                        "price": 2500,
-                        "type": "mystery",
-                        "effect": {"mystery_box": True},
-                        "rarity": "legendary",
-                        "stock": 2,
-                    },
+        shop_default_data = read_json_sync(self.shop_data_path)
+        self.default_shop = {
+            "items": {
+                "爱心巧克力": {
+                    "id": 1,
+                    "name": "爱心巧克力",
+                    "description": "增加与老婆的好感度 +200",
+                    "price": 500,
+                    "type": "consumable",
+                    "effect": {"love": 200},
+                    "rarity": "common",
+                    "stock": -1,  # -1表示无限库存
                 },
-                "daily_items": [
-                    "爱心巧克力",
-                    "幸运符",
-                    "金币袋",
-                    "双倍经验卡",
-                ],  # 每日刷新的商品ID
-                "last_refresh": datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d"),
-            }
+                "幸运符": {
+                    "id": 2,
+                    "name": "幸运符",
+                    "description": "提高娶老婆成功率 +20%（持续3次使用）",
+                    "price": 1000,
+                    "type": "buff",
+                    "effect": {"luck_boost": 20, "luck_streak": 3},
+                    "rarity": "rare",
+                    "stock": 10,
+                },
+                "金币袋": {
+                    "id": 3,
+                    "name": "金币袋",
+                    "description": "直接获得1000-3000金币",
+                    "price": 800,
+                    "type": "consumable",
+                    "effect": {"money_min": 1000, "money_max": 3000},
+                    "rarity": "common",
+                    "stock": -1,
+                },
+                "冷却重置卡": {
+                    "id": 4,
+                    "name": "冷却重置卡",
+                    "description": "重置所有技能冷却时间",
+                    "price": 1500,
+                    "type": "consumable",
+                    "effect": {"reset_cooldown": True},
+                    "rarity": "epic",
+                    "stock": 5,
+                },
+                "保护符": {
+                    "id": 5,
+                    "name": "保护符",
+                    "description": "免疫一次抢老婆失败的惩罚",
+                    "price": 2000,
+                    "type": "consumable",
+                    "effect": {"protection": True, "imm_num": 1},
+                    "rarity": "epic",
+                    "stock": 3,
+                },
+                "双倍经验卡": {
+                    "id": 6,
+                    "name": "双倍经验卡",
+                    "description": "打工收入翻倍（持续5次）",
+                    "price": 1200,
+                    "type": "buff",
+                    "effect": {"work_boost": 2, "dbl_exp_num": 5},
+                    "rarity": "rare",
+                    "stock": 8,
+                },
+                "神秘礼盒": {
+                    "id": 7,
+                    "name": "神秘礼盒",
+                    "description": "随机获得一个道具",
+                    "price": 2500,
+                    "type": "mystery",
+                    "effect": {"mystery_box": True},
+                    "rarity": "legendary",
+                    "stock": 2,
+                },
+            },
+            "daily_items": [
+                "爱心巧克力",
+                "幸运符",
+                "金币袋",
+                "双倍经验卡",
+            ],  # 每日刷新的商品ID
+            "last_refresh": datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d"),
+        }
+        if not self.shop_data_path.exists() or not shop_default_data.get("items"):
             write_json_sync(self.shop_data_path, self.default_shop)
         # 初始化用户背包路径文件
         if not self.backpack_path.exists():
             self.backpack_path.mkdir(parents=True, exist_ok=True)
 
-    async def _load_data(self, file_path: Path) -> Dict[str, Any]:
-        """通用数据加载方法"""
-        return await read_json(file_path)
-
-    async def _save_data(self, file_path: Path, data: Dict[str, Any]) -> None:
-        """通用数据保存方法"""
-        await write_json(file_path, data)
-
     async def get_shop_items(self) -> Dict[str, Any]:
         """获取商店物品列表，自动处理每日刷新"""
-        shop_data = await self._load_data(self.shop_data_path)
+        shop_data = await read_json(self.shop_data_path)
         today = datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d")
 
         # 检查并执行每日刷新
         if shop_data["last_refresh"] != today:
             # 刷新每日商品
             shop_data = self.default_shop
-            await self._save_data(self.shop_data_path, shop_data)
+            await write_json(self.shop_data_path, shop_data)
         return shop_data["items"]
 
     async def get_item_detail(self, item_name: str) -> Optional[Dict[str, Any]]:
@@ -168,7 +160,7 @@ class Shop:
     async def get_user_backpack(self, user_id: str) -> Dict[str, int]:
         """获取用户背包物品列表"""
         file_path = self.backpack_path / f"{user_id}.json"
-        backpack = await self._load_data(file_path)
+        backpack = await read_json(file_path)
         return backpack or {}
 
     async def handle_use_command(
@@ -217,10 +209,10 @@ class Shop:
             backpack[item_name] -= quantity
             if backpack[item_name] == 0:
                 del backpack[item_name]
-            await self._save_data(file_path, backpack)
+            await write_json(file_path, backpack)
 
             # 执行道具效果
-            result = await self.execute_item_effect(item, user_id, backpack)
+            result = await self.execute_item_effect(item, user_id, backpack, quantity)
             if not result["success"]:
                 return False, f"❌ {result['message']}"
             return True, result["message"]
@@ -229,15 +221,14 @@ class Shop:
             return False, "使用物品失败，请稍后再试~"
 
     async def execute_item_effect(
-        self,
-        item,
-        user_id,
-        backpack,
+        self, item, user_id, backpack, quantity
     ) -> Dict[str, Any]:
         """执行道具效果，返回执行结果"""
         try:
             target_user_data_path = self.user_data_path / f"{user_id}.json"
             user_data = await read_json(target_user_data_path)
+            if "other" not in user_data:
+                user_data["other"] = {}
             if item["type"] == "consumable":
                 # 好感度道具
                 if "love" in item["effect"]:
@@ -247,7 +238,7 @@ class Shop:
                             "message": "你还没有老婆，无法使用此道具",
                         }
                     user_data["home"]["love"] = (
-                        user_data["home"]["love"] + item["effect"]["love"]
+                        user_data["home"]["love"] + item["effect"]["love"] * quantity
                     )
                     await write_json(target_user_data_path, user_data)
 
@@ -258,16 +249,16 @@ class Shop:
                     # )
                     return {
                         "success": True,
-                        "message": f"💕 好感度增加 {item['effect']['love']}，当前好感度: {user_data['home']['love']}",
+                        "message": f"💕 好感度增加 {item['effect']['love'] * quantity}，当前好感度: {user_data['home']['love']}",
                     }
 
                 # 金币道具
                 elif "money_min" in item["effect"] and "money_max" in item["effect"]:
-                    money = int(
-                        random.randint(
+                    money = 0
+                    for _ in range(quantity):
+                        money += random.randint(
                             item["effect"]["money_min"], item["effect"]["money_max"]
                         )
-                    )
                     user_data["home"]["money"] = (
                         user_data["home"].get("money", 0) + money
                     )
@@ -288,6 +279,11 @@ class Shop:
                     "reset_cooldown" in item["effect"]
                     and item["effect"]["reset_cooldown"]
                 ):
+                    if quantity > 1:
+                        return {
+                            "success": False,
+                            "message": "冷却重置卡一次只能使用一张哦~",
+                        }
                     return {"success": True, "message": "⏰ 冷却重置道具功能暂未实现"}
                     # keys =
                     # for key in keys:
@@ -296,55 +292,82 @@ class Shop:
 
                 # 保护符道具
                 elif "protection" in item["effect"] and item["effect"]["protection"]:
-                    config_data = await read_json(self.config_path)
+                    config_data = read_json_sync(self.config_path, "utf-8-sig")
                     protection_duration = config_data.get("protection_duration", 86400)
-                    user_data["other"]["protection"] = user_data.get("other", {}).get(
-                        "protection", 0
-                    ) + int(protection_duration)
+                    if user_data["other"].get("imm_num", 0) == 0:
+                        user_data["other"]["protection"] = user_data["other"].get(
+                            "protection", 0
+                        ) + int(protection_duration)
+                    user_data["other"]["imm_num"] = (
+                        user_data["other"].get("imm_num", 0)
+                        + item["effect"]["imm_num"] * quantity
+                    )
                     await write_json(target_user_data_path, user_data)
                     return {
                         "success": True,
-                        "message": "🛡️ 获得24小时保护，免疫一次失败惩罚！",
+                        "message": f"🛡️ 获得{int(protection_duration / 3600)}小时保护，免疫{user_data['other']['imm_num']}次失败惩罚！",
                     }
 
             elif item["type"] == "buff":
                 # 幸运加成道具
-                if item["effect"]["luck_boost"]:
-                    user_data["other"]["luck_boost"] = user_data.get("other", {}).get(
-                        "luck_boost", 0
-                    ) + int(item["effect"]["luck_boost"])
-                    user_data["other"]["duration"] = user_data.get("other", {}).get(
-                        "duration", 0
-                    ) + int(item["effect"]["duration"])
+                if item["name"] == "幸运符":
+                    if user_data["other"].get("luck_streak", 0) == 0:
+                        user_data["other"]["luck_boost"] = user_data["other"].get(
+                            "luck_boost", 0
+                        ) + int(item["effect"]["luck_boost"])
+                    user_data["other"]["luck_streak"] = (
+                        user_data["other"].get("luck_streak", 0)
+                        + int(item["effect"]["luck_streak"]) * quantity
+                    )
+                    await write_json(target_user_data_path, user_data)
                     return {
                         "success": True,
-                        "message": f"🍀 获得幸运加成 +{item['effect']['luck_boost']}%，持续{item['effect']['duration']}次使用",
+                        "message": f"🍀 获得幸运加成 +{item['effect']['luck_boost']}%，持续{item['effect']['luck_streak'] * quantity}次使用",
                     }
 
                 # 打工加成道具
                 elif item["effect"]["work_boost"]:
-                    user_data["other"]["work_boost"] = user_data.get("other", {}).get(
-                        "work_boost", 0
-                    ) + int(item["effect"]["work_boost"])
-                    user_data["other"]["duration"] = user_data.get("other", {}).get(
-                        "duration", 0
-                    ) + int(item["effect"]["duration"])
+                    if user_data["other"].get("dbl_exp_num", 0) == 0:
+                        user_data["other"]["work_boost"] = user_data["other"].get(
+                            "work_boost", 0
+                        ) + int(item["effect"]["work_boost"])
+                    user_data["other"]["dbl_exp_num"] = (
+                        user_data["other"].get("dbl_exp_num", 0)
+                        + int(item["effect"]["dbl_exp_num"]) * quantity
+                    )
+                    await write_json(target_user_data_path, user_data)
                     return {
                         "success": True,
-                        "message": f"💼 获得打工加成 +{item['effect']['work_boost']}%，持续{item['effect']['duration']}次使用",
+                        "message": f"💼 获得打工加成 +{item['effect']['work_boost']}%，持续{item['effect']['dbl_exp_num'] * quantity}次使用",
                     }
             # 神秘礼盒道具
             elif item["type"] == "mystery" and item["effect"]["mystery_box"]:
                 shop_data = await read_json(self.shop_data_path)
-                available_items = [
-                    i for i in shop_data["items"].keys() if i != str(item["name"])
-                ]
-                random_item_name = random.choice(available_items)
-                backpack[random_item_name] = backpack.get(random_item_name, 0) + 1
-                rarity_emoji = TextFormatter.get_rarity_emoji(item["rarity"])
+                current_item_name = str(item["name"])
+                # 构建名称到详情的映射（排除当前物品），用于快速查询
+                name_to_detail = {
+                    name: detail
+                    for name, detail in shop_data["items"].items()
+                    if name != current_item_name
+                }
+                # 可用物品名称列表（即映射的键）
+                available_names = list(name_to_detail.keys())
+                # 随机选择指定数量的物品名称
+                selected_names = random.choices(available_names, k=quantity)
+                # 统计每个物品的选中次数
+                item_count = Counter(selected_names)
+                message_parts = []
+                for target_name, count in item_count.items():
+                    detail = name_to_detail[target_name]
+                    rarity_emoji = TextFormatter.get_rarity_emoji(detail["rarity"])
+                    backpack[target_name] = backpack.get(target_name, 0) + count
+                    # 收集消息片段
+                    message_parts.append(f"{rarity_emoji} {target_name} x {count}")
+                message = "\n".join(message_parts)
+                await write_json(self.backpack_path / f"{user_id}.json", backpack)
                 return {
                     "success": True,
-                    "message": f"🎁 神秘礼盒开启！获得: {rarity_emoji} {random_item_name}",
+                    "message": f"🎁 神秘礼盒开启！获得: \n{message}",
                 }
             return {"success": False, "message": "道具效果未定义"}
 
@@ -399,7 +422,7 @@ class Shop:
         :return: (是否成功, 结果消息)
         """
         # 加载数据
-        shop_data = await self._load_data(self.shop_data_path)
+        shop_data = await read_json(self.shop_data_path)
         items = shop_data["items"]
         file_path = self.backpack_path / f"{user_id}.json"
         backpack = await self.get_user_backpack(user_id)
@@ -426,13 +449,13 @@ class Shop:
         # 更新库存
         if target_item["stock"] != -1:
             target_item["stock"] -= quantity
-            await self._save_data(self.shop_data_path, shop_data)
+            await write_json(self.shop_data_path, shop_data)
 
         # 更新背包
         if item_name not in backpack:
             backpack[item_name] = 0
         backpack[item_name] += quantity
-        await self._save_data(file_path, backpack)
+        await write_json(file_path, backpack)
 
         return (
             True,
@@ -473,6 +496,8 @@ class Shop:
                 if len(parts) >= 3 and parts[1].isdigit():
                     to_user_id = parts[1]
                     amount = int(parts[2])
+                else:
+                    to_user_id = parts[1]
         except ValueError:
             return False, "赠送数量必须为整数"
         if amount <= 0:
@@ -500,11 +525,11 @@ class Shop:
         from_backpack[item_name] -= amount
         if from_backpack[item_name] == 0:
             del from_backpack[item_name]
-
         # 增加接收者物品
         to_backpack[item_name] = to_backpack.get(item_name, 0) + amount
-        await self._save_data(from_file_path, from_backpack)
-        await self._save_data(to_file_path, to_backpack)
+
+        await write_json(from_file_path, from_backpack)
+        await write_json(to_file_path, to_backpack)
         return True, f"成功给用户{to_user_id}：\n赠送{item_name} x {amount}"
 
     async def format_shop_items(self) -> str:
@@ -544,3 +569,50 @@ class Shop:
         except Exception as e:
             logger.error(f"格式化背包失败: {str(e)}")
             return "查看背包失败，请稍后再试~"
+
+    async def refresh_shop_manually(self) -> str:
+        """管理员手动刷新商店"""
+        try:
+            shop_data = self.default_shop
+            await write_json(self.shop_data_path, shop_data)
+            return "🔄 商城已手动刷新！"
+        except Exception as e:
+            logger.error(f"手动刷新商店失败: {str(e)}")
+            return "手动刷新商店失败，请稍后再试~"
+
+    async def handle_item_detail_command(self, input_str: str) -> str:
+        """查看物品详情"""
+        try:
+            parts = input_str.strip().split()
+            if not parts:
+                return "请指定物品名称，使用方法: /道具详情 物品名称"
+            item_name = parts[0]
+            item = await self.get_item_detail(item_name)
+            if not item:
+                return "❌ 道具不存在，请检查道具名称"
+            # 构建道具详情
+            rarity_map = {
+                "common": "普通",
+                "rare": "稀有",
+                "epic": "史诗",
+                "legendary": "传说",
+            }
+            rarity_emoji = TextFormatter.get_rarity_emoji(item["rarity"])
+            rarity_name = rarity_map.get(item["rarity"].lower(), "未知")
+            stock_text = "无限" if item["stock"] == -1 else str(item["stock"])
+            detail_msg = [
+                f"{rarity_emoji} {item['name']}",
+                "━━━━━━━━━━━━━",
+                f"🏷️ 稀有度: {rarity_name}",
+                f"💰 价格: {item['price']}金币",
+                f"📦 库存: {stock_text}",
+                f"📝 描述: {item['description']}",
+                "━━━━━━━━━━━━━",
+            ]
+            message = "\n".join(detail_msg)
+            return message
+        except ValueError:
+            return "❌ 指令格式错误，请使用 /道具详情 物品名称"
+        except Exception as e:
+            logger.error(f"查看物品详情失败: {str(e)}")
+            return "查看物品详情失败，请稍后再试~"
