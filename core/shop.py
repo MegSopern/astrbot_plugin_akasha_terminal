@@ -134,7 +134,7 @@ class Shop:
             ],  # 每日刷新的商品ID
             "last_refresh": datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d"),
         }
-        if not self.shop_data_path.exists() or not shop_default_data["items"]:
+        if not self.shop_data_path.exists() or not shop_default_data.get("items"):
             write_json_sync(self.shop_data_path, self.default_shop)
         # 初始化用户背包路径文件
         if not self.backpack_path.exists():
