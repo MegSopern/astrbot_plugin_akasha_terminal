@@ -1,6 +1,6 @@
 import random
+import time
 from pathlib import Path
-from time import time
 from typing import Any, Dict, Optional
 
 import astrbot.api.message_components as Comp
@@ -17,7 +17,6 @@ from ..utils.utils import (
     read_json,
     read_json_sync,
     write_json,
-    write_json_sync,
 )
 
 # 挑战bot时的反馈语录列表
@@ -94,7 +93,7 @@ class Battle:
         # 确保数据目录存在
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
-    async def is_cooling(self, user_id: str) -> bool | float:
+    async def is_cooling(self, user_id: str) -> tuple[bool, float]:
         """检查用户是否在冷却中"""
         if user_id in self.duel_cd:
             remaining = self.duel_cd[user_id] - time.time()
@@ -159,7 +158,6 @@ class Battle:
             # 检查是否@自己
             if challenger_id == opponent_id:
                 message.append(Comp.At(qq=challenger_id))
-                await event.send(event.plain_result(message))
                 try:
                     await event.bot.set_group_ban(
                         group_id=group_id,
@@ -315,8 +313,9 @@ class Battle:
                         "哎呀，禁言失败了，可能是权限不够或者出了点小问题。"
                     )
                 )
-            await write_json(self.user_data_path / f"{challenger_id}.json", cha_data)
-            await write_json(self.user_data_path / f"{opponent_id}.json", opp_data)
+            # # 保存数据
+            # await write_json(self.user_data_path / f"{challenger_id}.json", cha_data)
+            # await write_json(self.user_data_path / f"{opponent_id}.json", opp_data)
 
         except Exception as e:
             logger.error(f"处理决斗命令失败: {e}")
