@@ -24,7 +24,7 @@ from .utils.utils import logo_AATP
     "astrbot_plugin_akasha_terminal",
     "Xinhaihai & Xinhaihai/wbndm1234 & MegSopern",
     "一个功能丰富的astrbot插件，提供完整的游戏系统",
-    "2.0.5",
+    "2.0.6",
 )
 class AkashaTerminal(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
