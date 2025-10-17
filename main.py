@@ -162,11 +162,13 @@ class AkashaTerminal(Star):
         """十连抽武器"""
         message, weapon_image_paths = await self.lottery.weapon_draw(event, count=10)
         components = [Comp.Plain(message)]
-        # 添加所有武器图片
-        for path in weapon_image_paths:
-            path = str(path)
-            if path and Path(path).exists():
-                components.append(Comp.Image.fromFileSystem(path))
+        # 只在有有效的图片路径列表时才添加图片
+        if weapon_image_paths:
+            # 添加所有武器图片
+            for path in weapon_image_paths:
+                path = str(path)
+                if path and Path(path).exists():
+                    components.append(Comp.Image.fromFileSystem(path))
         yield event.chain_result(components)
 
     @filter.command("签到", alias={"每日签到"})
