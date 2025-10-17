@@ -68,64 +68,6 @@ def logo_AATP():
     print("\n\033[95m欢迎使用虚空插件！\033[0m")
 
 
-# 初始化用户数据的工具函数
-async def create_user_data(user_id: str) -> bool:
-    """创建user系统初始数据"""
-    try:
-        # 创建默认用户数据
-        user_data_path = (
-            Path(__file__).resolve().parent.parent.parent.parent
-            / "plugin_data"
-            / "astrbot_plugin_akasha_terminal"
-            / "user_data"
-        )
-        default_user_data = {
-            "user": {
-                "id": user_id,
-                "nickname": "",
-                "level": 1,
-                "experience": 0,
-                "created_at": time.time(),
-            },
-            "battle": {
-                "experience": 0,
-                "level": 0,
-                "levelname": "无等级",
-                "privilege": 0,
-            },
-            "home": {
-                "spouse_id": "",
-                "spouse_name": "",
-                "love": 0,
-                "wait": 0,
-                "place": "home",
-                "placetime": 0,
-                "money": 100,
-                "house_name": "小破屋",
-                "house_space": 6,
-                "house_price": 500,
-                "house_level": 1,
-            },
-            "quest": {
-                "daily": {},
-                "weekly": {},
-                "special": {},
-                "quest_points": 0,
-                "last_daily_reset": "",
-                "last_weekly_reset": "",
-            },
-        }
-
-        # 确保目录存在
-        user_data_path.mkdir(parents=True, exist_ok=True)
-        # 写入用户数据
-        await write_json(user_data_path / f"{user_id}.json", default_user_data)
-        return True
-    except Exception as e:
-        logger.error(f"创建用户数据失败: {str(e)}")
-        return False
-
-
 def read_json_sync(file_path: Path, encoding_config: str = "utf-8") -> Dict[str, Any]:
     """同步原子读取JSON文件"""
     # 原子读：加共享锁 -> 读 -> 解锁
@@ -189,6 +131,99 @@ def get_at_ids(event: AiocqhttpMessageEvent) -> list[str]:
         for seg in event.get_messages()
         if (isinstance(seg, At) and str(seg.qq) != event.get_self_id())
     ]
+
+
+# 初始化用户数据的工具函数
+async def create_user_data(user_id: str, user_data_path: Path) -> bool:
+    """创建user系统初始数据"""
+    try:
+        default_user_data = {
+            "user": {
+                "id": user_id,
+                "nickname": "",
+                "level": 1,
+                "experience": 0,
+                "created_at": time.time(),
+            },
+            "battle": {
+                "experience": 0,
+                "level": 0,
+                "levelname": "无等级",
+                "privilege": 0,
+            },
+            "home": {
+                "spouse_id": "",
+                "spouse_name": "",
+                "love": 0,
+                "wait": 0,
+                "place": "home",
+                "placetime": 0,
+                "money": 100,
+                "house_name": "小破屋",
+                "house_space": 6,
+                "house_price": 500,
+                "house_level": 1,
+            },
+            "quest": {
+                "daily": {},
+                "weekly": {},
+                "special": {},
+                "quest_points": 0,
+                "last_daily_reset": "",
+                "last_weekly_reset": "",
+            },
+        }
+
+        # 确保目录存在
+        user_data_path.mkdir(parents=True, exist_ok=True)
+        # 写入用户数据
+        await write_json(user_data_path / f"{user_id}.json", default_user_data)
+        return True
+    except Exception as e:
+        logger.error(f"创建用户数据失败: {str(e)}")
+        return False
+
+
+async def get_user_data_and_backpack(
+    user_id: str, only_data_or_backpack: str | None = None
+) -> dict | tuple[dict, dict]:
+    """获取用户数据和背包数据（不存在则创建）"""
+    base_dir = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "plugin_data"
+        / "astrbot_plugin_akasha_terminal"
+    )
+    user_data_path = base_dir / "user_data"
+    backpack_path = base_dir / "backpack"
+    user_data = None
+    user_backpack = None
+    if only_data_or_backpack in (None, "user_data"):
+        user_data_file = user_data_path / f"{user_id}.json"
+        if not user_data_file.exists():
+            await create_user_data(user_id, user_data_path)
+        user_data = await read_json(user_data_file)
+
+    if only_data_or_backpack in (None, "user_backpack"):
+        user_backpack = await read_json(backpack_path / f"{user_id}.json") or {}
+        # 初始化武器背包结构
+        if "weapon" not in user_backpack:
+            user_backpack["weapon"] = {
+                "纠缠之缘": 0,
+                "总抽卡次数": 0,
+                "武器计数": {},
+                "武器详细": {
+                    "三星武器": {"数量": 0, "详细信息": []},
+                    "四星武器": {"数量": 0, "详细信息": []},
+                    "五星武器": {"数量": 0, "详细信息": []},
+                },
+                "未出五星计数": 0,
+                "未出四星计数": 0,
+            }
+    if only_data_or_backpack == "user_data":
+        return user_data
+    elif only_data_or_backpack == "user_backpack":
+        return user_backpack
+    return user_data, user_backpack
 
 
 async def read_json(file_path: Path, encoding_config: str = "utf-8") -> Dict[str, Any]:

@@ -114,6 +114,25 @@
             }
         }
     },
+    "battle_system": {
+        "description": "战斗系统",
+        "type": "object",
+        "hint": "",
+        "items": {
+            "duel_cooldown": {
+                "description": "决斗冷却时间",
+                "type": "int",
+                "hint": "决斗系统的冷却时间（秒）",
+                "default": 300
+            },
+            "combat_effectiveness_coefficient": {
+                "description": "战斗力意义系数",
+                "type": "int",
+                "hint": "战斗力系数的大小（倍）",
+                "default": 2
+            }
+        }
+    },
     "synthesis_system": {
         "description": "合成系统",
         "type": "object",
@@ -155,12 +174,6 @@
                 "type": "int",
                 "hint": "抽卡系统的冷却时间（秒）",
                 "default": 10
-            },
-            "duel_cooldown": {
-                "description": "决斗冷却时间",
-                "type": "int",
-                "hint": "决斗系统的冷却时间（秒）",
-                "default": 5
             },
             "exercise_cooldown": {
                 "description": "修炼冷却时间",

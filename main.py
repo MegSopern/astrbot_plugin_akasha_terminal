@@ -12,6 +12,7 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
 
+from .core.battle import Battle
 from .core.lottery import Lottery
 from .core.shop import Shop
 from .core.task import Task
@@ -23,7 +24,7 @@ from .utils.utils import logo_AATP
     "astrbot_plugin_akasha_terminal",
     "Xinhaihai & Xinhaihai/wbndm1234 & MegSopern",
     "一个功能丰富的astrbot插件，提供完整的游戏系统",
-    "2.0.5",
+    "2.0.6",
 )
 class AkashaTerminal(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -31,8 +32,7 @@ class AkashaTerminal(Star):
         self.config = config
         # 读取抽卡冷却配置
         try:
-            other_system_config = config.get("other_system", {})
-            self.draw_card_cooldown = other_system_config.get("draw_card_cooldown", 10)
+            self.admins_id: list[str] = context.get_config().get("admins_id", [])
         except Exception as e:
             logger.error(f"读取冷却配置失败: {str(e)}")
         self.initialize_subsystems()
@@ -48,6 +48,8 @@ class AkashaTerminal(Star):
             self.shop = Shop()
             # 抽奖系统
             self.lottery = Lottery(self.draw_card_cooldown)
+            # 战斗系统
+            self.battle = Battle()
             logger.info("Akasha Terminal插件初始化完成")
         except Exception as e:
             logger.error(f"Akasha Terminal插件初始化失败:{str(e)}")
@@ -206,3 +208,12 @@ class AkashaTerminal(Star):
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         message = await self.shop.handle_item_detail_command(input_str)
         yield event.plain_result(message)
+
+    @filter.command(
+        "决斗", alias={"发起决斗", "开始决斗", "和我决斗", "与我决斗", "御前决斗"}
+    )
+    async def duel(self, event: AiocqhttpMessageEvent):
+        """发起决斗，使用方法: /决斗 @用户/qq号"""
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        await self.battle.handle_duel_command(event, input_str, self.admins_id)

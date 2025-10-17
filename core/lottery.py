@@ -10,8 +10,8 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 )
 
 from ..utils.utils import (
-    create_user_data,
     get_at_ids,
+    get_user_data_and_backpack,
     read_json,
     seconds_to_duration,
     write_json,
@@ -59,7 +59,7 @@ class Lottery:
 
         current_time = datetime.now(ZoneInfo("Asia/Shanghai")).timestamp()
         next_available_time = self.group_cooldowns.get(group_id, 0)
-        remaining = int(next_available_time - current_time)
+        remaining = next_available_time - current_time
         return max(remaining, 0)
 
     def update_group_cooldown(self, group_id: str):
@@ -117,42 +117,6 @@ class Lottery:
         """
         weapon_data = await read_json(self.weapon_path)
         return weapon_data.get(weapon_id)
-
-    async def get_user_data_and_backpack(
-        self, user_id: str, only_data_or_backpack: str | None = None
-    ) -> dict | tuple[dict, dict]:
-        """获取用户数据和背包数据（不存在则创建）"""
-        user_data = None
-        user_backpack = None
-        if only_data_or_backpack in (None, "user_data"):
-            user_data_file = self.user_data_path / f"{user_id}.json"
-            if not user_data_file.exists():
-                await create_user_data(user_id)
-            user_data = await read_json(user_data_file)
-
-        if only_data_or_backpack in (None, "user_backpack"):
-            user_backpack = (
-                await read_json(self.backpack_path / f"{user_id}.json") or {}
-            )
-            # 初始化武器背包结构
-            if "weapon" not in user_backpack:
-                user_backpack["weapon"] = {
-                    "纠缠之缘": 0,
-                    "总抽卡次数": 0,
-                    "武器计数": {},
-                    "武器详细": {
-                        "三星武器": {"数量": 0, "详细信息": []},
-                        "四星武器": {"数量": 0, "详细信息": []},
-                        "五星武器": {"数量": 0, "详细信息": []},
-                    },
-                    "未出五星计数": 0,
-                    "未出四星计数": 0,
-                }
-        if only_data_or_backpack == "user_data":
-            return user_data
-        elif only_data_or_backpack == "user_backpack":
-            return user_backpack
-        return user_data, user_backpack
 
     async def update_data(
         self, user_id: str, target_weapon_id: str, user_data, user_backpack
@@ -278,11 +242,11 @@ class Lottery:
                 remaining_time = self.check_group_cooldown(group_id)
             if remaining_time > 0:
                 return (
-                    f"抽卡冷却中，还剩{seconds_to_duration(remaining_time)}",
+                    f"抽卡冷却中，还剩{seconds_to_duration(remaining_time):.1f}",
                     None,
                 )
             user_id = str(event.get_sender_id())
-            user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
+            user_data, user_backpack = await get_user_data_and_backpack(user_id)
             weapon_data = user_backpack["weapon"]
             entangled_fate = weapon_data["纠缠之缘"]
             cost = count  # 每次消耗1颗纠缠之缘
