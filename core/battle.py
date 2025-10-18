@@ -290,7 +290,7 @@ class Battle:
                     )
                     message2_part = (
                         f"：\n你使用了管理员之力获得了胜利\n"
-                        f"恭喜你与{opp_name}决斗成功\n"
+                        f"恭喜你与 {opp_name} 决斗成功\n"
                         f"{opp_name}接受惩罚，已被禁言{random_time_opp / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
@@ -321,7 +321,7 @@ class Battle:
                         duration=random_time_opp,
                     )
                     message2_part = (
-                        f"：\n恭喜你与{opp_name}决斗成功\n"
+                        f"：\n恭喜你与 {opp_name} 决斗成功\n"
                         f"{opp_name}接受惩罚，已被禁言{random_time_opp / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
@@ -336,7 +336,7 @@ class Battle:
                         duration=random_time_cha,
                     )
                     message2_part = (
-                        f"：\n你与{opp_name}决斗失败\n"
+                        f"：\n你与 {opp_name} 决斗失败\n"
                         f"你接受惩罚，已被禁言{random_time_cha / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
@@ -379,7 +379,7 @@ class Battle:
                     await event.send(event.plain_result("战斗力意义系数必须在1到3之间"))
                     return
                 await event.send(
-                    event.chain_result(f"战斗力意义系数设置成功为：{new_value}")
+                    event.plain_result(f"战斗力意义系数设置成功为：{new_value}")
                 )
             except ValueError:
                 await event.send(event.plain_result("请输入有效的数字系数"))
@@ -390,5 +390,5 @@ class Battle:
             await write_json(self.config_file, config_data, "utf-8-sig")
         except Exception as e:
             logger.error(f"处理设置战斗力意义系数命令失败: {e}")
-            await event.send(event.chain_result("设置失败，请稍后再试~"))
+            await event.send(event.plain_result("设置失败，请稍后再试~"))
             return
