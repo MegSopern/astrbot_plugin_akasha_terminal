@@ -217,3 +217,9 @@ class AkashaTerminal(Star):
         cmd_prefix = event.message_str.split()[0]
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         await self.battle.handle_duel_command(event, input_str, self.admins_id)
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command("测试", alias={"测试用例"})
+    async def abcd(self, event: AiocqhttpMessageEvent):
+        """测试用例方法"""
+        await self.shop.ceshi_command(event)

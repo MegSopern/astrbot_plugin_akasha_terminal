@@ -608,3 +608,14 @@ class Shop:
         except Exception as e:
             logger.error(f"查看物品详情失败: {str(e)}")
             return "查看物品详情失败，请稍后再试~"
+
+    async def ceshi_command(self, event: AiocqhttpMessageEvent):
+        """测试用例函数"""
+        try:
+            # message = [Comp.At(qq=1677520180)]
+            # message.append(Comp.Plain("：\n测试换行\n测试成功！"))
+            message = str(self.config_path)
+            await event.send(event.plain_result(message))
+        except Exception as e:
+            logger.error(f"测试用例执行失败: {str(e)}")
+            await event.send("测试用例执行失败，请稍后再试~")

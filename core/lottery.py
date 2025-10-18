@@ -5,6 +5,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from astrbot.api import logger
+from astrbot.api.star import StarTools
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -24,20 +25,12 @@ class Lottery:
         # 从配置接收抽卡冷却时间
         self.draw_card_cooldown = draw_card_cooldown
         # 设置文件路径
-        base_dir = Path(__file__).resolve().parent.parent.parent.parent
-        plugin_data_dir = base_dir / "plugin_data" / "astrbot_plugin_akasha_terminal"
-        self.backpack_path = plugin_data_dir / "user_backpack"
-        self.user_data_path = plugin_data_dir / "user_data"
-        self.weapon_path = (
-            base_dir
-            / "plugins"
-            / "astrbot_plugin_akasha_terminal"
-            / "data"
-            / "weapon.json"
-        )
-        self.image_base_path = Path(
-            "data/plugins/astrbot_plugin_akasha_terminal/resources/weapon_image"
-        )
+        PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
+        PLUGIN_DIR = Path(__file__).resolve().parent.parent
+        self.backpack_path = PLUGIN_DATA_DIR / "user_backpack"
+        self.user_data_path = PLUGIN_DATA_DIR / "user_data"
+        self.weapon_file = PLUGIN_DIR / "data" / "weapon.json"
+        self.image_base_path = PLUGIN_DIR / "resources" / "weapon_image"
 
         # 存储群冷却时间
         self.group_cooldowns = {}  # {group_id: 下次可抽卡时间}
@@ -75,7 +68,7 @@ class Lottery:
         加载武器数据并按星级分类（300-399:三星, 400-499:四星, 500-599:五星）
         """
         try:
-            with open(self.weapon_path, "r", encoding="utf-8") as f:
+            with open(self.weapon_file, "r", encoding="utf-8") as f:
                 weapon_data = json.load(f)
 
             # 按ID范围分类武器（300-399:三星, 400-499:四星, 500-599:五星）
@@ -101,7 +94,7 @@ class Lottery:
             }
         except FileNotFoundError:
             logger.error(
-                f"错误：未找到武器数据文件 {self.weapon_path}，请检查路径是否正确"
+                f"错误：未找到武器数据文件 {self.weapon_file}，请检查路径是否正确"
             )
             return None
         except json.JSONDecodeError:
@@ -115,7 +108,7 @@ class Lottery:
         :param weapon_id: 武器ID
         :return: 武器详细信息
         """
-        weapon_data = await read_json(self.weapon_path)
+        weapon_data = await read_json(self.weapon_file)
         return weapon_data.get(weapon_id)
 
     async def update_data(
