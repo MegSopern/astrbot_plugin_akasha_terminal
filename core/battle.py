@@ -123,7 +123,7 @@ class Battle:
             return 0, 0, 0
 
     async def handle_duel_command(
-        self, event: AiocqhttpMessageEvent, parts: str, admins_id: list[str]
+        self, event: AiocqhttpMessageEvent, parts: list[str], admins_id: list[str]
     ) -> Optional[str]:
         """处理决斗命令"""
         try:
@@ -329,7 +329,7 @@ class Battle:
             return
 
     async def handle_set_magnification_command(
-        self, event: AiocqhttpMessageEvent, parts: str, admins_id: list[str]
+        self, event: AiocqhttpMessageEvent, parts: list[str], admins_id: list[str]
     ):
         """处理设置战斗力意义系数的命令"""
         user_id = event.get_sender_id()

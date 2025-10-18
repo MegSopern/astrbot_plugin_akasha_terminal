@@ -192,7 +192,9 @@ class User:
             logger.error(f"获取用户列表失败: {str(e)}")
             return []
 
-    async def format_user_info(self, event: AiocqhttpMessageEvent, parts: str) -> str:
+    async def format_user_info(
+        self, event: AiocqhttpMessageEvent, parts: list[str]
+    ) -> str:
         """格式化用户信息为字符串"""
         try:
             user_id = None
@@ -223,7 +225,7 @@ class User:
             return "获取用户信息失败，请稍后再试~"
 
     async def add_money(
-        self, event: AiocqhttpMessageEvent, parts: str
+        self, event: AiocqhttpMessageEvent, parts: list[str]
     ) -> tuple[bool, str]:
         """增加用户金钱"""
         try:

@@ -161,7 +161,7 @@ class Shop:
         return backpack or {}
 
     async def handle_use_command(
-        self, event: AiocqhttpMessageEvent, parts: str
+        self, event: AiocqhttpMessageEvent, parts: list[str]
     ) -> Tuple[bool, str]:
         """
         使用背包中的物品
@@ -372,7 +372,7 @@ class Shop:
             return {"success": False, "message": "道具效果执行失败"}
 
     async def handle_buy_command(
-        self, event: AiocqhttpMessageEvent, parts: str
+        self, event: AiocqhttpMessageEvent, parts: list[str]
     ) -> Tuple[bool, str]:
         """
         处理购买命令解析
@@ -393,16 +393,15 @@ class Shop:
             if quantity <= 0:
                 return False, "购买数量必须为正整数"
             home_data = await self.user_system.get_home_data(user_id)
-            user_money = home_data.get("money", 0)
 
-            return await self.buy_item(user_id, item_name, user_money, quantity)
+            return await self.buy_item(user_id, item_name, home_data, quantity)
         except ValueError:
             return False, "数量必须是数字"
         except Exception as e:
             return False, f"购买失败: {str(e)}"
 
     async def buy_item(
-        self, user_id: str, item_name: str, user_money: int, quantity: int = 1
+        self, user_id: str, item_name: str, home_data: dict, quantity: int = 1
     ) -> Tuple[bool, str]:
         """
         购买物品（支持批量购买）
@@ -412,6 +411,7 @@ class Shop:
         :param quantity: 购买数量（默认1）
         :return: (是否成功, 结果消息)
         """
+        user_money = home_data.get("money", 0)
         # 加载数据
         shop_data = await read_json(self.shop_data_path)
         items = shop_data["items"]
@@ -436,7 +436,9 @@ class Shop:
                 f"购买{target_item['name']} x {quantity}所需的金币不足\n"
                 f"需要{total_price}金币，您当前拥有{user_money}金币",
             )
-
+        # 更新金钱
+        home_data["money"] -= total_price
+        await self.user_system.update_home_data(user_id, home_data)
         # 更新库存
         if target_item["stock"] != -1:
             target_item["stock"] -= quantity
@@ -454,7 +456,7 @@ class Shop:
         )
 
     async def handle_gift_command(
-        self, event: AiocqhttpMessageEvent, parts: str
+        self, event: AiocqhttpMessageEvent, parts: list[str]
     ) -> Tuple[bool, str]:
         """
         赠送物品给其他用户
@@ -570,7 +572,7 @@ class Shop:
             logger.error(f"手动刷新商店失败: {str(e)}")
             return "手动刷新商店失败，请稍后再试~"
 
-    async def handle_item_detail_command(self, parts: str) -> str:
+    async def handle_item_detail_command(self, parts: list[str]) -> str:
         """查看物品详情"""
         try:
             if not parts:
