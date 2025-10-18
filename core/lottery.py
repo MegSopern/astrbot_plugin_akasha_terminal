@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 from astrbot.api import logger
 from astrbot.api.star import StarTools
+from astrbot.core import AstrBotConfig
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -20,10 +21,8 @@ from ..utils.utils import (
 
 
 class Lottery:
-    def __init__(self, draw_card_cooldown: int):
+    def __init__(self, config: AstrBotConfig):
         """初始化抽奖系统，设置路径和概率参数"""
-        # 从配置接收抽卡冷却时间
-        self.draw_card_cooldown = draw_card_cooldown
         # 设置文件路径
         PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
         PLUGIN_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +30,9 @@ class Lottery:
         self.user_data_path = PLUGIN_DATA_DIR / "user_data"
         self.weapon_file = PLUGIN_DIR / "data" / "weapon.json"
         self.image_base_path = PLUGIN_DIR / "resources" / "weapon_image"
+
+        # 从配置接收抽卡冷却时间
+        self.draw_card_cooldown = config.get("draw_card_cooldown", 10)  # 默认10秒
 
         # 存储群冷却时间
         self.group_cooldowns = {}  # {group_id: 下次可抽卡时间}
