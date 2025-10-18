@@ -1,3 +1,4 @@
+import asyncio
 import random
 import time
 from pathlib import Path
@@ -257,6 +258,8 @@ class Battle:
             )
             message.append(Comp.Plain(message_part))
             await event.send(event.chain_result(message))
+            # 模拟战斗过程，暂停3秒
+            await asyncio.sleep(3)
             # 判断结果
             random_value = random.random() * 100
             # 挑战者失败
@@ -275,8 +278,8 @@ class Battle:
                         duration=random_time_opp,
                     )
                     message2_part = (
-                        f"不讲武德，使用了管理员之力获得了胜利。"
-                        f"恭喜你与{opp_name}决斗成功。"
+                        f"：\n你使用了管理员之力获得了胜利\n"
+                        f"恭喜你与{opp_name}决斗成功\n"
                         f"{opp_name}接受惩罚，已被禁言{random_time_opp / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
@@ -292,7 +295,7 @@ class Battle:
                         duration=random_time_cha,
                     )
                     message2_part = (
-                        f"对方不讲武德，使用了管理员之力获得了胜利。"
+                        f"：\n对方不讲武德，使用了管理员之力获得了胜利\n"
                         f"你接受惩罚，已被禁言{random_time_cha / 60}分钟!"
                     )
                     message2.append(Comp.Plain(message2_part))
@@ -307,7 +310,7 @@ class Battle:
                         duration=random_time_opp,
                     )
                     message2_part = (
-                        f"恭喜你与{opp_name}决斗成功。"
+                        f"：\n恭喜你与{opp_name}决斗成功\n"
                         f"{opp_name}接受惩罚，已被禁言{random_time_opp / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
@@ -322,7 +325,7 @@ class Battle:
                         duration=random_time_cha,
                     )
                     message2_part = (
-                        f"你与{opp_name}决斗失败。"
+                        f"：\n你与{opp_name}决斗失败\n"
                         f"你接受惩罚，已被禁言{random_time_cha / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
@@ -331,7 +334,7 @@ class Battle:
             except Exception:
                 await event.send(
                     event.chain_result(
-                        "哎呀，禁言失败了，可能是权限不够或者出了点小问题。"
+                        "哎呀，禁言失败了，可能是权限不够或者出了点小问题"
                     )
                 )
                 return
