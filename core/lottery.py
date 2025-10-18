@@ -613,12 +613,11 @@ class Lottery:
             logger.error(f"展示武器库失败: {str(e)}")
             return "获取武器库信息时出错，请稍后再试~"
 
-    async def handle_cheat_command(self, event: AiocqhttpMessageEvent, input_str: str):
+    async def handle_cheat_command(self, event: AiocqhttpMessageEvent, parts: str):
         """处理开挂命令"""
         try:
             to_user_id = None
             amount = None
-            parts = input_str.strip().split()
             if not parts:
                 return (
                     False,

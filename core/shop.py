@@ -161,7 +161,7 @@ class Shop:
         return backpack or {}
 
     async def handle_use_command(
-        self, event: AiocqhttpMessageEvent, input_str: str
+        self, event: AiocqhttpMessageEvent, parts: str
     ) -> Tuple[bool, str]:
         """
         使用背包中的物品
@@ -172,7 +172,6 @@ class Shop:
         """
         try:
             user_id = str(event.get_sender_id())
-            parts = input_str.strip().split()
             if not parts:
                 return (
                     False,
@@ -373,7 +372,7 @@ class Shop:
             return {"success": False, "message": "道具效果执行失败"}
 
     async def handle_buy_command(
-        self, event: AiocqhttpMessageEvent, input_str: str
+        self, event: AiocqhttpMessageEvent, parts: str
     ) -> Tuple[bool, str]:
         """
         处理购买命令解析
@@ -383,7 +382,6 @@ class Shop:
         """
         try:
             user_id = str(event.get_sender_id())
-            parts = input_str.strip().split()
             if not parts:
                 return (
                     False,
@@ -456,7 +454,7 @@ class Shop:
         )
 
     async def handle_gift_command(
-        self, event: AiocqhttpMessageEvent, input_str: str
+        self, event: AiocqhttpMessageEvent, parts: str
     ) -> Tuple[bool, str]:
         """
         赠送物品给其他用户
@@ -469,7 +467,6 @@ class Shop:
         from_user_id = None
         to_user_id = None
         amount = 1
-        parts = input_str.strip().split()
         if len(parts) <= 1:
             return (
                 False,
@@ -573,10 +570,9 @@ class Shop:
             logger.error(f"手动刷新商店失败: {str(e)}")
             return "手动刷新商店失败，请稍后再试~"
 
-    async def handle_item_detail_command(self, input_str: str) -> str:
+    async def handle_item_detail_command(self, parts: str) -> str:
         """查看物品详情"""
         try:
-            parts = input_str.strip().split()
             if not parts:
                 return "请指定物品名称，使用方法: /道具详情 物品名称"
             item_name = parts[0]

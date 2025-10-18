@@ -123,12 +123,11 @@ class Battle:
             return 0, 0, 0
 
     async def handle_duel_command(
-        self, event: AiocqhttpMessageEvent, input_str: str, admins_id: list[str]
+        self, event: AiocqhttpMessageEvent, parts: str, admins_id: list[str]
     ) -> Optional[str]:
         """处理决斗命令"""
         try:
             challenger_id = str(event.get_sender_id())
-            parts = input_str.strip().split()
             if not parts:
                 await event.send(
                     event.plain_result(
@@ -330,7 +329,7 @@ class Battle:
             return
 
     async def handle_set_magnification_command(
-        self, event: AiocqhttpMessageEvent, input_str: str, admins_id: list[str]
+        self, event: AiocqhttpMessageEvent, parts: str, admins_id: list[str]
     ):
         """处理设置战斗力意义系数的命令"""
         user_id = event.get_sender_id()
@@ -338,7 +337,6 @@ class Battle:
             if user_id not in admins_id:
                 await event.send(event.plain_result("凡人，休得僭越!"))
                 return
-            parts = input_str.strip().split()
             if not parts:
                 await event.send(
                     event.plain_result(
