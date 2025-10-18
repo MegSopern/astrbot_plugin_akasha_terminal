@@ -218,6 +218,15 @@ class AkashaTerminal(Star):
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         await self.battle.handle_duel_command(event, input_str, self.admins_id)
 
+    @filter.command("设置战斗力系数", alias={"设置战斗力意义系数"})
+    async def set_magnification(self, event: AiocqhttpMessageEvent):
+        """设置战斗力系数值，使用方法: /设置战斗力系数 数值"""
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        await self.battle.handle_set_magnification_command(
+            event, input_str, self.admins_id
+        )
+
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command("测试", alias={"测试用例"})
     async def abcd(self, event: AiocqhttpMessageEvent):

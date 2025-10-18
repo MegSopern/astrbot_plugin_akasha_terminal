@@ -127,7 +127,7 @@
             },
             "combat_effectiveness_coefficient": {
                 "description": "战斗力意义系数",
-                "type": "int",
+                "type": "float",
                 "hint": "战斗力系数的大小（倍）",
                 "default": 2
             }

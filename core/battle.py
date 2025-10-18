@@ -327,3 +327,40 @@ class Battle:
         except Exception as e:
             logger.error(f"处理决斗命令失败: {e}")
             return
+
+    async def handle_set_magnification_command(
+        self, event: AiocqhttpMessageEvent, input_str: str, admins_id: list[str]
+    ):
+        """处理设置战斗力意义系数的命令"""
+        user_id = event.get_sender_id()
+        try:
+            if user_id not in admins_id:
+                await event.send(event.plain_result("凡人，休得僭越!"))
+                return
+            parts = input_str.strip().split()
+            if not parts:
+                await event.send(
+                    event.plain_result(
+                        "请输入要设置的战斗力意义系数值\n示例: /设置战斗力意义系数 2.5"
+                    )
+                )
+                return
+            try:
+                new_value = float(parts[0])
+                if not (1 <= new_value <= 3):
+                    await event.send(event.plain_result("战斗力意义系数必须在1到3之间"))
+                    return
+                await event.send(
+                    event.chain_result(f"战斗力意义系数设置成功为：{new_value}")
+                )
+            except ValueError:
+                await event.send(event.plain_result("请输入有效的数字系数"))
+                return
+            # 更新配置文件
+            config_data = read_json(self.config_file, "utf-8-sig")
+            config_data["battle_system"]["combat_effectiveness_coefficient"] = new_value
+            await write_json(self.config_file, config_data, "utf-8-sig")
+        except Exception as e:
+            logger.error(f"处理设置战斗力意义系数命令失败: {e}")
+            await event.send(event.chain_result("设置失败，请稍后再试~"))
+            return
