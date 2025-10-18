@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 import astrbot.api.message_components as Comp
 from astrbot.api import logger
+from astrbot.api.star import StarTools
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -76,12 +77,13 @@ class Battle:
         self.duel_cd: Dict[str, float] = {}
 
         # 数据路径
-        DATA_PATH = Path(__file__).resolve().parent.parent.parent.parent
-        self.base_dir = DATA_PATH / "plugin_data" / "astrbot_plugin_akasha_terminal"
-        self.user_data_path = self.base_dir / "user_data"
-        self.backpack_path = self.base_dir / "backpack"
+        PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
+        self.user_data_path = PLUGIN_DATA_DIR / "user_data"
+        self.backpack_path = PLUGIN_DATA_DIR / "backpack"
         self.config_file = (
-            DATA_PATH / "config" / "astrbot_plugin_akasha_terminal_config.json"
+            PLUGIN_DATA_DIR.parent.parent
+            / "config"
+            / "astrbot_plugin_akasha_terminal_config.json"
         )
 
         # 配置
