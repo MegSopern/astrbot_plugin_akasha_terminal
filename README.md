@@ -4,7 +4,7 @@
 
 [![GitHub Author](https://img.shields.io/badge/作者-MegSopern-FB7299)](https://github.com/MegSopern)
 [![GitHub Author](https://img.shields.io/badge/作者-Xinhaihai-FB7299)](https://github.com/Xinhaihai)
-[![GitHub Author](https://img.shields.io/badge/作者-wbndm1234-FB7299)](https://github.com/wbndmqaq)
+[![GitHub Author](https://img.shields.io/badge/作者-wbndmqaq-FB7299)](https://github.com/wbndmqaq)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 ![动态访问量](https://count.kjchmc.cn/get/@:astrbot_plugin_akasha_terminal)
 
