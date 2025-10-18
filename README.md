@@ -5,7 +5,6 @@
 [![GitHub Author](https://img.shields.io/badge/作者-MegSopern-FB7299)](https://github.com/MegSopern)
 [![GitHub Author](https://img.shields.io/badge/作者-Xinhaihai-FB7299)](https://github.com/Xinhaihai)
 [![GitHub Author](https://img.shields.io/badge/作者-wbndm1234-FB7299)](https://github.com/wbndmqaq)
-[![Author](https://img.shields.io/badge/作者-Sy%2Diu-FB7299)](https://github.com/Sy-iu)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 ![动态访问量](https://count.kjchmc.cn/get/@:astrbot_plugin_akasha_terminal)
 
@@ -108,27 +107,30 @@
 
 ## 📝 更新日志
 ### v2.1.0
-- 实现决斗系统的决斗逻辑，并重构用户数据管理，并清理抽卡模块中的重复逻辑
+[2025.10.18]
+- ✨新增决斗系统，并重构用户数据管理，并清理抽卡模块中的重复逻辑
+- 🛠️ 优化代码结构，提升维护性和性能
 ### v2.0.5
 [2025.10.16]
-- 新增管理员命令 “刷新商城”（别名：刷新商店、刷新虚空商店、刷新虚空商城）：支持管理员手动刷新商城物品列表，便于及时更新商店内容
-- 新增 “道具详情” 命令（别名：道具详细、物品详情、物品详细）：支持用户查询指定道具的详细信息，使用方法为/道具详情 物品名称，提升道具信息透明度
-- 优化 “赠送道具” 命令的内部参数处理逻辑，增强命令执行的稳定性与兼容性
+- ✨新增功能
+  - 新增管理员命令 “刷新商城”（别名：刷新商店、刷新虚空商店、刷新虚空商城）：支持管理员手动刷新商城物品列表，便于及时更新商店内容
+  - “道具详情” 命令（别名：道具详细、物品详情、物品详细）：支持用户查询指定道具的详细信息，使用方法为/道具详情 物品名称，提升道具信息透明度
+- ⚡️优化：“赠送道具” 命令的内部参数处理逻辑，增强命令执行的稳定性与兼容性
 ### v2.0.1
 [2025.10.15]
-- 实现使用道具的增益效果和神秘盒子效果（例如，爱情加成、随机金钱奖励、保护、运气/工作增益）
-- 更新 "十连抽武器" 和 "#我的信息" 的命令别名
+- ✨实现使用道具的增益效果和神秘盒子效果（例如，爱情加成、随机金钱奖励、保护、运气/工作增益）
+- ✨更新 "十连抽武器" 和 "#我的信息" 的命令别名
 - 修复已知BUG：抽卡冷却配置
 ### v2.0.0
 [2025.10.2]
-- 新增家园系统：支持房屋建设与装饰
-- 优化武器系统：战力计算逻辑调整，新增等级特权
-- 扩展任务系统：增加周常任务与成就体系
-- 修复已知BUG：解决部分场景下数据存储异常问题
+- ✨新增家园系统：支持房屋建设与装饰
+- 🛠️优化武器系统：战力计算逻辑调整，新增等级特权
+- 🔧扩展任务系统：增加周常任务与成就体系
+- 🔧修复已知BUG：解决部分场景下数据存储异常问题
 
 ### v1.0.0
 [2025.9.19]
-- 初始版本发布，包含核心功能：
+- 🚀初始版本发布，包含核心功能：
   - 用户、商店、任务基础系统
   - 基础游戏管理工具与数据存储支持
 
@@ -150,6 +152,20 @@
 - 报告BUG或提出功能建议（见「支持与反馈」）
 - 提交代码PR，参与功能开发
 - 完善文档或翻译内容
+
+---
+
+## 🌟 贡献者
+
+感谢所有为 astrbot_plugin_akasha_terminal 项目做出贡献的朋友们！
+
+[![GitHub Contributors](https://img.shields.io/github/contributors/MegSopern/astrbot_plugin_akasha_terminal?style=flat-square)](https://github.com/lxfight/astrbot_plugin_mnemosyne/graphs/contributors)
+
+<a href="https://github.com/MegSopern/astrbot_plugin_akasha_terminal/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=MegSopern/astrbot_plugin_akasha_terminal" alt="Contributor List" />
+</a>
+
+---
 
 ## 📜 许可证
 
