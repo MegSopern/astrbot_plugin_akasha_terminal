@@ -131,6 +131,34 @@ def get_at_ids(event: AiocqhttpMessageEvent) -> list[str]:
     ]
 
 
+def seconds_to_duration(seconds) -> str:
+    """将秒数转换为友好的时长字符串，如将秒数转换为"1天2小时3分4秒"""
+    if not isinstance(seconds, (int, float)) or seconds < 0:
+        return "输入必须是非负的数字"
+
+    # 定义时间单位及其对应的秒数
+    units = [
+        ("天", 86400),
+        ("小时", 3600),
+        ("分", 60),
+        ("秒", 1),
+    ]
+    parts = []
+    remaining = int(round(seconds))  # 四舍五入到整数
+
+    for unit_name, unit_seconds in units:
+        if remaining >= unit_seconds:
+            count = remaining // unit_seconds
+            parts.append(f"{count}{unit_name}")
+            remaining %= unit_seconds
+
+        if remaining == 0:
+            break
+
+    # 处理0秒的情况
+    return "0秒" if not parts else "".join(parts)
+
+
 # 初始化用户数据的工具函数
 async def create_user_data(user_id: str, user_data_path: Path) -> bool:
     """创建user系统初始数据"""
@@ -296,29 +324,9 @@ async def get_nickname(event: AiocqhttpMessageEvent, user_id) -> str:
     return all_info.get("card") or all_info.get("nickname")
 
 
-def seconds_to_duration(seconds) -> str:
-    """将秒数转换为友好的时长字符串，如将秒数转换为"1天2小时3分4秒"""
-    if not isinstance(seconds, (int, float)) or seconds < 0:
-        return "输入必须是非负的数字"
-
-    # 定义时间单位及其对应的秒数
-    units = [
-        ("天", 86400),
-        ("小时", 3600),
-        ("分", 60),
-        ("秒", 1),
-    ]
-    parts = []
-    remaining = int(round(seconds))  # 四舍五入到整数
-
-    for unit_name, unit_seconds in units:
-        if remaining >= unit_seconds:
-            count = remaining // unit_seconds
-            parts.append(f"{count}{unit_name}")
-            remaining %= unit_seconds
-
-        if remaining == 0:
-            break
-
-    # 处理0秒的情况
-    return "0秒" if not parts else "".join(parts)
+async def get_cmd_info(event: AiocqhttpMessageEvent) -> list[str]:
+    """提取命令及获取去除前缀后的内容"""
+    cmd_prefix = event.message_str.split()[0]
+    input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+    parts = input_str.strip().split()
+    return parts
