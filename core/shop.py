@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
+import astrbot.api.message_components as Comp
 from astrbot.api import logger
+from astrbot.api.star import StarTools
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -24,23 +26,13 @@ from ..utils.utils import (
 class Shop:
     def __init__(self):
         """初始化商店系统，设置数据目录和文件路径"""
-        BASE_DIR = Path(__file__).resolve().parent.parent
-        self.data_dir = BASE_DIR / "data"
+        PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
+        self.data_dir = Path(__file__).resolve().parent.parent / "data"
         self.shop_data_path = self.data_dir / "shop_data.json"
-        self.backpack_path = (
-            BASE_DIR.parent.parent
-            / "plugin_data"
-            / "astrbot_plugin_akasha_terminal"
-            / "user_backpack"
-        )
-        self.user_data_path = (
-            BASE_DIR.parent.parent
-            / "plugin_data"
-            / "astrbot_plugin_akasha_terminal"
-            / "user_data"
-        )
+        self.backpack_path = PLUGIN_DATA_DIR / "user_backpack"
+        self.user_data_path = PLUGIN_DATA_DIR / "user_data"
         self.config_path = (
-            BASE_DIR.parent.parent
+            PLUGIN_DATA_DIR.parent.parent
             / "config"
             / "astrbot_plugin_akasha_terminal_config.json"
         )
