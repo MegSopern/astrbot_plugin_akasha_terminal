@@ -192,6 +192,21 @@ class Battle:
                     await event.send(event.chain_result(message))
                     event.stop_event()
                 return
+            # 判断双方数据文件是否存在
+            cha_file = self.user_data_path / f"{challenger_id}.json"
+            if not cha_file.exists():
+                await event.send(
+                    event.plain_result("你的信息不存在哦，请先进行一次签到来注册信息~")
+                )
+                return
+            opp_file = self.user_data_path / f"{opponent_id}.json"
+            if not opp_file.exists():
+                await event.send(
+                    event.plain_result(
+                        "对方的信息不存在，请让他先进行一次签到来注册信息~"
+                    )
+                )
+                return
             # 读取用户昵称
             cha_name = await get_nickname(event, challenger_id)
             opp_name = await get_nickname(event, opponent_id)
