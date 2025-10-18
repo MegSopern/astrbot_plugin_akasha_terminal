@@ -1,4 +1,5 @@
 import re
+import traceback
 from pathlib import Path
 
 import aiohttp
@@ -53,6 +54,7 @@ class AkashaTerminal(Star):
             logger.info("Akasha Terminal插件初始化完成")
         except Exception as e:
             logger.error(f"Akasha Terminal插件初始化失败:{str(e)}")
+            logger.error(traceback.format_exc())
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""

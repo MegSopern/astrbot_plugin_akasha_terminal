@@ -93,7 +93,8 @@ class Battle:
             "combat_effectiveness_coefficient", 2
         )
         # 确保数据目录存在
-        self.base_dir.mkdir(parents=True, exist_ok=True)
+        self.user_data_path.mkdir(parents=True, exist_ok=True)
+        self.backpack_path.mkdir(parents=True, exist_ok=True)
 
     async def is_cooling(self, user_id: str) -> tuple[bool, float]:
         """检查用户是否在冷却中"""
