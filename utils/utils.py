@@ -1,5 +1,4 @@
 import asyncio
-import fcntl
 import json
 import os
 import tempfile
@@ -8,10 +7,13 @@ from pathlib import Path
 from typing import Any, Dict
 
 from astrbot.api import logger
-from astrbot.core.message.components import At, BaseMessageComponent, Image, Reply
+from astrbot.core.message.components import At, Reply
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
+
+# 替换fcntl为跨平台的filelock库
+from filelock import FileLock
 
 
 def logo_AATP():
@@ -70,22 +72,15 @@ def logo_AATP():
 
 def read_json_sync(file_path: Path, encoding_config: str = "utf-8") -> Dict[str, Any]:
     """同步原子读取JSON文件"""
-    # 原子读：加共享锁 -> 读 -> 解锁
     if not file_path.exists():
         return {}
 
     def read_json_atomic() -> Dict[str, Any]:
-        fd = os.open(file_path, os.O_RDONLY | os.O_CLOEXEC)
-        try:
-            # 加共享锁（非阻塞）
-            fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with os.fdopen(fd, "r", encoding=encoding_config) as f:
-                data = json.load(f)
-                # 读取完成后，释放锁
-                fcntl.flock(fd, fcntl.LOCK_UN)
-        finally:
-            pass
-        return data
+        # 使用文件锁的兼容实现，锁文件为原文件路径加.lock后缀
+        lock = FileLock(f"{file_path}.lock", timeout=5)
+        with lock.acquire():
+            with open(file_path, "r", encoding=encoding_config) as f:
+                return json.load(f)
 
     try:
         return read_json_atomic()
@@ -112,11 +107,14 @@ def write_json_sync(
             tmp_file.flush()
             os.fsync(tmp_file.fileno())
             temp_name = tmp_file.name
-        # 原子替换
-        os.replace(temp_name, file_path)
+
+        # 使用文件锁保证原子替换的安全性
+        lock = FileLock(f"{file_path}.lock", timeout=5)
+        with lock.acquire():
+            # 原子替换
+            os.replace(temp_name, file_path)
 
     try:
-        # 直接调用原子写入方法
         write_json_atomic()
         return True
     except Exception as e:
@@ -228,24 +226,17 @@ async def get_user_data_and_backpack(
 
 async def read_json(file_path: Path, encoding_config: str = "utf-8") -> Dict[str, Any]:
     """异步原子读取JSON文件"""
-    # 原子读：加共享锁 -> 读 -> 解锁
     if not file_path.exists():
         return {}
 
     loop = asyncio.get_running_loop()
 
     def read_json_atomic() -> Dict[str, Any]:
-        fd = os.open(file_path, os.O_RDONLY | os.O_CLOEXEC)
-        try:
-            # 加共享锁（非阻塞）
-            fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with os.fdopen(fd, "r", encoding=encoding_config) as f:
-                data = json.load(f)
-                # 读取完成后，释放锁
-                fcntl.flock(fd, fcntl.LOCK_UN)
-        finally:
-            pass
-        return data
+        # 使用文件锁的兼容实现
+        lock = FileLock(f"{file_path}.lock", timeout=5)
+        with lock.acquire():
+            with open(file_path, "r", encoding=encoding_config) as f:
+                return json.load(f)
 
     try:
         return await loop.run_in_executor(None, read_json_atomic)
@@ -273,11 +264,14 @@ async def write_json(
             tmp_file.flush()
             os.fsync(tmp_file.fileno())
             temp_name = tmp_file.name
-        # 原子替换
-        os.replace(temp_name, file_path)
+
+        # 使用文件锁保证原子替换的安全性
+        lock = FileLock(f"{file_path}.lock", timeout=5)
+        with lock.acquire():
+            # 原子替换
+            os.replace(temp_name, file_path)
 
     try:
-        # 使用原子写入方法
         await loop.run_in_executor(None, write_json_atomic)
         return True
     except Exception as e:
