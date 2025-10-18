@@ -4,7 +4,7 @@
 
 [![GitHub Author](https://img.shields.io/badge/作者-MegSopern-FB7299)](https://github.com/MegSopern)
 [![GitHub Author](https://img.shields.io/badge/作者-Xinhaihai-FB7299)](https://github.com/Xinhaihai)
-[![GitHub Author](https://img.shields.io/badge/作者-wbndm1234-FB7299)](https://github.com/wbndm1234)
+[![GitHub Author](https://img.shields.io/badge/作者-wbndmqaq-FB7299)](https://github.com/wbndm1234)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 ![动态访问量](https://count.kjchmc.cn/get/@:astrbot_plugin_akasha_terminal)
 
@@ -138,12 +138,12 @@
 2. 验证依赖包是否正确安装
 3. astrbot的[帮助文档](https://astrbot.app)
 4. 上述方法未解决？通过以下方式联系我们：
-   - 提交 [GitHub Issues](https://github.com/Xinhaihai-Xinhaihai/astrbot_plugin_akasha_terminal/issues)
-   - 提交 [GitHub PR](https://github.com/Xinhaihai-Xinhaihai/astrbot_plugin_akasha_terminal/pulls)
+   - 提交 [GitHub Issues](https://github.com/MegSopern/astrbot_plugin_akasha_terminal/issues)
+   - 提交 [GitHub PR](https://github.com/MegSopern/astrbot_plugin_akasha_terminal/pulls)
    - 加入 [QQ群](https://qm.qq.com/q/evPFBVDc64) 交流建议
 
   ## ❤️ 贡献指南
-本项目基于 [原虚空插件](https://github.com/wbndm1234/trss-akasha-terminal-plugin) 二次开发，感谢 [倒霉](https://github.com/wbndm1234) 的许可支持。
+本项目基于 [原虚空插件](https://github.com/wbndm1234/trss-akasha-terminal-plugin) 二次开发，感谢 [倒霉](https://github.com/wbndmqaq) 的许可支持。
 
 欢迎通过以下方式贡献：
 - 报告BUG或提出功能建议（见「支持与反馈」）
