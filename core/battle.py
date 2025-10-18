@@ -128,30 +128,8 @@ class Battle:
         """处理决斗命令"""
         try:
             challenger_id = str(event.get_sender_id())
-            if not parts:
-                await event.send(
-                    event.plain_result(
-                        "不知道你要与谁决斗哦，请@你想决斗的人~\n示例: /决斗 @用户/qq号"
-                    )
-                )
-                return
-            to_user_ids = [
-                str(seg.qq) for seg in event.get_messages() if isinstance(seg, At)
-            ]
-            logger.error(f"处理@参数后: {to_user_ids}")
-            if isinstance(to_user_ids, list) and to_user_ids:
-                opponent_id = to_user_ids[0]
-            else:
-                if parts[0].isdigit():
-                    opponent_id = parts[0]
-                else:
-                    await event.send(
-                        event.plain_result(
-                            "无效的用户ID，请@你想决斗的人~\n示例: /决斗 @用户/qq号"
-                        )
-                    )
-                    return
 
+            # 决斗冷却检查
             is_cooling, remaining = await self.is_cooling(challenger_id)
             if is_cooling:
                 await event.send(
@@ -161,6 +139,30 @@ class Battle:
                 )
                 return
 
+            # 获取对手ID
+            to_user_ids = [
+                str(seg.qq) for seg in event.get_messages() if isinstance(seg, At)
+            ]
+            if isinstance(to_user_ids, list) and to_user_ids:
+                opponent_id = to_user_ids[0]
+
+            if not opponent_id:
+                if not parts:
+                    await event.send(
+                        event.plain_result(
+                            "不知道你要与谁决斗哦，请@你想决斗的人~\n示例: /决斗 @用户/qq号"
+                        )
+                    )
+                    return
+                elif parts[0].isdigit():
+                    opponent_id = parts[0]
+                else:
+                    await event.send(
+                        event.plain_result(
+                            "无效的用户ID，请@你想决斗的人~\n示例: /决斗 @用户/qq号"
+                        )
+                    )
+                    return
             group_id = event.get_group_id()
             message = []
             await self.set_cooling(challenger_id)

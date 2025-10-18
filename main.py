@@ -123,7 +123,7 @@ class AkashaTerminal(Star):
         success, message = await self.shop.handle_buy_command(event, parts)
         yield event.plain_result(message)
 
-    @filter.command("背包", alias={"查看背包", "我的背包"})
+    @filter.command("背包", alias="查看背包")
     async def show_backpack(self, event: AiocqhttpMessageEvent):
         """查看我的背包"""
         message = await self.shop.format_backpack(event)
