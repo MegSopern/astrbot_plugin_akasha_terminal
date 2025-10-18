@@ -39,6 +39,11 @@ class Shop:
         self.data_dir.mkdir(parents=True, exist_ok=True)  # 确保数据目录存在
         self._init_default_data()
 
+        # 导入用户系统获取金钱
+        from .user import User
+
+        self.user_system = User()
+
     def _init_default_data(self) -> None:
         """初始化默认商店数据和用户背包（仅当文件不存在时）"""
         # 设置「中国标准时间」
@@ -389,11 +394,7 @@ class Shop:
             quantity = int(parts[1]) if len(parts) >= 2 else 1
             if quantity <= 0:
                 return False, "购买数量必须为正整数"
-            # 导入用户系统获取金钱
-            from .user import User
-
-            user_system = User()
-            home_data = await user_system.get_home_data(user_id)
+            home_data = await self.user_system.get_home_data(user_id)
             user_money = home_data.get("money", 0)
 
             return await self.buy_item(user_id, item_name, user_money, quantity)
