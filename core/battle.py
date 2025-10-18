@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 import astrbot.api.message_components as Comp
 from astrbot.api import logger
 from astrbot.api.star import StarTools
+from astrbot.core.message.components import At
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -22,30 +23,28 @@ from ..utils.utils import (
 )
 
 # 挑战bot时的反馈语录列表
-challenge_bot_text_list = (
-    [
-        "你想挑战我？大胆！",
-        "你什么意思？想挑战神明？举办了！",
-        "哈哈哈，来吧，接受我的审判！",
-        "就凭你？也配站在我面前叫嚣？",
-        "神明的威严岂容尔等放肆！",
-        "呵，不知天高地厚的家伙，也敢捋虎须？",
-        "挑战我？先掂量掂量自己有几分斤两！",
-        "别浪费时间废话，拿出你的全部本事来！",
-        "我会让你明白，挑战神明是何等愚蠢的决定！",
-        "收起你那可笑的勇气吧，在我面前不值一提！",
-        "你这点微末伎俩，也敢称作挑战？简直是天大的笑话！",
-        "吾之领域，岂容异类撒野？准备好迎接毁灭吧！",
-        "居然敢直视神明的双眼？这份狂妄，会让你付出惨痛代价！",
-        "别再做无谓的挣扎了，你的结局从挑战我的那一刻就已注定！",
-        "我见过无数狂妄之徒，你不过是其中最不起眼的一个！",
-        "拿出你的底牌吧，否则你连让我认真的资格都没有！",
-        "神明的怒火，足以焚烧整个天地，你确定要以身试险？",
-        "呵，蚍蜉撼树，也不过如此！",
-        "今日便折断你的傲骨，让你知晓何为尊卑有序！",
-        "挑战我？你怕是还没搞清楚，我们之间的差距如同云泥之别！",
-    ],
-)
+challenge_bot_text_list = [
+    "你想挑战我？大胆！",
+    "你什么意思？想挑战神明？举办了！",
+    "哈哈哈，来吧，接受我的审判！",
+    "就凭你？也配站在我面前叫嚣？",
+    "神明的威严岂容尔等放肆！",
+    "呵，不知天高地厚的家伙，也敢捋虎须？",
+    "挑战我？先掂量掂量自己有几分斤两！",
+    "别浪费时间废话，拿出你的全部本事来！",
+    "我会让你明白，挑战神明是何等愚蠢的决定！",
+    "收起你那可笑的勇气吧，在我面前不值一提！",
+    "你这点微末伎俩，也敢称作挑战？简直是天大的笑话！",
+    "吾之领域，岂容异类撒野？准备好迎接毁灭吧！",
+    "居然敢直视神明的双眼？这份狂妄，会让你付出惨痛代价！",
+    "别再做无谓的挣扎了，你的结局从挑战我的那一刻就已注定！",
+    "我见过无数狂妄之徒，你不过是其中最不起眼的一个！",
+    "拿出你的底牌吧，否则你连让我认真的资格都没有！",
+    "神明的怒火，足以焚烧整个天地，你确定要以身试险？",
+    "呵，蚍蜉撼树，也不过如此！",
+    "今日便折断你的傲骨，让你知晓何为尊卑有序！",
+    "挑战我？你怕是还没搞清楚，我们之间的差距如同云泥之别！",
+]
 
 # 自我挑战时的反馈语录列表
 challenge_self_text_list = [
@@ -114,7 +113,7 @@ class Battle:
         """加载用户武器数量"""
         try:
             backpack = await get_user_data_and_backpack(user_id, "user_backpack")
-            weapon_data = backpack.get("weapons", {})
+            weapon_data = backpack.get("weapon", {})
             three_star = weapon_data["武器详细"]["三星武器"]["数量"]
             four_star = weapon_data["武器详细"]["四星武器"]["数量"]
             five_star = weapon_data["武器详细"]["五星武器"]["数量"]
@@ -136,7 +135,10 @@ class Battle:
                     )
                 )
                 return
-            to_user_ids = get_at_ids(event)
+            to_user_ids = [
+                str(seg.qq) for seg in event.get_messages() if isinstance(seg, At)
+            ]
+            logger.error(f"处理@参数后: {to_user_ids}")
             if isinstance(to_user_ids, list) and to_user_ids:
                 opponent_id = to_user_ids[0]
             else:
@@ -171,11 +173,14 @@ class Battle:
                         user_id=challenger_id,
                         duration=60,
                     )
-                    message.append(random.choice(challenge_self_text_list))
+                    message.append(
+                        Comp.Plain(f"：\n{random.choice(challenge_self_text_list)}")
+                    )
                 except Exception:
-                    message.append("：\n我想禁言你一分钟，但权限不足QAQ")
+                    message.append(Comp.Plain("：\n我想禁言你一分钟，但权限不足QAQ"))
                 await event.send(event.chain_result(message))
                 event.stop_event()
+                return
 
             # 检查是否@了机器人
             if opponent_id == str(event.get_self_id()):
@@ -187,12 +192,16 @@ class Battle:
                             user_id=challenger_id,
                             duration=60,
                         )
-                        message.append(random.choice(challenge_bot_text_list))
+                        message.append(
+                            Comp.Plain(f"：\n{random.choice(challenge_bot_text_list)}")
+                        )
                     except Exception:
-                        message.append("：\n我想禁言你一分钟，但权限不足QAQ")
+                        message.append(
+                            Comp.Plain("：\n我想禁言你一分钟，但权限不足QAQ")
+                        )
                     await event.send(event.chain_result(message))
                     event.stop_event()
-                return
+                    return
             # 判断双方数据文件是否存在
             cha_file = self.user_data_path / f"{challenger_id}.json"
             if not cha_file.exists():

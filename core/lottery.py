@@ -214,8 +214,13 @@ class Lottery:
             # 添加武器图片
             weapon_name = target_weapon_info["name"]
             weapon_image = f"{weapon_name}.png"
-            weapon_image_path = str(self.image_base_path / weapon_star / weapon_image)
-
+            weapon_image_path = self.image_base_path / weapon_star / weapon_image
+            # 检查文件是否存在
+            if not weapon_image_path.exists():
+                logger.error(f"武器图片不存在：{weapon_image_path}")
+                weapon_image_path = None  # 标记为无效
+            else:
+                weapon_image_path = str(weapon_image_path)
             return (
                 {
                     "star": weapon_star,
@@ -235,8 +240,9 @@ class Lottery:
         """执行武器抽卡主逻辑"""
         try:
             group_id = event.get_group_id() or None
-            if group_id:
-                remaining_time = self.check_group_cooldown(group_id)
+            if not group_id:
+                return "请在群聊中使用抽武器功能哦~", None
+            remaining_time = self.check_group_cooldown(group_id)
             if remaining_time > 0:
                 return (
                     f"抽卡冷却中，还剩{seconds_to_duration(remaining_time)}",
@@ -251,8 +257,9 @@ class Lottery:
             # 检查资源是否充足
             if entangled_fate < cost:
                 return (
-                    f"\n需要{cost}颗纠缠之缘，你当前只有{entangled_fate}颗\n",
+                    f"\n需要{cost}颗纠缠之缘，你当前只有{entangled_fate}颗\n"
                     "💡 可通过[签到]获得更多纠缠之缘",
+                    None,
                 )
             user_backpack["weapon"]["纠缠之缘"] -= cost
 
