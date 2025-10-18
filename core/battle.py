@@ -260,11 +260,11 @@ class Battle:
 
             message.append(Comp.At(qq=challenger_id))
             message_part = (
-                f"：\n你的境界为【{cha_data['battle'].get('levelname', '无等级')}】\n"
-                f"三星武器: {numcha_3}, 四星武器: {numcha_4}, 五星武器: {numcha_5}\n"
-                f"{opp_name}的境界为【{opp_data['battle'].get('levelname', '无等级')}】\n"
-                f"三星武器: {numopp_3}, 四星武器: {numopp_4}, 五星武器: {numopp_5}\n"
-                f"决斗开始! 战斗力系数: {self.magnification}, 境界差: {win_level}, 你的获胜概率是: {win_prob:.2f}%\n"
+                f"：\n你的境界为：【{cha_data['battle'].get('levelname', '无等级')}】\n"
+                f"三星武器: {numcha_3}, 四星武器: {numcha_4}, 五星武器: {numcha_5}\n\n"
+                f"{opp_name}的境界为：【{opp_data['battle'].get('levelname', '无等级')}】\n"
+                f"三星武器: {numopp_3}, 四星武器: {numopp_4}, 五星武器: {numopp_5}\n\n"
+                f"决斗开始! 战斗力系数: {self.magnification}, 境界差: {win_level}, 你的获胜概率是：{win_prob:.2f}%\n"
                 f"提示：挑战失败者将被禁言1~5分钟, 被挑战者失败将被禁言1~3分钟"
             )
             message.append(Comp.Plain(message_part))
