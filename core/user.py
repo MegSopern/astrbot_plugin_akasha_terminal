@@ -208,6 +208,10 @@ class User:
             if not user_id:
                 user_id = str(event.get_sender_id())
             nickname = await get_nickname(event, user_id)
+            if user_id != str(event.get_sender_id()):
+                he_data = self.user_data_path / f"{user_id}.json"
+                if not he_data.exists():
+                    return f"{nickname}还没有注册用户信息哦，请让他先进行一次签到来注册信息~"
             user_data = await self.get_user(user_id, nickname)
             battle_data = await self.get_battle_data(user_id)
             home_data = await self.get_home_data(user_id)

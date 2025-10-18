@@ -407,7 +407,7 @@ class Lottery:
         try:
             user_id = str(event.get_sender_id())
             CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
-            user_data, user_backpack = await self.get_user_data_and_backpack(user_id)
+            user_data, user_backpack = await get_user_data_and_backpack(user_id)
             today = datetime.now(CN_TIMEZONE).date().strftime("%Y-%m-%d")
 
             # 初始化签到信息
@@ -479,7 +479,7 @@ class Lottery:
     async def show_my_weapons(self, event: AiocqhttpMessageEvent):
         """展示个人武器库统计信息"""
         try:
-            user_data, user_backpack = await self.get_user_data_and_backpack(
+            user_data, user_backpack = await get_user_data_and_backpack(
                 event.get_sender_id()
             )
             weapon_data = user_backpack["weapon"]
@@ -652,7 +652,7 @@ class Lottery:
                 to_user_id = str(event.get_sender_id())
             if amount <= 0:
                 return False, "增加的金额必须为正整数"
-            user_backpack = await self.get_user_data_and_backpack(
+            user_backpack = await get_user_data_and_backpack(
                 to_user_id, only_data_or_backpack="user_backpack"
             )
             user_backpack["weapon"]["纠缠之缘"] += amount
