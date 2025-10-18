@@ -32,7 +32,9 @@ class Lottery:
         self.image_base_path = PLUGIN_DIR / "resources" / "weapon_image"
 
         # 从配置接收抽卡冷却时间
-        self.draw_card_cooldown = config.get("draw_card_cooldown", 10)  # 默认10秒
+        self.draw_card_cooldown = config.get("other_system", {}).get(
+            "draw_card_cooldown", 10
+        )  # 默认10秒
 
         # 存储群冷却时间
         self.group_cooldowns = {}  # {group_id: 下次可抽卡时间}
@@ -237,7 +239,7 @@ class Lottery:
                 remaining_time = self.check_group_cooldown(group_id)
             if remaining_time > 0:
                 return (
-                    f"抽卡冷却中，还剩{seconds_to_duration(remaining_time):.1f}",
+                    f"抽卡冷却中，还剩{seconds_to_duration(remaining_time)}",
                     None,
                 )
             user_id = str(event.get_sender_id())

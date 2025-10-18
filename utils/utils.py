@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from astrbot.api import logger
+from astrbot.api.star import StarTools
 from astrbot.core.message.components import At, Reply
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
@@ -14,6 +15,9 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 
 # 替换fcntl为跨平台的filelock库
 from filelock import FileLock
+
+# 文件路径
+PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
 
 
 def logo_AATP():
@@ -215,13 +219,8 @@ async def get_user_data_and_backpack(
     user_id: str, only_data_or_backpack: str | None = None
 ) -> dict | tuple[dict, dict]:
     """获取用户数据和背包数据（不存在则创建）"""
-    base_dir = (
-        Path(__file__).resolve().parent.parent.parent.parent
-        / "plugin_data"
-        / "astrbot_plugin_akasha_terminal"
-    )
-    user_data_path = base_dir / "user_data"
-    backpack_path = base_dir / "backpack"
+    user_data_path = PLUGIN_DATA_DIR / "user_data"
+    backpack_path = PLUGIN_DATA_DIR / "user_backpack"
     user_data = None
     user_backpack = None
     if only_data_or_backpack in (None, "user_data"):

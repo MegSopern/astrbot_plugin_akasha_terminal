@@ -80,7 +80,7 @@ class Battle:
         # 数据路径
         PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
         self.user_data_path = PLUGIN_DATA_DIR / "user_data"
-        self.backpack_path = PLUGIN_DATA_DIR / "backpack"
+        self.backpack_path = PLUGIN_DATA_DIR / "user_backpack"
         self.config_file = (
             PLUGIN_DATA_DIR.parent.parent
             / "config"
