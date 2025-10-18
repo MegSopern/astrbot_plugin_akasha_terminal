@@ -47,7 +47,7 @@ class AkashaTerminal(Star):
             # 商店系统
             self.shop = Shop()
             # 抽奖系统
-            self.lottery = Lottery()
+            self.lottery = Lottery(self.config)
             # 战斗系统
             self.battle = Battle()
             logger.info("Akasha Terminal插件初始化完成")

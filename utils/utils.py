@@ -78,9 +78,10 @@ def read_json_sync(file_path: Path, encoding_config: str = "utf-8") -> Dict[str,
     def read_json_atomic() -> Dict[str, Any]:
         # 使用文件锁的兼容实现，锁文件为原文件路径加.lock后缀
         lock = FileLock(f"{file_path}.lock", timeout=5)
-        with lock.acquire():
+        with lock:
             with open(file_path, "r", encoding=encoding_config) as f:
-                return json.load(f)
+                data = json.load(f)
+        return data
 
     try:
         return read_json_atomic()
@@ -110,7 +111,7 @@ def write_json_sync(
 
         # 使用文件锁保证原子替换的安全性
         lock = FileLock(f"{file_path}.lock", timeout=5)
-        with lock.acquire():
+        with lock:
             # 原子替换
             os.replace(temp_name, file_path)
 
@@ -156,7 +157,7 @@ def seconds_to_duration(seconds) -> str:
             break
 
     # 处理0秒的情况
-    return "0秒" if not parts else "".join(parts)
+    return "".join(parts) if parts else "0秒"
 
 
 # 初始化用户数据的工具函数
@@ -262,7 +263,7 @@ async def read_json(file_path: Path, encoding_config: str = "utf-8") -> Dict[str
     def read_json_atomic() -> Dict[str, Any]:
         # 使用文件锁的兼容实现
         lock = FileLock(f"{file_path}.lock", timeout=5)
-        with lock.acquire():
+        with lock:
             with open(file_path, "r", encoding=encoding_config) as f:
                 return json.load(f)
 
@@ -295,7 +296,7 @@ async def write_json(
 
         # 使用文件锁保证原子替换的安全性
         lock = FileLock(f"{file_path}.lock", timeout=5)
-        with lock.acquire():
+        with lock:
             # 原子替换
             os.replace(temp_name, file_path)
 
@@ -328,5 +329,4 @@ async def get_cmd_info(event: AiocqhttpMessageEvent) -> list[str]:
     """提取命令及获取去除前缀后的内容"""
     cmd_prefix = event.message_str.split()[0]
     input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-    parts = input_str.strip().split()
-    return parts
+    return input_str.strip().split()

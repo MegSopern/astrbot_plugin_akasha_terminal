@@ -357,7 +357,7 @@ class Battle:
                 await event.send(event.plain_result("请输入有效的数字系数"))
                 return
             # 更新配置文件
-            config_data = read_json(self.config_file, "utf-8-sig")
+            config_data = await read_json(self.config_file, "utf-8-sig")
             config_data["battle_system"]["combat_effectiveness_coefficient"] = new_value
             await write_json(self.config_file, config_data, "utf-8-sig")
         except Exception as e:
