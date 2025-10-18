@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from astrbot.api import logger
+from astrbot.api.star import StarTools
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -10,19 +11,12 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 # 导入工具函数
 from ..utils.utils import get_at_ids, get_nickname, read_json, write_json
 
-# 数据存储路径：插件目录上一层的plugin_data/astrbot_plugin_akasha_terminal
-BASE_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent
-    / "plugin_data"
-    / "astrbot_plugin_akasha_terminal"
-)
-
 
 class User:
     def __init__(self):
         # 初始化数据目录
-        self.data_dir = BASE_DIR
-        self.user_data_path = self.data_dir / "user_data"  # 用户数据统一存储目录
+        self.data_dir = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
+        self.user_data_path = self.data_dir / "user_data"
 
         # 数据配置映射：统一管理各类型数据的默认值
         self._data_config = {
