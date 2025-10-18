@@ -159,7 +159,7 @@
 
 感谢所有为 astrbot_plugin_akasha_terminal 项目做出贡献的朋友们！
 
-[![GitHub Contributors](https://img.shields.io/github/contributors/MegSopern/astrbot_plugin_akasha_terminal?style=flat-square)](https://github.com/lxfight/astrbot_plugin_mnemosyne/graphs/contributors)
+[![GitHub Contributors](https://img.shields.io/github/contributors/MegSopern/astrbot_plugin_akasha_terminal?style=flat-square)](https://github.com/MegSopern/astrbot_plugin_akasha_terminal/graphs/contributors)
 
 <a href="https://github.com/MegSopern/astrbot_plugin_akasha_terminal/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=MegSopern/astrbot_plugin_akasha_terminal" alt="Contributor List" />
