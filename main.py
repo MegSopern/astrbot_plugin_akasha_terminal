@@ -23,7 +23,7 @@ from .utils.utils import get_cmd_info, logo_AATP
 
 @register(
     "astrbot_plugin_akasha_terminal",
-    "MegSopern & Xinhaihai & Xwbndmqaq",
+    "MegSopern & Xinhaihai & wbndmqaq",
     "一个功能丰富的聚合类娱乐插件，提供完整的游戏系统与JSON存储支持，包含商店、抽卡、情侣、战斗、社交、任务等多样化玩法",
     "2.1.0",
 )
