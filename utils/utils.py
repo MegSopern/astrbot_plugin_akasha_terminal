@@ -1,5 +1,4 @@
 import asyncio
-import fcntl
 import json
 import os
 import tempfile
@@ -8,10 +7,13 @@ from pathlib import Path
 from typing import Any, Dict
 
 from astrbot.api import logger
-from astrbot.core.message.components import At, BaseMessageComponent, Image, Reply
+from astrbot.core.message.components import At, Reply
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
+
+# 替换fcntl为跨平台的filelock库
+from filelock import FileLock
 
 
 def logo_AATP():
@@ -70,21 +72,15 @@ def logo_AATP():
 
 def read_json_sync(file_path: Path, encoding_config: str = "utf-8") -> Dict[str, Any]:
     """同步原子读取JSON文件"""
-    # 原子读：加共享锁 -> 读 -> 解锁
     if not file_path.exists():
         return {}
 
     def read_json_atomic() -> Dict[str, Any]:
-        fd = os.open(file_path, os.O_RDONLY | os.O_CLOEXEC)
-        try:
-            # 加共享锁（非阻塞）
-            fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with os.fdopen(fd, "r", encoding=encoding_config) as f:
+        # 使用文件锁的兼容实现，锁文件为原文件路径加.lock后缀
+        lock = FileLock(f"{file_path}.lock", timeout=5)
+        with lock:
+            with open(file_path, "r", encoding=encoding_config) as f:
                 data = json.load(f)
-                # 读取完成后，释放锁
-                fcntl.flock(fd, fcntl.LOCK_UN)
-        finally:
-            pass
         return data
 
     try:
@@ -112,11 +108,14 @@ def write_json_sync(
             tmp_file.flush()
             os.fsync(tmp_file.fileno())
             temp_name = tmp_file.name
-        # 原子替换
-        os.replace(temp_name, file_path)
+
+        # 使用文件锁保证原子替换的安全性
+        lock = FileLock(f"{file_path}.lock", timeout=5)
+        with lock:
+            # 原子替换
+            os.replace(temp_name, file_path)
 
     try:
-        # 直接调用原子写入方法
         write_json_atomic()
         return True
     except Exception as e:
@@ -131,6 +130,34 @@ def get_at_ids(event: AiocqhttpMessageEvent) -> list[str]:
         for seg in event.get_messages()
         if (isinstance(seg, At) and str(seg.qq) != event.get_self_id())
     ]
+
+
+def seconds_to_duration(seconds) -> str:
+    """将秒数转换为友好的时长字符串，如将秒数转换为"1天2小时3分4秒"""
+    if not isinstance(seconds, (int, float)) or seconds < 0:
+        return "输入必须是非负的数字"
+
+    # 定义时间单位及其对应的秒数
+    units = [
+        ("天", 86400),
+        ("小时", 3600),
+        ("分", 60),
+        ("秒", 1),
+    ]
+    parts = []
+    remaining = int(round(seconds))  # 四舍五入到整数
+
+    for unit_name, unit_seconds in units:
+        if remaining >= unit_seconds:
+            count = remaining // unit_seconds
+            parts.append(f"{count}{unit_name}")
+            remaining %= unit_seconds
+
+        if remaining == 0:
+            break
+
+    # 处理0秒的情况
+    return "".join(parts) if parts else "0秒"
 
 
 # 初始化用户数据的工具函数
@@ -228,24 +255,17 @@ async def get_user_data_and_backpack(
 
 async def read_json(file_path: Path, encoding_config: str = "utf-8") -> Dict[str, Any]:
     """异步原子读取JSON文件"""
-    # 原子读：加共享锁 -> 读 -> 解锁
     if not file_path.exists():
         return {}
 
     loop = asyncio.get_running_loop()
 
     def read_json_atomic() -> Dict[str, Any]:
-        fd = os.open(file_path, os.O_RDONLY | os.O_CLOEXEC)
-        try:
-            # 加共享锁（非阻塞）
-            fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with os.fdopen(fd, "r", encoding=encoding_config) as f:
-                data = json.load(f)
-                # 读取完成后，释放锁
-                fcntl.flock(fd, fcntl.LOCK_UN)
-        finally:
-            pass
-        return data
+        # 使用文件锁的兼容实现
+        lock = FileLock(f"{file_path}.lock", timeout=5)
+        with lock:
+            with open(file_path, "r", encoding=encoding_config) as f:
+                return json.load(f)
 
     try:
         return await loop.run_in_executor(None, read_json_atomic)
@@ -273,11 +293,14 @@ async def write_json(
             tmp_file.flush()
             os.fsync(tmp_file.fileno())
             temp_name = tmp_file.name
-        # 原子替换
-        os.replace(temp_name, file_path)
+
+        # 使用文件锁保证原子替换的安全性
+        lock = FileLock(f"{file_path}.lock", timeout=5)
+        with lock:
+            # 原子替换
+            os.replace(temp_name, file_path)
 
     try:
-        # 使用原子写入方法
         await loop.run_in_executor(None, write_json_atomic)
         return True
     except Exception as e:
@@ -302,29 +325,8 @@ async def get_nickname(event: AiocqhttpMessageEvent, user_id) -> str:
     return all_info.get("card") or all_info.get("nickname")
 
 
-def seconds_to_duration(seconds) -> str:
-    """将秒数转换为友好的时长字符串，如将秒数转换为"1天2小时3分4秒"""
-    if not isinstance(seconds, (int, float)) or seconds < 0:
-        return "输入必须是非负的数字"
-
-    # 定义时间单位及其对应的秒数
-    units = [
-        ("天", 86400),
-        ("小时", 3600),
-        ("分", 60),
-        ("秒", 1),
-    ]
-    parts = []
-    remaining = int(round(seconds))  # 四舍五入到整数
-
-    for unit_name, unit_seconds in units:
-        if remaining >= unit_seconds:
-            count = remaining // unit_seconds
-            parts.append(f"{count}{unit_name}")
-            remaining %= unit_seconds
-
-        if remaining == 0:
-            break
-
-    # 处理0秒的情况
-    return "0秒" if not parts else "".join(parts)
+async def get_cmd_info(event: AiocqhttpMessageEvent) -> list[str]:
+    """提取命令及获取去除前缀后的内容"""
+    cmd_prefix = event.message_str.split()[0]
+    input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+    return input_str.strip().split()

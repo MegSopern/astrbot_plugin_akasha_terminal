@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
+import astrbot.api.message_components as Comp
 from astrbot.api import logger
+from astrbot.api.star import StarTools
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -24,28 +26,23 @@ from ..utils.utils import (
 class Shop:
     def __init__(self):
         """初始化商店系统，设置数据目录和文件路径"""
-        BASE_DIR = Path(__file__).resolve().parent.parent
-        self.data_dir = BASE_DIR / "data"
+        PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
+        self.data_dir = Path(__file__).resolve().parent.parent / "data"
         self.shop_data_path = self.data_dir / "shop_data.json"
-        self.backpack_path = (
-            BASE_DIR.parent.parent
-            / "plugin_data"
-            / "astrbot_plugin_akasha_terminal"
-            / "user_backpack"
-        )
-        self.user_data_path = (
-            BASE_DIR.parent.parent
-            / "plugin_data"
-            / "astrbot_plugin_akasha_terminal"
-            / "user_data"
-        )
+        self.backpack_path = PLUGIN_DATA_DIR / "user_backpack"
+        self.user_data_path = PLUGIN_DATA_DIR / "user_data"
         self.config_path = (
-            BASE_DIR.parent.parent
+            PLUGIN_DATA_DIR.parent.parent
             / "config"
             / "astrbot_plugin_akasha_terminal_config.json"
         )
         self.data_dir.mkdir(parents=True, exist_ok=True)  # 确保数据目录存在
         self._init_default_data()
+
+        # 导入用户系统获取金钱
+        from .user import User
+
+        self.user_system = User()
 
     def _init_default_data(self) -> None:
         """初始化默认商店数据和用户背包（仅当文件不存在时）"""
@@ -397,11 +394,7 @@ class Shop:
             quantity = int(parts[1]) if len(parts) >= 2 else 1
             if quantity <= 0:
                 return False, "购买数量必须为正整数"
-            # 导入用户系统获取金钱
-            from .user import User
-
-            user_system = User()
-            home_data = await user_system.get_home_data(user_id)
+            home_data = await self.user_system.get_home_data(user_id)
             user_money = home_data.get("money", 0)
 
             return await self.buy_item(user_id, item_name, user_money, quantity)
@@ -616,3 +609,14 @@ class Shop:
         except Exception as e:
             logger.error(f"查看物品详情失败: {str(e)}")
             return "查看物品详情失败，请稍后再试~"
+
+    async def ceshi_command(self, event: AiocqhttpMessageEvent):
+        """测试用例函数"""
+        try:
+            # message = [Comp.At(qq=1677520180)]
+            # message.append(Comp.Plain("：\n测试换行\n测试成功！"))
+            message = str(self.config_path)
+            await event.send(event.plain_result(message))
+        except Exception as e:
+            logger.error(f"测试用例执行失败: {str(e)}")
+            await event.send("测试用例执行失败，请稍后再试~")

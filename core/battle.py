@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 import astrbot.api.message_components as Comp
 from astrbot.api import logger
+from astrbot.api.star import StarTools
 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
     AiocqhttpMessageEvent,
 )
@@ -76,12 +77,13 @@ class Battle:
         self.duel_cd: Dict[str, float] = {}
 
         # 数据路径
-        DATA_PATH = Path(__file__).resolve().parent.parent.parent.parent
-        self.base_dir = DATA_PATH / "plugin_data" / "astrbot_plugin_akasha_terminal"
-        self.user_data_path = self.base_dir / "user_data"
-        self.backpack_path = self.base_dir / "backpack"
+        PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
+        self.user_data_path = PLUGIN_DATA_DIR / "user_data"
+        self.backpack_path = PLUGIN_DATA_DIR / "backpack"
         self.config_file = (
-            DATA_PATH / "config" / "astrbot_plugin_akasha_terminal_config.json"
+            PLUGIN_DATA_DIR.parent.parent
+            / "config"
+            / "astrbot_plugin_akasha_terminal_config.json"
         )
 
         # 配置
@@ -127,11 +129,12 @@ class Battle:
             challenger_id = str(event.get_sender_id())
             parts = input_str.strip().split()
             if not parts:
-                return event.send(
+                await event.send(
                     event.plain_result(
                         "不知道你要与谁决斗哦，请@你想决斗的人~\n示例: /决斗 @用户/qq号"
                     )
                 )
+                return
             to_user_ids = get_at_ids(event)
             if isinstance(to_user_ids, list) and to_user_ids:
                 opponent_id = to_user_ids[0]
@@ -139,22 +142,25 @@ class Battle:
                 if parts[0].isdigit():
                     opponent_id = parts[0]
                 else:
-                    return event.send(
+                    await event.send(
                         event.plain_result(
                             "无效的用户ID，请@你想决斗的人~\n示例: /决斗 @用户/qq号"
                         )
                     )
+                    return
 
             is_cooling, remaining = await self.is_cooling(challenger_id)
             if is_cooling:
-                return event.send(
+                await event.send(
                     event.plain_result(
                         f"你刚刚发起了一场决斗，请耐心一点，等待{remaining:.1f}秒后再发起决斗吧！"
                     )
                 )
+                return
 
             group_id = event.get_group_id()
             message = []
+            await self.set_cooling(challenger_id)
             # 检查是否@自己
             if challenger_id == opponent_id:
                 message.append(Comp.At(qq=challenger_id))
@@ -169,7 +175,6 @@ class Battle:
                     message.append("：\n我想禁言你一分钟，但权限不足QAQ")
                 await event.send(event.chain_result(message))
                 event.stop_event()
-            await self.set_cooling(challenger_id)
 
             # 检查是否@了机器人
             if opponent_id == str(event.get_self_id()):
@@ -202,11 +207,12 @@ class Battle:
                 opp_data["battle"].get("privilege") == 1
             )
             if is_admin1 and is_admin2:
-                return await event.send(
+                await event.send(
                     event.plain_result(
                         "你们两人都是管理员或拥有特权，神仙打架，凡人遭殃，御前决斗无法进行哦！"
                     )
                 )
+                return
             # 读取用户武器数量
             numcha_3, numcha_4, numcha_5 = await self.load_weapon_count(challenger_id)
             numopp_3, numopp_4, numopp_5 = await self.load_weapon_count(opponent_id)
@@ -313,10 +319,48 @@ class Battle:
                         "哎呀，禁言失败了，可能是权限不够或者出了点小问题。"
                     )
                 )
+                return
             # # 保存数据
             # await write_json(self.user_data_path / f"{challenger_id}.json", cha_data)
             # await write_json(self.user_data_path / f"{opponent_id}.json", opp_data)
 
         except Exception as e:
             logger.error(f"处理决斗命令失败: {e}")
+            return
+
+    async def handle_set_magnification_command(
+        self, event: AiocqhttpMessageEvent, input_str: str, admins_id: list[str]
+    ):
+        """处理设置战斗力意义系数的命令"""
+        user_id = event.get_sender_id()
+        try:
+            if user_id not in admins_id:
+                await event.send(event.plain_result("凡人，休得僭越!"))
+                return
+            parts = input_str.strip().split()
+            if not parts:
+                await event.send(
+                    event.plain_result(
+                        "请输入要设置的战斗力意义系数值\n示例: /设置战斗力意义系数 2.5"
+                    )
+                )
+                return
+            try:
+                new_value = float(parts[0])
+                if not (1 <= new_value <= 3):
+                    await event.send(event.plain_result("战斗力意义系数必须在1到3之间"))
+                    return
+                await event.send(
+                    event.chain_result(f"战斗力意义系数设置成功为：{new_value}")
+                )
+            except ValueError:
+                await event.send(event.plain_result("请输入有效的数字系数"))
+                return
+            # 更新配置文件
+            config_data = await read_json(self.config_file, "utf-8-sig")
+            config_data["battle_system"]["combat_effectiveness_coefficient"] = new_value
+            await write_json(self.config_file, config_data, "utf-8-sig")
+        except Exception as e:
+            logger.error(f"处理设置战斗力意义系数命令失败: {e}")
+            await event.send(event.chain_result("设置失败，请稍后再试~"))
             return

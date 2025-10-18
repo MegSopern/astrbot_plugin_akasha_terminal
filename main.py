@@ -17,14 +17,14 @@ from .core.lottery import Lottery
 from .core.shop import Shop
 from .core.task import Task
 from .core.user import User
-from .utils.utils import logo_AATP
+from .utils.utils import get_cmd_info, logo_AATP
 
 
 @register(
     "astrbot_plugin_akasha_terminal",
-    "Xinhaihai & Xinhaihai/wbndm1234 & MegSopern",
-    "一个功能丰富的astrbot插件，提供完整的游戏系统",
-    "2.0.6",
+    "MegSopern & Xinhaihai & Xwbndmqaq & Sy-iu",
+    "一个功能丰富的聚合类娱乐插件，提供完整的游戏系统与JSON存储支持，包含商店、抽卡、情侣、战斗、社交、任务等多样化玩法",
+    "2.1.0",
 )
 class AkashaTerminal(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -47,7 +47,7 @@ class AkashaTerminal(Star):
             # 商店系统
             self.shop = Shop()
             # 抽奖系统
-            self.lottery = Lottery(self.draw_card_cooldown)
+            self.lottery = Lottery(self.config)
             # 战斗系统
             self.battle = Battle()
             logger.info("Akasha Terminal插件初始化完成")
@@ -61,18 +61,16 @@ class AkashaTerminal(Star):
     @filter.command("我的信息", alias={"个人信息", "查看信息"})
     async def get_user_info(self, event: AiocqhttpMessageEvent):
         """查看个人信息，使用方法: /我的信息 @用户/qq号"""
-        cmd_prefix = event.message_str.split()[0]
-        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        message = await self.user.format_user_info(event, input_str)
+        parts = await get_cmd_info(event)
+        message = await self.user.format_user_info(event, parts)
         yield event.plain_result(message)
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command("增加金钱", alias=["添加金钱", "加钱"])
     async def add_user_money(self, event: AiocqhttpMessageEvent):
         """增加用户金钱，使用方法: /增加金钱 金额"""
-        cmd_prefix = event.message_str.split()[0]
-        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.user.add_money(event, input_str)
+        parts = await get_cmd_info(event)
+        success, message = await self.user.add_money(event, parts)
         yield event.plain_result(message)
 
     @filter.permission_type(filter.PermissionType.ADMIN)
@@ -119,9 +117,8 @@ class AkashaTerminal(Star):
     async def buy_prop(self, event: AiocqhttpMessageEvent):
         """/购买道具 物品名称 数量"""
         # 提取命令后的参数部分
-        cmd_prefix = event.message_str.split()[0]
-        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop.handle_buy_command(event, input_str)
+        parts = await get_cmd_info(event)
+        success, message = await self.shop.handle_buy_command(event, parts)
         yield event.plain_result(message)
 
     @filter.command("背包", alias="查看背包")
@@ -133,17 +130,15 @@ class AkashaTerminal(Star):
     @filter.command("使用道具", alias={"用道具", "使用物品", "用物品"})
     async def use_item(self, event: AiocqhttpMessageEvent):
         """使用道具，使用方法: /使用道具 物品名称"""
-        cmd_prefix = event.message_str.split()[0]
-        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop.handle_use_command(event, input_str)
+        parts = await get_cmd_info(event)
+        success, message = await self.shop.handle_use_command(event, parts)
         yield event.plain_result(message)
 
     @filter.command("赠送道具", alias={"送道具", "赠送物品", "送物品"})
     async def gift_item(self, event: AiocqhttpMessageEvent):
         """赠送道具，使用方法: /赠送道具 物品名称 @用户"""
-        cmd_prefix = event.message_str.split()[0]
-        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.shop.handle_gift_command(event, input_str)
+        parts = await get_cmd_info(event)
+        success, message = await self.shop.handle_gift_command(event, parts)
         yield event.plain_result(message)
 
     @filter.command("抽武器", alias={"单抽武器", "单抽"})
@@ -189,9 +184,8 @@ class AkashaTerminal(Star):
     @filter.command("开挂", alias={"增加纠缠之缘", "添加纠缠之缘"})
     async def cheat(self, event: AiocqhttpMessageEvent):
         """增添纠缠之缘，使用方法: /开挂 数量"""
-        cmd_prefix = event.message_str.split()[0]
-        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        success, message = await self.lottery.handle_cheat_command(event, input_str)
+        parts = await get_cmd_info(event)
+        success, message = await self.lottery.handle_cheat_command(event, parts)
         yield event.plain_result(message)
 
     @filter.command("刷新商城", alias={"刷新商店", "刷新虚空商店", "刷新虚空商城"})
@@ -204,9 +198,8 @@ class AkashaTerminal(Star):
     @filter.command("道具详情", alias={"道具详细", "物品详情", "物品详细"})
     async def item_detail(self, event: AiocqhttpMessageEvent):
         """查看道具详情，使用方法: /道具详情 物品名称"""
-        cmd_prefix = event.message_str.split()[0]
-        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        message = await self.shop.handle_item_detail_command(input_str)
+        parts = await get_cmd_info(event)
+        message = await self.shop.handle_item_detail_command(parts)
         yield event.plain_result(message)
 
     @filter.command(
@@ -214,6 +207,17 @@ class AkashaTerminal(Star):
     )
     async def duel(self, event: AiocqhttpMessageEvent):
         """发起决斗，使用方法: /决斗 @用户/qq号"""
-        cmd_prefix = event.message_str.split()[0]
-        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
-        await self.battle.handle_duel_command(event, input_str, self.admins_id)
+        parts = await get_cmd_info(event)
+        await self.battle.handle_duel_command(event, parts, self.admins_id)
+
+    @filter.command("设置战斗力系数", alias={"设置战斗力意义系数"})
+    async def set_magnification(self, event: AiocqhttpMessageEvent):
+        """设置战斗力系数值，使用方法: /设置战斗力系数 数值"""
+        parts = await get_cmd_info(event)
+        await self.battle.handle_set_magnification_command(event, parts, self.admins_id)
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command("测试", alias={"测试用例"})
+    async def abcd(self, event: AiocqhttpMessageEvent):
+        """测试用例方法"""
+        await self.shop.ceshi_command(event)

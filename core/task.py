@@ -14,14 +14,15 @@ from ..utils.utils import read_json, write_json
 class Task:
     def __init__(self):
         """初始化任务系统，加载任务配置路径"""
-        self.task_file_path = Path(__file__).parent.parent / "data" / "task.json"
+        PLUGIN_DIR = Path(__file__).resolve().parent.parent
+        self.task_file = PLUGIN_DIR / "data" / "task.json"
         self.task_data: Dict[str, Dict[str, Any]] = {}
         self.user = User()  # 关联用户系统
 
     async def _load_task_data(self) -> None:
         """加载任务配置数据,从JSON文件读取任务定义并初始化"""
         try:
-            self.task_data = await read_json(self.task_file_path)
+            self.task_data = await read_json(self.task_file)
             logger.info(f"成功加载 {len(self.task_data)} 个任务配置")
         except Exception as e:
             logger.error(f"加载任务配置失败: {str(e)}")
