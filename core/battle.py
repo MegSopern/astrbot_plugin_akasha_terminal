@@ -129,11 +129,12 @@ class Battle:
             challenger_id = str(event.get_sender_id())
             parts = input_str.strip().split()
             if not parts:
-                return event.send(
+                await event.send(
                     event.plain_result(
                         "不知道你要与谁决斗哦，请@你想决斗的人~\n示例: /决斗 @用户/qq号"
                     )
                 )
+                return
             to_user_ids = get_at_ids(event)
             if isinstance(to_user_ids, list) and to_user_ids:
                 opponent_id = to_user_ids[0]
@@ -141,22 +142,25 @@ class Battle:
                 if parts[0].isdigit():
                     opponent_id = parts[0]
                 else:
-                    return event.send(
+                    await event.send(
                         event.plain_result(
                             "无效的用户ID，请@你想决斗的人~\n示例: /决斗 @用户/qq号"
                         )
                     )
+                    return
 
             is_cooling, remaining = await self.is_cooling(challenger_id)
             if is_cooling:
-                return event.send(
+                await event.send(
                     event.plain_result(
                         f"你刚刚发起了一场决斗，请耐心一点，等待{remaining:.1f}秒后再发起决斗吧！"
                     )
                 )
+                return
 
             group_id = event.get_group_id()
             message = []
+            await self.set_cooling(challenger_id)
             # 检查是否@自己
             if challenger_id == opponent_id:
                 message.append(Comp.At(qq=challenger_id))
@@ -171,7 +175,6 @@ class Battle:
                     message.append("：\n我想禁言你一分钟，但权限不足QAQ")
                 await event.send(event.chain_result(message))
                 event.stop_event()
-            await self.set_cooling(challenger_id)
 
             # 检查是否@了机器人
             if opponent_id == str(event.get_self_id()):
@@ -204,11 +207,12 @@ class Battle:
                 opp_data["battle"].get("privilege") == 1
             )
             if is_admin1 and is_admin2:
-                return await event.send(
+                await event.send(
                     event.plain_result(
                         "你们两人都是管理员或拥有特权，神仙打架，凡人遭殃，御前决斗无法进行哦！"
                     )
                 )
+                return
             # 读取用户武器数量
             numcha_3, numcha_4, numcha_5 = await self.load_weapon_count(challenger_id)
             numopp_3, numopp_4, numopp_5 = await self.load_weapon_count(opponent_id)
@@ -315,6 +319,7 @@ class Battle:
                         "哎呀，禁言失败了，可能是权限不够或者出了点小问题。"
                     )
                 )
+                return
             # # 保存数据
             # await write_json(self.user_data_path / f"{challenger_id}.json", cha_data)
             # await write_json(self.user_data_path / f"{opponent_id}.json", opp_data)
