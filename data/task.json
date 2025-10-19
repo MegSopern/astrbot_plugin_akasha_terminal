@@ -1,239 +1,835 @@
 {
-	"daily_work": {
-		"id": "1",
-		"name": "勤劳工作者",
-		"description": "完成3次打工赚钱",
-		"type": "daily",
-		"reward": {
-			"money": "500",
-			"items": {
-				"2": 1
-			},
-			"quest_points": "10"
+	"daily_tasks": {
+		"daily_work": {
+			"id": "1",
+			"name": "勤劳工作者",
+			"description": "完成3次打工赚钱",
+			"type": "daily",
+			"reward": {
+				"money": "500",
+				"items": {
+					"2": 1
+				},
+				"quest_points": 10
+			}
+		},
+		"daily_shop": {
+			"id": "2",
+			"name": "购物达人",
+			"description": "在商店购买3件道具",
+			"type": "daily",
+			"reward": {
+				"money": "300",
+				"items": {
+					"4": 1
+				},
+				"quest_points": 15
+			}
+		},
+		"daily_synthesis": {
+			"id": "3",
+			"name": "合成大师",
+			"description": "成功合成2个道具",
+			"type": "daily",
+			"reward": {
+				"money": "800",
+				"items": {
+					"5": 1
+				},
+				"quest_points": 20
+			}
+		},
+		"daily_gift": {
+			"id": "5",
+			"name": "慷慨之心",
+			"description": "赠送1件礼物给其他玩家",
+			"type": "daily",
+			"reward": {
+				"money": "50",
+				"items": {
+					"1": 1
+				},
+				"quest_points": 15
+			}
+		},
+		"daily_fight": {
+			"id": "19",
+			"name": "武术交流",
+			"description": "和一位玩家进行一次决斗",
+			"type": "daily",
+			"reward": {
+				"money": "666",
+				"items": {
+					"4": 1
+				},
+				"quest_points": 10
+			}
 		}
 	},
-	"daily_shop": {
-		"id": "2",
-		"name": "购物达人",
-		"description": "在商店购买3件道具",
-		"reward": {
-			"money": "300",
-			"items": {
-				"4": 1
-			},
-			"quest_points": "8"
+	"weekly_tasks": {
+		"weekly_relationship": {
+			"id": "4",
+			"name": "社交达人",
+			"description": "与5个不同的人互动",
+			"type": "weekly",
+			"reward": {
+				"money": "1500",
+				"quest_points": 30
+			}
+		},
+		"weekly_wealth": {
+			"id": "7",
+			"name": "财富积累者",
+			"description": "累计获取10000金币",
+			"type": "weekly",
+			"reward": {
+				"money": "100",
+				"items": {
+					"6": 1
+				},
+				"quest_points": 50
+			}
+		},
+		"weekly_money": {
+			"id": "9",
+			"name": "金币吞噬者",
+			"description": "累计获取100000金币",
+			"type": "weekly",
+			"reward": {
+				"money": "100",
+				"items": {
+					"8": 1
+				},
+				"quest_points": 80
+			}
 		}
 	},
-	"daily_synthesis": {
-		"id": "3",
-		"name": "合成大师",
-		"description": "成功合成2个道具",
-		"reward": {
-			"money": "800",
-			"items": {
-				"5": 1
+	"special_tasks": {
+		"task_noob": {
+			"id": "10",
+			"name": "任务小白",
+			"description": "完成1个任务",
+			"type": "special",
+			"reward": {
+				"money": "100",
+				"items": {
+					"9": 1
+				},
+				"quest_points": 10
+			}
+		},
+		"task_hunter": {
+			"id": "10",
+			"name": "任务猎人",
+			"description": "完成10个任务",
+			"type": "special",
+			"reward": {
+				"money": "100",
+				"items": {
+					"9": 1
+				},
+				"quest_points": 100
+			}
+		},
+		"task_master": {
+			"id": "10",
+			"name": "任务大师",
+			"description": "完成30个任务",
+			"type": "special",
+			"reward": {
+				"money": "100",
+				"items": {
+					"9": 1
+				},
+				"quest_points": 300
+			}
+		},
+		"sign_in_master": {
+			"id": "sign_in_master",
+			"name": "时间的见证者",
+			"description": "累计签到30天",
+			"type": "special",
+			"target": 30,
+			"rewards": {
+				"money": 2500,
+				"items": {
+					"1": 15,
+					"2": 10
+				},
+				"quest_points": 50
 			},
-			"quest_points": "20"
+			"permanent": true,
+			"track_key": "sign_in_count"
+		},
+		"first_date": {
+			"id": "first_date",
+			"name": "初心的触碰",
+			"description": "与伴侣进行第一次约会",
+			"type": "special",
+			"target": 1,
+			"rewards": {
+				"money": 500,
+				"items": {
+					"1": 3,
+					"2": 2
+				},
+				"quest_points": 15
+			},
+			"permanent": true,
+			"track_key": "date_count"
+		},
+		"confession_master": {
+			"id": "confession_master",
+			"name": "真心的表达者",
+			"description": "表白成功10次",
+			"type": "special",
+			"target": 10,
+			"rewards": {
+				"money": 2500,
+				"items": {
+					"4": 8,
+					"7": 3
+				},
+				"quest_points": 55
+			},
+			"permanent": true,
+			"track_key": "confession_success"
+		},
+		"proposal_expert": {
+			"id": "proposal_expert",
+			"name": "承诺的勇者",
+			"description": "成功求婚3次",
+			"type": "special",
+			"target": 3,
+			"rewards": {
+				"money": 5000,
+				"items": {
+					"9": 5,
+					"8": 3
+				},
+				"quest_points": 90
+			},
+			"permanent": true,
+			"track_key": "proposal_success"
+		},
+		"love_master": {
+			"id": "love_master",
+			"name": "情深似海者",
+			"description": "与伴侣的好感度达到1000",
+			"type": "special",
+			"target": 1000,
+			"rewards": {
+				"money": 2000,
+				"items": {
+					"6": 1,
+					"7": 2
+				},
+				"quest_points": 50
+			},
+			"permanent": true,
+			"track_key": "max_love"
+		},
+		"love_collector": {
+			"id": "love_collector",
+			"name": "情感的收藏家",
+			"description": "收集1000个爱心",
+			"type": "special",
+			"target": 1000,
+			"rewards": {
+				"money": 3000,
+				"items": {
+					"4": 10,
+					"5": 5
+				},
+				"quest_points": 65
+			},
+			"permanent": true,
+			"track_key": "love_hearts"
+		},
+		"divorce_expert": {
+			"id": "divorce_expert",
+			"name": "离别的哲学",
+			"description": "经历5次离婚",
+			"type": "special",
+			"target": 5,
+			"rewards": {
+				"money": 1000,
+				"items": {
+					"3": 3,
+					"4": 2
+				},
+				"quest_points": 20
+			},
+			"permanent": true,
+			"track_key": "divorce_count"
+		},
+		"ntr_master": {
+			"id": "ntr_master",
+			"name": "背叛的见证者",
+			"description": "成功抢夺5次老婆",
+			"type": "special",
+			"target": 5,
+			"rewards": {
+				"money": 2000,
+				"items": {
+					"6": 3,
+					"8": 2
+				},
+				"quest_points": 40
+			},
+			"permanent": true,
+			"track_key": "ntr_success"
+		},
+		"couple_task_master": {
+			"id": "couple_task_master",
+			"name": "爱情的践行者",
+			"description": "完成20个情侣任务",
+			"type": "special",
+			"target": 20,
+			"rewards": {
+				"money": 3500,
+				"items": {
+					"8": 4,
+					"9": 3
+				},
+				"quest_points": 75
+			},
+			"permanent": true,
+			"track_key": "couple_tasks"
+		},
+		"adventure_seeker": {
+			"id": "adventure_seeker",
+			"name": "未知的探索者",
+			"description": "完成10次情侣冒险",
+			"type": "special",
+			"target": 10,
+			"rewards": {
+				"money": 2500,
+				"items": {
+					"5": 5,
+					"6": 3
+				},
+				"quest_points": 55
+			},
+			"permanent": true,
+			"track_key": "adventure_count"
+		},
+		"ranking_climber": {
+			"id": "ranking_climber",
+			"name": "巅峰的追求者",
+			"description": "进入情侣排行榜前10名",
+			"type": "special",
+			"target": 1,
+			"rewards": {
+				"money": 4000,
+				"items": {
+					"6": 6,
+					"8": 4
+				},
+				"quest_points": 85
+			},
+			"permanent": true,
+			"track_key": "ranking_top10"
+		},
+		"social_butterfly": {
+			"id": "social_butterfly",
+			"name": "言语的艺术家",
+			"description": "累计进行50次互动",
+			"type": "special",
+			"target": 50,
+			"rewards": {
+				"money": 1500,
+				"items": {
+					"3": 5,
+					"4": 3
+				},
+				"quest_points": 30
+			},
+			"permanent": true,
+			"track_key": "interaction_count"
+		},
+		"hug_master": {
+			"id": "hug_master",
+			"name": "温暖的传递者",
+			"description": "给予100次拥抱",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 2000,
+				"items": {
+					"2": 8,
+					"5": 3
+				},
+				"quest_points": 40
+			},
+			"permanent": true,
+			"track_key": "hug_count"
+		},
+		"gift_giver": {
+			"id": "gift_giver",
+			"name": "慷慨的灵魂",
+			"description": "赠送50次礼物",
+			"type": "special",
+			"target": 50,
+			"rewards": {
+				"money": 2000,
+				"items": {
+					"3": 8,
+					"4": 5
+				},
+				"quest_points": 45
+			},
+			"permanent": true,
+			"track_key": "gift_count"
+		},
+		"street_walker": {
+			"id": "street_walker",
+			"name": "漫步的哲学家",
+			"description": "逛街100次",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 2500,
+				"items": {
+					"1": 12,
+					"3": 6
+				},
+				"quest_points": 50
+			},
+			"permanent": true,
+			"track_key": "street_count"
+		},
+		"work_hard": {
+			"id": "work_hard",
+			"name": "劳动的意义",
+			"description": "累计打工100次",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 3000,
+				"items": {
+					"1": 10,
+					"6": 2
+				},
+				"quest_points": 60
+			},
+			"permanent": true,
+			"track_key": "work_count"
+		},
+		"welfare_recipient": {
+			"id": "welfare_recipient",
+			"name": "生存的智慧",
+			"description": "领取低保20次",
+			"type": "special",
+			"target": 20,
+			"rewards": {
+				"money": 1000,
+				"items": {
+					"1": 8,
+					"2": 5
+				},
+				"quest_points": 25
+			},
+			"permanent": true,
+			"track_key": "welfare_count"
+		},
+		"millionaire": {
+			"id": "millionaire",
+			"name": "财富的守望者",
+			"description": "累计拥有100000金币",
+			"type": "special",
+			"target": 100000,
+			"rewards": {
+				"money": 10000,
+				"items": {
+					"8": 3,
+					"9": 5
+				},
+				"quest_points": 100
+			},
+			"permanent": true,
+			"track_key": "max_money"
+		},
+		"robber_king": {
+			"id": "robber_king",
+			"name": "财富再分配者",
+			"description": "成功抢劫20次",
+			"type": "special",
+			"target": 20,
+			"rewards": {
+				"money": 2500,
+				"items": {
+					"7": 3,
+					"8": 2
+				},
+				"quest_points": 45
+			},
+			"permanent": true,
+			"track_key": "robbery_count"
+		},
+		"deposit_master": {
+			"id": "deposit_master",
+			"name": "奉献的艺术",
+			"description": "上交存款50次",
+			"type": "special",
+			"target": 50,
+			"rewards": {
+				"money": 3000,
+				"items": {
+					"5": 6,
+					"8": 3
+				},
+				"quest_points": 60
+			},
+			"permanent": true,
+			"track_key": "deposit_count"
+		},
+		"bank_user": {
+			"id": "bank_user",
+			"name": "价值的思辨者",
+			"description": "使用cp银行存取款10次",
+			"type": "special",
+			"target": 10,
+			"rewards": {
+				"money": 1500,
+				"items": {
+					"2": 6,
+					"7": 2
+				},
+				"quest_points": 30
+			},
+			"permanent": true,
+			"track_key": "bank_usage"
+		},
+		"house_owner": {
+			"id": "house_owner",
+			"name": "安居的智慧",
+			"description": "购买第一套房子",
+			"type": "special",
+			"target": 1,
+			"rewards": {
+				"money": 5000,
+				"items": {
+					"9": 5,
+					"1": 10
+				},
+				"quest_points": 80
+			},
+			"permanent": true,
+			"track_key": "house_count"
+		},
+		"shop_owner": {
+			"id": "shop_owner",
+			"name": "创造的先驱",
+			"description": "开设第一家店铺",
+			"type": "special",
+			"target": 1,
+			"rewards": {
+				"money": 3000,
+				"items": {
+					"8": 2,
+					"9": 3
+				},
+				"quest_points": 60
+			},
+			"permanent": true,
+			"track_key": "shop_opened"
+		},
+		"shopping_spree": {
+			"id": "shopping_spree",
+			"name": "物欲的哲学",
+			"description": "在商店购买10次道具",
+			"type": "special",
+			"target": 10,
+			"rewards": {
+				"money": 800,
+				"items": {
+					"2": 5,
+					"5": 2
+				},
+				"quest_points": 25
+			},
+			"permanent": true,
+			"track_key": "shop_count"
+		},
+		"shop_browser": {
+			"id": "shop_browser",
+			"name": "欲望的观察者",
+			"description": "浏览商店100次",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 1200,
+				"items": {
+					"1": 6,
+					"5": 2
+				},
+				"quest_points": 25
+			},
+			"permanent": true,
+			"track_key": "shop_views"
+		},
+		"refresh_master": {
+			"id": "refresh_master",
+			"name": "更新的执着者",
+			"description": "刷新商店20次",
+			"type": "special",
+			"target": 20,
+			"rewards": {
+				"money": 1500,
+				"items": {
+					"6": 2,
+					"7": 1
+				},
+				"quest_points": 30
+			},
+			"permanent": true,
+			"track_key": "shop_refresh"
+		},
+		"item_user": {
+			"id": "item_user",
+			"name": "物质的消解者",
+			"description": "使用道具100次",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 2000,
+				"items": {
+					"3": 10,
+					"6": 4
+				},
+				"quest_points": 40
+			},
+			"permanent": true,
+			"track_key": "item_usage"
+		},
+		"backpack_organizer": {
+			"id": "backpack_organizer",
+			"name": "秩序的守护者",
+			"description": "查看背包50次",
+			"type": "special",
+			"target": 50,
+			"rewards": {
+				"money": 800,
+				"items": {
+					"2": 4,
+					"4": 3
+				},
+				"quest_points": 20
+			},
+			"permanent": true,
+			"track_key": "backpack_views"
+		},
+		"void_ball_collector": {
+			"id": "void_ball_collector",
+			"name": "虚无的追寻者",
+			"description": "获得50个虚空彩球",
+			"type": "special",
+			"target": 50,
+			"rewards": {
+				"money": 2000,
+				"items": {
+					"7": 4,
+					"9": 2
+				},
+				"quest_points": 45
+			},
+			"permanent": true,
+			"track_key": "void_balls"
+		},
+		"gacha_addict": {
+			"id": "gacha_addict",
+			"name": "欲望的囚徒",
+			"description": "进行50次武器抽卡",
+			"type": "special",
+			"target": 50,
+			"rewards": {
+				"money": 1500,
+				"items": {
+					"6": 3,
+					"7": 2
+				},
+				"quest_points": 35
+			},
+			"permanent": true,
+			"track_key": "gacha_count"
+		},
+		"weapon_collector": {
+			"id": "weapon_collector",
+			"name": "命运的宠儿",
+			"description": "收集10把五星武器",
+			"type": "special",
+			"target": 10,
+			"rewards": {
+				"money": 5000,
+				"items": {
+					"8": 5,
+					"9": 3
+				},
+				"quest_points": 100
+			},
+			"permanent": true,
+			"track_key": "five_star_weapons"
+		},
+		"duel_champion": {
+			"id": "duel_champion",
+			"name": "胜负的执念",
+			"description": "赢得20场决斗",
+			"type": "special",
+			"target": 20,
+			"rewards": {
+				"money": 3000,
+				"items": {
+					"7": 5,
+					"8": 3
+				},
+				"quest_points": 70
+			},
+			"permanent": true,
+			"track_key": "duel_wins"
+		},
+		"duel_veteran": {
+			"id": "duel_veteran",
+			"name": "斗争的本质",
+			"description": "参与100场决斗",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 4000,
+				"items": {
+					"6": 8,
+					"9": 4
+				},
+				"quest_points": 80
+			},
+			"permanent": true,
+			"track_key": "duel_count"
 		}
 	},
-	"weekly_relationship": {
-		"id": "4",
-		"name": "社交达人",
-		"description": "与5个不同的人互动",
-		"reward": {
-			"money": "1500"
+	"task_shop": {
+		"1": {
+			"name": "体力药水",
+			"price": 100,
+			"description": "恢复体力，让你重新充满活力",
+			"quest_point_price": 5
+		},
+		"2": {
+			"name": "幸运符",
+			"price": 200,
+			"description": "增加幸运值，提升各种成功率",
+			"quest_point_price": 8
+		},
+		"3": {
+			"name": "爱心巧克力",
+			"price": 150,
+			"description": "甜蜜的巧克力，增加好感度",
+			"quest_point_price": 6
+		},
+		"4": {
+			"name": "经验加速器",
+			"price": 300,
+			"description": "双倍经验获取，快速成长",
+			"quest_point_price": 12
+		},
+		"5": {
+			"name": "金币袋",
+			"price": 250,
+			"description": "装满金币的小袋子，直接获得500金币",
+			"quest_point_price": 10
+		},
+		"6": {
+			"name": "神秘宝箱",
+			"price": 500,
+			"description": "神秘的宝箱，可能开出珍贵道具",
+			"quest_point_price": 20
+		},
+		"7": {
+			"name": "时间沙漏",
+			"price": 400,
+			"description": "减少所有冷却时间50%",
+			"quest_point_price": 15
+		},
+		"8": {
+			"name": "魅力香水",
+			"price": 350,
+			"description": "增加魅力值，提升表白成功率",
+			"quest_point_price": 14
+		},
+		"9": {
+			"name": "战斗药剂",
+			"price": 180,
+			"description": "临时提升战斗力，决斗必备",
+			"quest_point_price": 7
+		},
+		"10": {
+			"name": "保护符",
+			"price": 220,
+			"description": "减少失败惩罚，降低风险",
+			"quest_point_price": 9
+		},
+		"11": {
+			"name": "双倍券",
+			"price": 600,
+			"description": "下次任务奖励翻倍",
+			"quest_point_price": 25
+		},
+		"12": {
+			"name": "复活石",
+			"price": 800,
+			"description": "死亡时自动复活，保留所有物品",
+			"quest_point_price": 30
+		},
+		"13": {
+			"name": "传送卷轴",
+			"price": 120,
+			"description": "瞬间传送到任意地点",
+			"quest_point_price": 5
+		},
+		"14": {
+			"name": "记忆水晶",
+			"price": 450,
+			"description": "记录当前状态，可随时恢复",
+			"quest_point_price": 18
+		},
+		"15": {
+			"name": "友谊手环",
+			"price": 300,
+			"description": "赠送给好友，增进友谊",
+			"quest_point_price": 12
+		},
+		"16": {
+			"name": "智慧之书",
+			"price": 380,
+			"description": "永久增加智力属性",
+			"quest_point_price": 16
+		},
+		"17": {
+			"name": "勇气徽章",
+			"price": 320,
+			"description": "永久增加勇气属性",
+			"quest_point_price": 13
+		},
+		"18": {
+			"name": "治疗药草",
+			"price": 80,
+			"description": "治疗轻微伤势，恢复健康",
+			"quest_point_price": 3
+		},
+		"19": {
+			"name": "隐身斗篷",
+			"price": 700,
+			"description": "短时间内隐身，避免冲突",
+			"quest_point_price": 28
+		},
+		"20": {
+			"name": "许愿星",
+			"price": 1000,
+			"description": "实现一个小愿望，效果神秘",
+			"quest_point_price": 40
 		}
 	},
-	"daily_gift": {
-		"id": "5",
-		"name": "慷慨之心",
-		"description": "赠送1件礼物给其他玩家",
-		"reward": {
-			"money": "50",
-			"items": {
-				"1": 1
-			},
-			"quest_points": "12"
-		}
-	},
-	"daily_date": {
-		"id": "6",
-		"name": "浪漫约会",
-		"description": "进行1次约会",
-		"reward": {
-			"money": "100",
-			"items": {
-				"1": 2
-			},
-			"quest_points": "15"
-		}
-	},
-	"weekly_wealth": {
-		"id": "7",
-		"name": "财富积累者",
-		"description": "累计获取10000金币",
-		"reward": {
-			"money": "100",
-			"items": {
-				"6": 1
-			},
-			"quest_points": "15"
-		}
-	},
-	"special_sign": {
-		"id": "8",
-		"name": "初次登录",
-		"description": "首次使用任务系统",
-		"reward": {
-			"money": "100",
-			"items": {
-				"4": 2
-			},
-			"quest_points": "15"
-		}
-	},
-	"weekly_money": {
-		"id": "9",
-		"name": "金币吞噬者",
-		"description": "累计获取100000金币",
-		"reward": {
-			"money": "100",
-			"items": {
-				"8": 1
-			},
-			"quest_points": "15"
-		}
-	},
-	"achievement_hunter": {
-		"id": "10",
-		"name": "任务猎人",
-		"description": "完成十个任务",
-		"reward": {
-			"money": "100",
-			"items": {
-				"9": 1
-			},
-			"quest_points": "15"
-		}
-	},
-	"daily_protect": {
-		"id": "11",
-		"name": "保护商队",
-		"description": "保护商人安全到达目的地",
-		"reward": {
-			"money": "1300",
-			"items": {
-				"2": 1
-			},
-			"quest_points": "12"
-		}
-	},
-	"daily_finding": {
-		"id": "12",
-		"name": "寻找遗物",
-		"description": "根据模糊的线索,寻找一件遗物",
-		"reward": {
-			"money": "1000",
-			"items": {
-				"6": 2
-			},
-			"quest_points": "0"
-		}
-	},
-	"daily_risk": {
-		"id": "13",
-		"name": "森林冒险",
-		"description": "森林探险",
-		"reward": {
-			"money": "888",
-			"items": {
-				"1": 3
-			},
-			"quest_points": "0"
-		}
-	},
-	"weekly_purofy": {
-		"id": "14",
-		"name": "净化水源",
-		"description": "某个村庄的水源被污染了,需要净化",
-		"reward": {
-			"money": "288",
-			"items": {
-				"5": 2
-			},
-			"quest_points": "0"
-		}
-	},
-	"weekly_teaching": {
-		"id": "15",
-		"name": "学习知识",
-		"description": "学习知识",
-		"reward": {
-			"money": "0",
-			"items": {
-				"7": 2
-			},
-			"quest_points": "0"
-		}
-	},
-	"special_party": {
-		"id": "16",
-		"name": "聚会狂欢",
-		"description": "你胜利了",
-		"reward": {
-			"money": "1888",
-			"items": {
-				"10": 3
-			},
-			"quest_points": "0"
-		}
-	},
-	"weekly_hunter": {
-		"id": "17",
-		"name": "狩猎野兽",
-		"description": "狩猎传说中的野兽",
-		"reward": {
-			"money": "1488",
-			"items": {
-				"8": 1
-			},
-			"quest_points": "0"
-		}
-	},
-	"weekly_boss": {
-		"id": "18",
-		"name": "每周挑战",
-		"description": "挑战boss",
-		"reward": {
-			"money": "2088",
-			"items": {
-				"8": 1
-			},
-			"quest_points": "0"
-		}
-	},
-	"daily_fight": {
-		"id": "19",
-		"name": "武术交流",
-		"description": "和一位玩家进行一次决斗",
-		"reward": {
-			"money": "666",
-			"items": {
-				"4": 1
-			},
-			"quest_points": "0"
-		}
-	},
-	"special_final": {
-		"id": "20",
-		"name": "You do it",
-		"description": "成为最强*(排行第一且保持一个月)",
-		"reward": {
-			"money": "58888",
-			"items": {
-				"10": 5
-			},
-			"quest_points": "0"
-		}
-	}
+	"last_daily_refresh": "",
+	"last_weekly_refresh": "",
+	"system_initialized": false,
+	"version": "1.0.0"
 }
