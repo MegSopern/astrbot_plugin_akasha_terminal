@@ -545,13 +545,13 @@ class Lottery:
             combat_power = (
                 five_star_count * 500 + four_star_count * 100 + three_star_count * 20
             )
-            achievements = ""
+            achievements = []
             if five_star_count >= 10:
-                achievements += "🏆 五星武器收藏家"
+                achievements.append("🏆 五星武器收藏家")
             if four_star_count >= 50:
-                achievements += "💎 四星武器大师"
+                achievements.append("💎 四星武器大师")
             if len(weapon_data["武器计数"]) >= 100:
-                achievements += "🎖️ 武器收集达人"
+                achievements.append("🎖️ 武器收集达人")
 
             # 战斗力评级
             if combat_power >= 3000:
