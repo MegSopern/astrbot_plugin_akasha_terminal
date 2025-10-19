@@ -240,11 +240,11 @@ async def create_user_data(user_id: str, user_data_path: Path) -> bool:
                 "house_price": 500,
                 "house_level": 1,
             },
-            "quest": {
+            "task": {
                 "daily": {},
                 "weekly": {},
                 "special": {},
-                "quest_points": 0,
+                "task_points": 0,
                 "last_daily_reset": "",
                 "last_weekly_reset": "",
             },

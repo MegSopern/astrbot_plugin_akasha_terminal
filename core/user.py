@@ -52,12 +52,12 @@ class User:
                     "house_level": 1,
                 }
             },
-            "quest": {
+            "task": {
                 "default": lambda uid: {
                     "daily": {},
                     "weekly": {},
                     "special": {},
-                    "quest_points": 0,
+                    "task_points": 0,
                     "last_daily_reset": "",
                     "last_weekly_reset": "",
                 }
@@ -163,11 +163,11 @@ class User:
         self, user_id: str, group_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取用户任务数据"""
-        return await self._get_data("quest", user_id)
+        return await self._get_data("task", user_id)
 
     async def update_quest_data(self, user_id: str, data: Dict[str, Any]) -> bool:
         """更新用户任务数据"""
-        return await self._update_data("quest", user_id, data)
+        return await self._update_data("task", user_id, data)
 
     async def delete_user(self, user_id: str) -> bool:
         """删除用户所有数据"""

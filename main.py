@@ -93,12 +93,10 @@ class AkashaTerminal(Star):
         message = await self.task.get_user_daily_task(user_id)
         yield event.plain_result(message)
 
-    @filter.command("我的任务", alias="查看任务")
-    async def check_my_tasks(self, event: AiocqhttpMessageEvent):
-        """查看当前任务进度"""
-        user_id: str = event.get_sender_id()
-        message = await self.task.format_user_tasks(user_id)
-        yield event.plain_result(message)
+    @filter.command("任务列表", alias={"我的任务", "查看任务"})
+    async def show_quests(self, event: AiocqhttpMessageEvent):
+        """显示所有任务列表"""
+        await self.task.format_user_tasks(event)
 
     @filter.command("打工")
     async def work_action(self, event: AiocqhttpMessageEvent):
