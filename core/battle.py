@@ -128,7 +128,7 @@ class Battle:
         """处理决斗命令"""
         try:
             challenger_id = str(event.get_sender_id())
-
+            opponent_id: Optional[str] = None
             # 决斗冷却检查
             is_cooling, remaining = await self.is_cooling(challenger_id)
             if is_cooling:

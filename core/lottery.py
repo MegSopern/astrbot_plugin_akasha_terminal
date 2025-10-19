@@ -155,12 +155,12 @@ class Lottery:
         try:
             # 计算五星概率（64抽后每抽+6.5%）
             current_five_star_prob = self.five_star_prob
-            if five_star_miss > 64:
-                current_five_star_prob += (five_star_miss - 64) * 6.5
+            if five_star_miss >= 64:
+                current_five_star_prob += (five_star_miss - 63) * 6.5
                 current_five_star_prob = min(current_five_star_prob, 100)
 
             # 四星保底判定（每10抽必出）
-            is_four_star_guarantee = four_star_miss > 9
+            is_four_star_guarantee = four_star_miss >= 9
 
             # 随机判定星级
             rand_val = random.uniform(0, 100)
@@ -284,7 +284,11 @@ class Lottery:
                 ) = await self.handle_single_draw(
                     user_id, user_data, user_backpack, five_star_miss, four_star_miss
                 )
-                five_star_prob = current_five_star_prob
+                next_five_star_prob = (
+                    int(current_five_star_prob) + 6.5
+                    if five_star_miss >= 64
+                    else self.five_star_prob
+                )
                 draw_results.append(result)
                 all_snippets += result["message_snippets"]
                 image_paths.append(weapon_image_path)
@@ -329,7 +333,7 @@ class Lottery:
             # 添加保底进度和剩余资源
             message += (
                 f"💎 剩余纠缠之缘：{user_backpack['weapon']['纠缠之缘']}\n"
-                f"🎯 五星保底进度：{five_star_miss}/80（当前概率：{five_star_prob:.2f}%）\n"
+                f"🎯 五星保底进度：{five_star_miss}/80（下一抽概率：{next_five_star_prob:.2f}%）\n"
                 f"🎯 四星保底进度：{four_star_miss}/10\n"
             )
 
