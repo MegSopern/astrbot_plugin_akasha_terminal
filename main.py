@@ -206,3 +206,10 @@ class AkashaTerminal(Star):
         input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
         message = await self.shop.handle_item_detail_command(input_str)
         yield event.plain_result(message)
+
+    @filter.command("测试")
+    async def test_command(self, event: AiocqhttpMessageEvent):
+        """测试命令，返回测试成功！信息"""
+        user_name = event.get_sender_nickname()
+        yield event.plain_result("测试ing...")
+        yield event.plain_result(f"{user_name}测试成功！")
