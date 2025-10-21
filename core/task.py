@@ -14,7 +14,9 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 )
 
 from ..utils.utils import (
+    add_to_backpack,
     get_nickname,
+    get_user_data_and_backpack,
     read_json,
     write_json,
 )
@@ -48,6 +50,12 @@ class Task:
             for item_name, count in rewards["items"].items():
                 reward_texts.append(f"{item_name}×{count}")
         return ", ".join(reward_texts) or "无奖励"
+
+    def _status_of(self, state: Dict[str, Any]) -> str:
+        """获取任务状态符号"""
+        return (
+            "✅" if state.get("claimed") else ("🎁" if state.get("completed") else "⏳")
+        )
 
     # 判断记录的数据和今天是否在同一周
     def is_same_week(self, date_str: str) -> bool:
@@ -109,17 +117,19 @@ class Task:
         self,
         event: AiocqhttpMessageEvent,
         user_id: str,
-        user_data: Dict[str, Any] = None,
+        is_return_user_data: bool = False,  # 是否返回user_data
     ) -> Dict[str, Any]:
-        """获取用户任务数据,如果提供了user_data则直接使用"""
+        """获取用户任务数据\n
+        如果is_return_user_data为True，则返回(user_data["task"]、user_data)元组\n
+        否则默认仅返回user_data["task"]
+        """
         if not (self.user_data_path / f"{user_id}.json").exists():
             await event.send(
                 event.plain_result("你的信息不存在，请先进行一次签到来注册信息~")
             )
             return
         today = datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d")
-        if not user_data:
-            user_data = await read_json(self.user_data_path / f"{user_id}.json")
+        user_data = await read_json(self.user_data_path / f"{user_id}.json")
         if (
             not user_data["task"]["last_daily_reset"]
             or not user_data["task"]["last_weekly_refresh"]
@@ -132,6 +142,10 @@ class Task:
         new_data = await self.check_task_reset(user_id, user_data, today)
         if new_data:
             user_data = new_data
+
+        # 返回任务数据
+        if is_return_user_data:
+            return user_data["task"], user_data
         return user_data["task"]
 
     async def check_task_reset(
@@ -226,9 +240,8 @@ class Task:
         """格式化用户任务信息"""
         user_id = str(event.get_sender_id())
         try:
-            user_data = await read_json(self.user_data_path / f"{user_id}.json")
+            user_tasks = await self.get_user_tasks(event, user_id)
             task_data = await self.get_task_data()
-            user_tasks = await self.get_user_tasks(event, user_id, user_data)
             achievements, completed_tasks = await self.get_user_achievements(user_tasks)
 
             # 确保task_data有正确的结构
@@ -236,6 +249,45 @@ class Task:
             weekly_tasks = task_data.get("weekly_tasks", {})
             special_tasks = task_data.get("special_tasks", {})
             task_shop = task_data.get("task_shop", {})
+
+            # 公共工具（仅在本函数内使用，减少重复逻辑）
+
+            def _progress_of(state: Dict[str, Any], target: int) -> Tuple[int, int]:
+                progress = min(state.get("progress", 0), target)
+                percent = math.floor((progress / target) * 100) if target else 0
+                return progress, percent
+
+            def _format_entry(
+                task_def: Dict[str, Any], user_state: Dict[str, Any]
+            ) -> Dict[str, Any]:
+                # 格式化单个任务条目
+                p, perc = _progress_of(user_state, task_def["target"])
+                return {
+                    **task_def,
+                    "status": self._status_of(user_state),
+                    "progressText": f"{p}/{task_def['target']}",
+                    "progressPercent": perc,
+                    "rewardsText": self.format_rewards(task_def["rewards"]),
+                }
+
+            def _build_section(
+                task_defs: Dict[str, Dict[str, Any]],
+                user_target_tasks: Dict[str, Dict[str, Any]],
+                skip_one_time_claimed: bool = False,
+            ) -> List[Dict[str, Any]]:
+                # 构建任务部分列表
+                result: List[Dict[str, Any]] = []
+                for tid, task_item in task_defs.items():
+                    state = user_target_tasks.get(
+                        tid, {"progress": 0, "completed": False, "claimed": False}
+                    )
+                    # 特殊任务：跳过已领取的一次性任务
+                    if (
+                        skip_one_time_claimed or task_item.get("one_time", False)
+                    ) and state.get("claimed"):
+                        continue
+                    result.append(_format_entry(task_item, state))
+                return result
 
             # 构建模板数据
             template_data = {
@@ -249,119 +301,65 @@ class Task:
                 "task_shop": [],
                 "achievements": [],
             }
+
             try:
-                # 处理每日任务
-                for task_id, task in daily_tasks.items():
-                    user_daily_task = user_tasks.get("daily", {}).get(
-                        task_id, {"progress": 0, "completed": False, "claimed": False}
-                    )
-                    progress = min(user_daily_task["progress"], task["target"])
-                    template_data["daily_tasks"].append(
-                        {
-                            **task,
-                            "status": "✅"
-                            if user_daily_task["claimed"]
-                            else "🎁"
-                            if user_daily_task["completed"]
-                            else "⏳",
-                            "progressText": f"{progress}/{task['target']}",
-                            "progressPercent": math.floor(
-                                (progress / task["target"]) * 100
-                            ),
-                            "rewardsText": self.format_rewards(task["rewards"]),
-                        }
-                    )
+                # 统一构建三类任务
+                template_data["daily_tasks"] = _build_section(
+                    daily_tasks,
+                    user_tasks.get("daily", {}),
+                    skip_one_time_claimed=False,
+                )
+                template_data["weekly_tasks"] = _build_section(
+                    weekly_tasks,
+                    user_tasks.get("weekly", {}),
+                    skip_one_time_claimed=False,
+                )
+                template_data["special_tasks"] = _build_section(
+                    special_tasks,
+                    user_tasks.get("special", {}),
+                    skip_one_time_claimed=True,  # 跳过已领取的特殊任务
+                )
 
-                # 处理周常任务
-                for task_id, task in weekly_tasks.items():
-                    user_task = user_tasks.get("weekly", {}).get(
-                        task_id, {"progress": 0, "completed": False, "claimed": False}
-                    )
-                    progress = min(user_task["progress"], task["target"])
-                    template_data["weekly_tasks"].append(
-                        {
-                            **task,
-                            "status": "✅"
-                            if user_task["claimed"]
-                            else "🎁"
-                            if user_task["completed"]
-                            else "⏳",
-                            "progressText": f"{progress}/{task['target']}",
-                            "progressPercent": math.floor(
-                                (progress / task["target"]) * 100
-                            ),
-                            "rewardsText": self.format_rewards(task["rewards"]),
-                        }
-                    )
-
-                # 处理特殊任务
-                for task_id, task in special_tasks.items():
-                    user_task = user_tasks.get("special", {}).get(
-                        task_id, {"progress": 0, "completed": False, "claimed": False}
-                    )
-                    # 跳过已完成的一次性任务
-                    if task.get("one_time") and user_task["claimed"]:
-                        continue
-
-                    progress = min(user_task["progress"], task["target"])
-                    template_data["special_tasks"].append(
-                        {
-                            **task,
-                            "status": "✅"
-                            if user_task["claimed"]
-                            else "🎁"
-                            if user_task["completed"]
-                            else "⏳",
-                            "progressText": f"{progress}/{task['target']}",
-                            "progressPercent": math.floor(
-                                (progress / task["target"]) * 100
-                            ),
-                            "rewardsText": self.format_rewards(task["rewards"]),
-                        }
-                    )
-
-                # 处理任务商店
-                for item_id, item in task_shop.items():
+                # 任务商店
+                for _, item in task_shop.items():
                     template_data["task_shop"].append(
                         {
                             **item,
                             "affordable": (
-                                user_tasks.get("quest_points", 0) >= item.get("cost", 0)
+                                user_tasks.get("task_points", 0) >= item.get("cost", 0)
                             ),
                         }
                     )
-                # 处理成就
-                for achievement in achievements:
-                    template_data["achievements"].append(
-                        {
-                            **achievement,
-                            "status": "🏆" if achievement["unlocked"] else "🔒",
-                            "progressText": f"{achievement['progress']}/{achievement['target']}"
-                            if achievement["type"] == "count"
-                            else "",
-                            "progressPercent": math.floor(
-                                (achievement["progress"] / achievement["target"]) * 100
-                            )
-                            if achievement["type"] == "count"
-                            else 0,
-                        }
-                    )
+
+                # 成就
+                template_data["achievements"] = [
+                    {
+                        **ach,
+                        "status": "🏆" if ach["unlocked"] else "🔒",
+                        "progressText": f"{ach['progress']}/{ach['target']}"
+                        if ach["type"] == "count"
+                        else "",
+                        "progressPercent": (
+                            math.floor((ach["progress"] / ach["target"]) * 100)
+                            if ach["type"] == "count"
+                            else 0
+                        ),
+                    }
+                    for ach in achievements
+                ]
             except Exception as e:
                 logger.error(f"格式化任务数据失败: {str(e)}")
                 await event.send(event.plain_result("处理任务数据时出错，请稍后重试"))
                 return
 
             try:
-                # 计算统计数据
-                daily_completed = len(
-                    [q for q in template_data["daily_tasks"] if q["status"] == "✅"]
-                )
-                weekly_completed = len(
-                    [q for q in template_data["weekly_tasks"] if q["status"] == "✅"]
-                )
-                special_completed = len(
-                    [q for q in template_data["special_tasks"] if q["status"] == "✅"]
-                )
+                # 统计数据
+                def _count_done(entries: List[Dict[str, Any]]) -> int:
+                    return sum(1 for q in entries if q.get("status") == "✅")
+
+                daily_completed = _count_done(template_data["daily_tasks"])
+                weekly_completed = _count_done(template_data["weekly_tasks"])
+                special_completed = _count_done(template_data["special_tasks"])
 
                 total_tasks = (
                     len(template_data["daily_tasks"])
@@ -383,6 +381,9 @@ class Task:
 
             try:
                 # 构建最终消息
+                daily_refresh = self.get_refresh_time()
+                weekly_refresh = self.get_weekly_refresh_time()
+
                 message = [Comp.Plain(f"📋 {template_data['user_name']}的任务列表\n")]
                 message.append(
                     Comp.Plain(f"🏆 任务点数: {template_data['task_points']}\n")
@@ -393,28 +394,28 @@ class Task:
                     )
                 )
 
+                # 每日任务
                 message.append(Comp.Plain("📅 每日任务:\n"))
-                for quest in template_data["daily_tasks"][:3]:  # 只显示前3个
+                for task in template_data["daily_tasks"][:3]:
                     message.append(
                         Comp.Plain(
-                            f"{quest['status']} {quest['name']} - {quest['progressText']}\n"
+                            f"{task['status']} {task['name']} - {task['progressText']}\n"
                         )
                     )
 
+                # 周常任务（按原样在前面插入一个换行）
                 message.append(Comp.Plain("\n📆 周常任务:\n"))
-                for quest in template_data["weekly_tasks"][:3]:  # 只显示前3个
+                for task in template_data["weekly_tasks"][:3]:
                     message.append(
                         Comp.Plain(
-                            f"{quest['status']} {quest['name']} - {quest['progressText']}\n"
+                            f"{task['status']} {task['name']} - {task['progressText']}\n"
                         )
                     )
 
-                message.append(
-                    Comp.Plain(f"🔄 每日任务刷新: {self.get_refresh_time()}\n")
-                )
-                message.append(
-                    Comp.Plain(f"🔄 周常任务刷新: {self.get_weekly_refresh_time()}\n")
-                )
+                # 刷新提示
+                message.append(Comp.Plain(f"🔄 每日任务刷新: {daily_refresh}\n"))
+                message.append(Comp.Plain(f"🔄 周常任务刷新: {weekly_refresh}\n"))
+
                 await event.send(event.chain_result(message))
                 return
             except Exception as e:
@@ -425,3 +426,373 @@ class Task:
             logger.error(f"获取用户任务失败: {str(e)}")
             await event.send(event.plain_result("获取用户任务信息失败，请稍后重试"))
             return
+
+    async def format_user_daily_tasks(self, event: AiocqhttpMessageEvent):
+        """格式化用户每日任务信息"""
+        user_id = str(event.get_sender_id())
+        try:
+            user_tasks = await self.get_user_tasks(event, user_id)
+            task_data = await self.get_task_data()
+            daily_tasks = task_data.get("weekly_tasks", {})
+
+            message = ["📅 每日任务 📅\n"]
+            message.append("━━━━━━━━━━━━━━━━\n")
+
+            for task_id, task in daily_tasks.items():
+                user_task = user_tasks.get("daily", {}).get(
+                    task_id, {"progress": 0, "completed": False, "claimed": False}
+                )
+                progress = min(user_task["progress"], task["target"])
+                progress_percent = progress / task["target"] * 100
+                status = self._status_of(user_task)
+
+                message.append(f"{status} {task['name']}\n")
+                message.append(f"   📝 {task['description']}\n")
+                if task.get("requirement"):
+                    message.append(f"   ⚠️ {task['requirement']}\n")
+                message.append(
+                    f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
+                )
+
+                # 显示奖励
+                rewards_text = self.format_rewards(task["rewards"])
+                message.append(f"   🎁 奖励: {rewards_text}\n")
+
+                if user_task["completed"] and not user_task["claimed"]:
+                    message.append(f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n")
+
+                message.append("   ────────────────\n")
+
+            # 显示刷新时间
+            message.append(f"\n🔄 任务将在 {self.get_refresh_time()} 后刷新")
+            await event.send(event.plain_result(Comp.Plain("".join(message))))
+
+        except Exception as e:
+            logger.error(f"显示每日任务失败: {str(e)}")
+            await event.send(event.plain_result("每日任务暂时无法访问，请稍后再试"))
+
+    async def format_user_weekly_tasks(self, event: AiocqhttpMessageEvent):
+        """格式化用户周常任务信息"""
+        user_id = str(event.get_sender_id())
+        try:
+            user_tasks = await self.get_user_tasks(event, user_id)
+            task_data = await self.get_task_data()
+            weekly_tasks = task_data.get("weekly_tasks", {})
+
+            message = ["📆 周常任务 📆\n"]
+            message.append("━━━━━━━━━━━━━━━━\n")
+
+            for task_id, task in weekly_tasks.items():
+                user_task = user_tasks.get("weekly", {}).get(
+                    task_id, {"progress": 0, "completed": False, "claimed": False}
+                )
+                progress = min(user_task["progress"], task["target"])
+                progress_percent = progress / task["target"] * 100
+                status = self._status_of(user_task)
+
+                message.append(f"{status} {task['name']}\n")
+                message.append(f"   📝 {task['description']}\n")
+                if task.get("requirement", ""):
+                    message.append(f"   ⚠️ {task['requirement']}\n")
+                message.append(
+                    f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
+                )
+
+                # 显示奖励
+                rewards_text = self.format_rewards(task["rewards"])
+                message.append(f"   🎁 奖励: {rewards_text}\n")
+
+                if user_task["completed"] and not user_task["claimed"]:
+                    message.append(f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n")
+                message.append("   ────────────────\n")
+
+            # 显示刷新时间
+            message.append(f"\n🔄 任务将在 {self.get_weekly_refresh_time()} 后刷新")
+            await event.send(event.plain_result(Comp.Plain("".join(message))))
+        except Exception as e:
+            logger.error(f"显示周常任务失败: {str(e)}")
+            await event.send(event.plain_result("周常任务暂时无法访问，请稍后再试"))
+
+    async def format_user_special_tasks(self, event: AiocqhttpMessageEvent):
+        """格式化用户特殊任务信息"""
+        user_id = str(event.get_sender_id())
+        try:
+            user_tasks = await self.get_user_tasks(event, user_id)
+            task_data = await self.get_task_data()
+            special_tasks = task_data.get("special_tasks", {})
+
+            message = ["⭐ 特殊任务 ⭐\n"]
+            message.append("━━━━━━━━━━━━━━━━\n")
+
+            for task_id, task in special_tasks.items():
+                user_task = user_tasks.get("special", {}).get(
+                    task_id, {"progress": 0, "completed": False, "claimed": False}
+                )
+
+                # 跳过已完成的一次性任务
+                if task.get("one_time") or user_task["claimed"]:
+                    continue
+
+                progress = min(user_task["progress"], task["target"])
+                progress_percent = progress / task["target"] * 100
+                status = self._status_of(user_task)
+
+                message.append(
+                    f"{status} {task['name']} {'（限时）' if task.get('one_time') else ''}\n"
+                )
+                message.append(f"   📝 {task['description']}\n")
+                if task.get("requirement"):
+                    message.append(f"   ⚠️ {task['requirement']}\n")
+                message.append(
+                    f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
+                )
+
+                # 显示奖励
+                rewards_text = self.format_rewards(task["rewards"])
+                message.append(f"   🎁 奖励: {rewards_text}\n")
+
+                if user_task["completed"] and not user_task["claimed"]:
+                    message.append(f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n")
+
+                message.append("   ────────────────\n")
+            await event.send(event.plain_result(Comp.Plain("".join(message))))
+
+        except Exception as e:
+            logger.error(f"显示特殊任务失败: {str(e)}")
+            await event.send(event.plain_result("特殊任务暂时无法访问，请稍后再试"))
+
+    async def handle_claim_reward(self, event: AiocqhttpMessageEvent, parts: list[str]):
+        """处理用户领取任务奖励请求"""
+        user_id = event.get_sender_id()
+        try:
+            if not parts:
+                await event.send(
+                    event.plain_result(
+                        "请指定要领取奖励的任务名称！\n使用方法: /领取奖励 [任务名称]"
+                    )
+                )
+                return
+            task_name = parts[0]
+
+            try:
+                user_tasks, user_data = await self.get_user_tasks(
+                    event, str(user_id), is_return_user_data=True
+                )
+                backpack = await get_user_data_and_backpack(user_id, "user_backpack")
+                task_data = await self.get_task_data()
+
+                # 查找任务
+                task = None
+                task_type = None
+
+                # 检查所有任务类型
+                for task_type_key in [
+                    "daily_quests",
+                    "weekly_quests",
+                    "special_quests",
+                ]:
+                    for tid, tdef in user_tasks.get(task_type_key, {}).items():
+                        if tdef["name"] == task_name:
+                            user_task = tdef
+                            task = task_data[task_type_key].get(tid)
+                            task_type = task_type_key.replace("_quests", "")
+                            break
+
+                if not user_task:
+                    await event.send(
+                        event.plain_result(f"你没有名为「{task_name}」的任务！")
+                    )
+                    return
+                if user_task["claimed"]:
+                    await event.send(
+                        event.plain_result(f"你已经领取过「{task_name}」的奖励！")
+                    )
+                    return
+                if not user_task["completed"]:
+                    await event.send(
+                        event.plain_result(f"任务 {task_name} 尚未完成，无法领取奖励！")
+                    )
+                    return
+            except Exception as e:
+                logger.error(f"查找任务失败: {str(e)}")
+                await event.send(event.plain_result("查找任务失败，请稍后再试"))
+                return
+
+            try:
+                # 处理奖励发放
+                rewards = []
+                # 金币奖励
+                if "money" in task["rewards"]:
+                    user_data["home"]["money"] = (
+                        user_data["home"].get("money", 0) + task["rewards"]["money"]
+                    )
+                    rewards.append(f"💰 {task['rewards']['money']} 金币")
+
+                # 好感度奖励
+                if "love" in task["rewards"]:
+                    user_data["home"]["love"] = (
+                        user_data["home"].get("love", 0) + task["rewards"]["love"]
+                    )
+                    rewards.append(f"❤️ {task['rewards']['love']} 好感度")
+
+                # 道具奖励
+                if "items" in task["rewards"]:
+                    for item_name, count in task["rewards"]["items"].items():
+                        rewards.append(f"{item_name} ×{count}")
+                        backpack[item_name] = backpack.get(item_name, 0) + count
+
+                # 任务点数奖励
+                if "task_points" in task["rewards"]:
+                    user_tasks["task_points"] = (
+                        user_tasks.get("task_points", 0)
+                        + task["rewards"]["task_points"]
+                    )
+                    rewards.append(f"🏆 {task['rewards']['task_points']} 任务点数")
+
+                msg_parts = [Comp.Plain("\n".join(rewards))]
+                # 构建奖励消息
+
+                message = [
+                    Comp.At(qq=user_id),
+                    Comp.Plain(
+                        "：\n🎉 任务完成！\n"
+                        f"📋 {task_name}\n"
+                        "🎁 获得奖励:\n"
+                        f"{msg_parts}\n"
+                        f"💰 当前金币: {user_data.get('money', 0)}\n"
+                        f"🏆 任务点数: {user_tasks.get('task_points', 0)}"
+                    ),
+                ]
+                await event.send(event.chain_result(message))
+
+                # 标记为已领取
+                user_data["tasks"][task_type][task["id"]]["claimed"] = True
+
+                # 保存数据
+                await write_json(self.user_data_path / f"{user_id}.json", user_data)
+                await write_json(self.backpack_path / f"{user_id}.json", backpack)
+
+            except Exception as e:
+                logger.error(f"发放任务奖励失败: {str(e)}")
+                await event.send(event.plain_result("发放任务奖励失败，请稍后再试"))
+                return
+        except Exception as e:
+            logger.error(f"领取奖励失败: {str(e)}")
+            await event.send(event.plain_result("领取奖励失败，请稍后再试"))
+
+    async def format_task_shop_items(self, event: AiocqhttpMessageEvent):
+        """格式化任务商店物品列表"""
+        user_id = str(event.get_sender_id())
+        try:
+            user_tasks = await self.get_user_tasks(event, user_id)
+            task_data = await self.get_task_data()
+            task_shop = task_data.get("task_shop", {})
+            message = [
+                Comp.Plain(
+                    "🏪 任务商店 🏪\n"
+                    f"🏆 你的任务点数: {user_tasks.get('task_points', 0)}\n"
+                    "━━━━━━━━━━━━━━━━\n"
+                )
+            ]
+            for item_name, item in task_shop.items():
+                price = item.get("task_point_price", 0)
+                user_points = user_tasks.get("task_points", 0) >= price
+
+                message.append(
+                    Comp.Plain(
+                        f"[{item_name}]\n"
+                        f"   📝 {item['description']}\n"
+                        f"   🏆 价格: {price} 任务点数\n"
+                        f"   {'✅ 可购买' if user_points else '❌ 点数不足'}\n"
+                        f"   💡 使用 #虚空兑换 {item['name']} 进行兑换\n"
+                        f"   ────────────────\n"
+                    )
+                )
+            await event.send(event.chain_result(message))
+        except Exception as e:
+            logger.error(f"显示任务商店失败: {str(e)}")
+            await event.send(event.plain_result("任务商店暂时无法访问，请稍后再试"))
+
+    async def handle_task_shop_purchase(
+        self, event: AiocqhttpMessageEvent, parts: list[str]
+    ):
+        """处理任务商店物品购买请求"""
+        user_id = str(event.get_sender_id())
+        try:
+            if not parts:
+                await event.send(
+                    event.plain_result(
+                        "请指定要兑换的物品名称！\n使用方法: /虚空兑换 [物品名称]"
+                    )
+                )
+                return
+
+            item_name = parts[0]
+            quantity = 1
+
+            if len(parts) >= 2 and parts[1].isdigit():
+                quantity = int(parts[1])
+                if quantity <= 0:
+                    await event.send(event.plain_result("兑换数量必须为正整数！"))
+                    return
+            else:
+                await event.send(
+                    event.plain_result(
+                        "请指定要兑换的物品数量！\n使用方法: /虚空兑换 [物品名称] [数量]"
+                    )
+                )
+                return
+            try:
+                user_tasks, user_data = await self.get_user_tasks(
+                    event, user_id, is_return_user_data=True
+                )
+                backpack = await get_user_data_and_backpack(user_id, "user_backpack")
+                task_data = await self.get_task_data()
+                task_shop = task_data.get("task_shop", {})
+                item = task_shop.get(item_name, {})
+
+                if not item:
+                    await event.send(
+                        event.plain_result(f"任务商店中没有名为「{item_name}」的物品！")
+                    )
+                    return
+
+                price = item.get("task_point_price", 0)
+                if user_tasks.get("task_points", 0) < price * quantity:
+                    await event.send(
+                        event.plain_result(
+                            f"你的任务点数不足！需要 {price * quantity} 点，你只有 {user_tasks['task_points']} 点"
+                        )
+                    )
+                    return
+            except Exception as e:
+                logger.error(f"查找商店物品失败: {str(e)}")
+                await event.send(event.plain_result("查找商店物品失败，请稍后再试"))
+                return
+
+            try:
+                # 扣除任务点数
+                user_data["task"]["task_points"] -= price * quantity
+                # 添加物品到背包
+                backpack[item_name] = backpack.get(item_name, 0) + quantity
+
+                message = [
+                    Comp.At(qq=user_id),
+                    Comp.Plain(
+                        f"🛍️ 兑换成功！\n"
+                        f"🎁 你获得了: {item_name} × {quantity}\n"
+                        f"商品描述：{item['description']}\n"
+                        f"💎 消耗: {price} 任务点数\n"
+                        f"🏆 剩余任务点数: {user_tasks.get('task_points', 0)}"
+                    ),
+                ]
+                await write_json(self.user_data_path / f"{user_id}.json", user_data)
+                await write_json(self.backpack_path / f"{user_id}.json", backpack)
+                await event.send(event.chain_result(message))
+            except Exception as e:
+                logger.error(f"处理兑换失败: {str(e)}")
+                await event.send(event.plain_result("处理兑换失败，请稍后再试"))
+                return
+        except Exception as e:
+            logger.error(f"兑换物品失败: {str(e)}")
+            await event.send(event.plain_result("兑换物品失败，请稍后再试"))

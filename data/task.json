@@ -30,7 +30,7 @@
 			}
 		},
 		"daily_synthesis": {
-			"id": "3",
+			"id": "daily_synthesis",
 			"name": "合成大师",
 			"description": "成功合成2个道具",
 			"type": "daily",
@@ -44,7 +44,7 @@
 			}
 		},
 		"daily_gift": {
-			"id": "5",
+			"id": "daily_gift",
 			"name": "慷慨之心",
 			"description": "赠送1件礼物给其他玩家",
 			"type": "daily",
@@ -58,7 +58,7 @@
 			}
 		},
 		"daily_fight": {
-			"id": "19",
+			"id": "daily_fight",
 			"name": "武术交流",
 			"description": "和一位玩家进行一次决斗",
 			"type": "daily",
@@ -74,7 +74,7 @@
 	},
 	"weekly_tasks": {
 		"weekly_relationship": {
-			"id": "金币袋",
+			"id": "weekly_relationship",
 			"name": "社交达人",
 			"description": "与5个不同的人互动",
 			"type": "weekly",
@@ -85,7 +85,7 @@
 			}
 		},
 		"weekly_wealth": {
-			"id": "7",
+			"id": "weekly_wealth",
 			"name": "财富积累者",
 			"description": "累计获取10000金币",
 			"type": "weekly",
@@ -99,7 +99,7 @@
 			}
 		},
 		"weekly_money": {
-			"id": "9",
+			"id": "weekly_money",
 			"name": "金币吞噬者",
 			"description": "累计获取100000金币",
 			"type": "weekly",
@@ -115,7 +115,7 @@
 	},
 	"special_tasks": {
 		"task_noob": {
-			"id": "10",
+			"id": "task_noob",
 			"name": "任务小白",
 			"description": "完成1个任务",
 			"type": "special",
@@ -129,7 +129,7 @@
 			}
 		},
 		"task_hunter": {
-			"id": "10",
+			"id": "task_hunter",
 			"name": "任务猎人",
 			"description": "完成10个任务",
 			"type": "special",
@@ -143,7 +143,7 @@
 			}
 		},
 		"task_master": {
-			"id": "10",
+			"id": "task_master",
 			"name": "任务大师",
 			"description": "完成30个任务",
 			"type": "special",
@@ -232,6 +232,7 @@
 			"target": 1000,
 			"rewards": {
 				"money": 2000,
+				"love": 100,
 				"items": {
 					"6": 1,
 					"7": 2
@@ -249,6 +250,7 @@
 			"target": 1000,
 			"rewards": {
 				"money": 3000,
+				"love": 300,
 				"items": {
 					"金币袋": 10,
 					"神秘宝箱": 5
@@ -300,6 +302,7 @@
 			"target": 20,
 			"rewards": {
 				"money": 3500,
+				"love": 200,
 				"items": {
 					"8": 4,
 					"9": 3
@@ -737,103 +740,103 @@
 			"description": "甜蜜的巧克力，增加好感度",
 			"task_point_price": 6
 		},
-		"金币袋": {
+		"经验加速器": {
 			"name": "经验加速器",
 			"price": 300,
 			"description": "双倍经验获取，快速成长",
 			"task_point_price": 12
 		},
-		"神秘宝箱": {
+		"金币袋": {
 			"name": "金币袋",
 			"price": 250,
 			"description": "装满金币的小袋子，直接获得500金币",
 			"task_point_price": 10
 		},
-		"6": {
+		"神秘宝箱": {
 			"name": "神秘宝箱",
 			"price": 500,
 			"description": "神秘的宝箱，可能开出珍贵道具",
 			"task_point_price": 20
 		},
-		"7": {
+		"时间沙漏": {
 			"name": "时间沙漏",
 			"price": 400,
 			"description": "减少所有冷却时间50%",
 			"task_point_price": 15
 		},
-		"8": {
+		"魅力香水": {
 			"name": "魅力香水",
 			"price": 350,
 			"description": "增加魅力值，提升表白成功率",
 			"task_point_price": 14
 		},
-		"9": {
+		"战斗药剂": {
 			"name": "战斗药剂",
 			"price": 180,
 			"description": "临时提升战斗力，决斗必备",
 			"task_point_price": 7
 		},
-		"10": {
+		"保护符": {
 			"name": "保护符",
 			"price": 220,
 			"description": "减少失败惩罚，降低风险",
 			"task_point_price": 9
 		},
-		"11": {
+		"双倍券": {
 			"name": "双倍券",
 			"price": 600,
 			"description": "下次任务奖励翻倍",
 			"task_point_price": 25
 		},
-		"12": {
+		"复活石": {
 			"name": "复活石",
 			"price": 800,
 			"description": "死亡时自动复活，保留所有物品",
 			"task_point_price": 30
 		},
-		"13": {
+		"传送卷轴": {
 			"name": "传送卷轴",
 			"price": 120,
 			"description": "瞬间传送到任意地点",
 			"task_point_price": 5
 		},
-		"14": {
+		"记忆水晶": {
 			"name": "记忆水晶",
 			"price": 450,
 			"description": "记录当前状态，可随时恢复",
 			"task_point_price": 18
 		},
-		"15": {
+		"友谊手环": {
 			"name": "友谊手环",
 			"price": 300,
 			"description": "赠送给好友，增进友谊",
 			"task_point_price": 12
 		},
-		"16": {
+		"智慧之书": {
 			"name": "智慧之书",
 			"price": 380,
 			"description": "永久增加智力属性",
 			"task_point_price": 16
 		},
-		"17": {
+		"勇气徽章": {
 			"name": "勇气徽章",
 			"price": 320,
 			"description": "永久增加勇气属性",
 			"task_point_price": 13
 		},
-		"18": {
+		"治疗药草": {
 			"name": "治疗药草",
 			"price": 80,
 			"description": "治疗轻微伤势，恢复健康",
 			"task_point_price": 3
 		},
-		"19": {
+		"隐身斗篷": {
 			"name": "隐身斗篷",
 			"price": 700,
 			"description": "短时间内隐身，避免冲突",
 			"task_point_price": 28
 		},
-		"20": {
+		"许愿星": {
 			"name": "许愿星",
 			"price": 1000,
 			"description": "实现一个小愿望，效果神秘",
