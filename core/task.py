@@ -68,7 +68,7 @@ class Task:
 
     def get_refresh_time(self) -> str:
         """获取每日任务刷新剩余时间（到明天零点）"""
-        now = datetime.now()
+        now = datetime.now(self.CN_TIMEZONE)
         # 计算明天零点
         next_reset = datetime(now.year, now.month, now.day) + timedelta(days=1)
         diff = next_reset - now
@@ -79,7 +79,7 @@ class Task:
 
     def get_weekly_refresh_time(self) -> str:
         """获取周常任务刷新剩余时间（到下周一零点）"""
-        now = datetime.now()
+        now = datetime.now(self.CN_TIMEZONE)
         current_weekday = now.weekday()  # 0=周一，6=周日
         days_until_monday = 7 - current_weekday
         # 计算下周一零点
@@ -563,7 +563,7 @@ class Task:
 
     async def handle_claim_reward(self, event: AiocqhttpMessageEvent, parts: list[str]):
         """处理用户领取任务奖励请求"""
-        user_id = event.get_sender_id()
+        user_id = str(event.get_sender_id())
         try:
             if not parts:
                 await event.send(
@@ -796,3 +796,101 @@ class Task:
         except Exception as e:
             logger.error(f"兑换物品失败: {str(e)}")
             await event.send(event.plain_result("兑换物品失败，请稍后再试"))
+
+    async def handle_reset_tasks(self, event: AiocqhttpMessageEvent):
+        """重置用户任务"""
+        user_id = str(event.get_sender_id())
+        try:
+            # 检查刷新冷却时间
+            refresh_cost = 1000
+            user_tasks, user_data = await self.get_user_tasks(
+                event, user_id, is_return_user_data=True
+            )
+            if user_data.get("money", 0) < refresh_cost:
+                await event.send(
+                    event.plain_result(
+                        f"刷新每日任务需要 {refresh_cost} 金币，你的金币不足"
+                    )
+                )
+                return
+            user_data["money"] -= refresh_cost
+            # 重置每日任务
+            today = datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d")
+            user_data["task"]["daily"] = {}
+            user_data["task"]["last_daily_reset"] = today
+            await write_json(self.user_data_path / f"{user_id}.json", user_data)
+
+            message = [
+                Comp.at(qq=user_id),
+                Comp.Plain(
+                    "：\n"
+                    "✅ 任务刷新成功！\n"
+                    f"💰 花费: {refresh_cost} 金币\n"
+                    "🔄 每日任务进度已重置\n"
+                    "💡 使用 /任务列表 查看新任务"
+                ),
+            ]
+            await event.send(event.chain_result(message))
+        except Exception as e:
+            logger.error(f"获取刷新冷却时间失败: {str(e)}")
+            await event.send(event.plain_result("获取刷新冷却时间失败，请稍后再试"))
+            return
+
+    async def update_task_progress(
+        self,
+        user_id: str,
+        track_key: str,
+        is_increment: bool = True,
+        value: int = 1,
+    ) -> bool:
+        """
+        更新任务进度（供其他系统调用）\n
+        user_id: 用户ID\n
+        track_key: 任务追踪键[任务id]\n
+        value: 增量值或设置值，默认1\n
+        is_increment: 是否为增量更新，False则为设置最大值，默认True
+        """
+        try:
+            user_tasks, user_data = await self.get_user_tasks(
+                user_id, is_return_user_data=True
+            )
+            task_data = await self.get_task_data()
+
+            # 确保task_data有正确的结构
+            tasks_categories = {
+                "daily": task_data.get("daily_tasks", {}),
+                "weekly": task_data.get("weekly_tasks", {}),
+                "special": task_data.get("special_tasks", {}),
+            }
+            for task_category, tasks in tasks_categories.items():
+                updated = False
+                if track_key in tasks:
+                    if task_category not in user_tasks:
+                        user_tasks[task_category] = {}
+                    if track_key not in user_tasks[task_category]:
+                        user_tasks[task_category][track_key] = {
+                            "progress": 0,
+                            "completed": False,
+                            "claimed": False,
+                        }
+
+                    user_task = user_tasks[task_category][track_key]
+                    if not user_task.get("completed"):
+                        if is_increment:
+                            user_task["progress"] += value
+                        else:
+                            user_task["progress"] = max(
+                                tasks[track_key].get("target", 0), value
+                            )
+
+                        if user_task["progress"] >= tasks[track_key].get(
+                            "target", float("inf")
+                        ):
+                            user_task["completed"] = True
+                    updated = True
+            user_data["task"] = user_tasks
+            # 写回用户数据文件
+            await write_json(self.user_data_path / f"{user_id}.json", user_data)
+            return updated
+        except Exception as e:
+            logger.error(f"更新用户 {user_id} 任务进度失败: {str(e)}")

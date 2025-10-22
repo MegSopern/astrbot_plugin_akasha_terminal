@@ -132,6 +132,11 @@ class AkashaTerminal(Star):
         """显示所有任务列表"""
         await self.task.format_user_tasks(event)
 
+    @filter.command("刷新任务", alias={"重置任务", "刷新每日任务", "重置每日任务"})
+    async def refresh_tasks(self, event: AiocqhttpMessageEvent):
+        """手动重置每日任务"""
+        await self.task.handle_reset_tasks(event)
+
     @filter.command("打工")
     async def work_action(self, event: AiocqhttpMessageEvent):
         """处理打工动作并检查任务进度"""
