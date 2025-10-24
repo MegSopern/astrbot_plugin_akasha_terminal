@@ -583,15 +583,15 @@ class Task:
 
                 # 检查所有任务类型
                 for task_type_key in [
-                    "daily_quests",
-                    "weekly_quests",
-                    "special_quests",
+                    "daily_tasks",
+                    "weekly_tasks",
+                    "special_tasks",
                 ]:
                     for tid, tdef in user_tasks.get(task_type_key, {}).items():
                         if tdef["name"] == task_name:
                             user_task = tdef
                             task = task_data[task_type_key].get(tid)
-                            task_type = task_type_key.replace("_quests", "")
+                            task_type = task_type_key.replace("_tasks", "")
                             break
 
                 if not user_task:
