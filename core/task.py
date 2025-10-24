@@ -662,7 +662,7 @@ class Task:
                 await event.send(event.chain_result(message))
 
                 # 标记为已领取
-                user_data["tasks"][task_type][task["id"]]["claimed"] = True
+                user_data["task"][task_type][task["id"]]["claimed"] = True
 
                 # 保存数据
                 await write_json(self.user_data_path / f"{user_id}.json", user_data)
