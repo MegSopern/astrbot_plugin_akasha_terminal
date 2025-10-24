@@ -27,7 +27,8 @@
 					"金币袋": 1
 				},
 				"task_points": 15
-			}
+			},
+			"track_key": "shop_count"
 		},
 		"daily_synthesis": {
 			"id": "daily_synthesis",
@@ -93,10 +94,12 @@
 			"rewards": {
 				"money": 100,
 				"items": {
-					"6": 1
+					"6": 1,
+					"7": 1
 				},
 				"task_points": 50
-			}
+			},
+			"track_key": "money_earned"
 		},
 		"weekly_money": {
 			"id": "weekly_money",
@@ -105,12 +108,15 @@
 			"type": "weekly",
 			"target": 100000,
 			"rewards": {
-				"money": 100,
+				"money": 1000,
 				"items": {
+					"6": 5,
+					"7": 5,
 					"8": 1
 				},
-				"task_points": 80
-			}
+				"task_points": 400
+			},
+			"track_key": "money_earned"
 		}
 	},
 	"special_tasks": {
@@ -346,6 +352,23 @@
 			"permanent": true,
 			"track_key": "ranking_top10"
 		},
+		"social_starter": {
+			"id": "social_starter",
+			"name": "社交新手",
+			"description": "累计进行10次互动",
+			"type": "special",
+			"target": 10,
+			"rewards": {
+				"money": 500,
+				"items": {
+					"经验书": 2,
+					"金币袋": 1
+				},
+				"task_points": 15
+			},
+			"permanent": true,
+			"track_key": "interaction_count"
+		},
 		"social_butterfly": {
 			"id": "social_butterfly",
 			"name": "言语的艺术家",
@@ -359,6 +382,76 @@
 					"金币袋": 3
 				},
 				"task_points": 30
+			},
+			"permanent": true,
+			"track_key": "interaction_count"
+		},
+		"social_expert": {
+			"id": "social_expert",
+			"name": "社交达人",
+			"description": "累计进行100次互动",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 3000,
+				"items": {
+					"经验书": 10,
+					"金币袋": 5
+				},
+				"task_points": 50
+			},
+			"permanent": true,
+			"track_key": "interaction_count"
+		},
+		"social_master": {
+			"id": "social_master",
+			"name": "社交大师",
+			"description": "累计进行200次互动",
+			"type": "special",
+			"target": 200,
+			"rewards": {
+				"money": 6000,
+				"items": {
+					"经验书": 20,
+					"神秘宝箱": 5
+				},
+				"task_points": 80
+			},
+			"permanent": true,
+			"track_key": "interaction_count"
+		},
+		"social_legend": {
+			"id": "social_legend",
+			"name": "社交传奇",
+			"description": "累计进行500次互动",
+			"type": "special",
+			"target": 500,
+			"rewards": {
+				"money": 15000,
+				"items": {
+					"经验书": 50,
+					"神秘宝箱": 10,
+					"幸运符": 10
+				},
+				"task_points": 120
+			},
+			"permanent": true,
+			"track_key": "interaction_count"
+		},
+		"social_god": {
+			"id": "social_god",
+			"name": "社交之神",
+			"description": "累计进行1000次互动",
+			"type": "special",
+			"target": 1000,
+			"rewards": {
+				"money": 30000,
+				"items": {
+					"经验书": 100,
+					"神秘宝箱": 25,
+					"幸运符": 20
+				},
+				"task_points": 200
 			},
 			"permanent": true,
 			"track_key": "interaction_count"
@@ -550,6 +643,22 @@
 			"permanent": true,
 			"track_key": "shop_opened"
 		},
+		"shopping_noob": {
+			"id": "shopping_noob",
+			"name": "物欲的起始",
+			"description": "在商店购买1次道具",
+			"type": "special",
+			"target": 1,
+			"rewards": {
+				"money": 80,
+				"items": {
+					"神秘宝箱": 1
+				},
+				"task_points": 25
+			},
+			"permanent": true,
+			"track_key": "shop_count"
+		},
 		"shopping_spree": {
 			"id": "shopping_spree",
 			"name": "物欲的哲学",
@@ -563,6 +672,40 @@
 					"神秘宝箱": 2
 				},
 				"task_points": 25
+			},
+			"permanent": true,
+			"track_key": "shop_count"
+		},
+		"shopping_overlord": {
+			"id": "shopping_overlord",
+			"name": "物欲的霸主",
+			"description": "在商店购买30次道具",
+			"type": "special",
+			"target": 30,
+			"rewards": {
+				"money": 2000,
+				"items": {
+					"体力药水": 10,
+					"神秘宝箱": 5
+				},
+				"task_points": 40
+			},
+			"permanent": true,
+			"track_key": "shop_count"
+		},
+		"shopping_king": {
+			"id": "shopping_king",
+			"name": "物欲的统治",
+			"description": "在商店购买100次道具",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 10000,
+				"items": {
+					"体力药水": 20,
+					"神秘宝箱": 10
+				},
+				"task_points": 60
 			},
 			"permanent": true,
 			"track_key": "shop_count"

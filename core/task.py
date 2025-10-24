@@ -846,7 +846,7 @@ class Task:
         """
         更新任务进度（供其他系统调用）\n
         user_id: 用户ID\n
-        track_key: 任务追踪键[任务id]\n
+        track_key: 任务追踪键\n
         value: 增量值或设置值，默认1\n
         is_increment: 是否为增量更新，False则为设置最大值，默认True
         """
@@ -862,32 +862,33 @@ class Task:
                 "weekly": task_data.get("weekly_tasks", {}),
                 "special": task_data.get("special_tasks", {}),
             }
+            updated = False
             for task_category, tasks in tasks_categories.items():
-                updated = False
-                if track_key in tasks:
-                    if task_category not in user_tasks:
-                        user_tasks[task_category] = {}
-                    if track_key not in user_tasks[task_category]:
-                        user_tasks[task_category][track_key] = {
-                            "progress": 0,
-                            "completed": False,
-                            "claimed": False,
-                        }
+                for task_id, task in tasks.items():
+                    if track_key == task.get("itrack_key"):
+                        if task_category not in user_tasks:
+                            user_tasks[task_category] = {}
+                        if task_id not in user_tasks[task_category]:
+                            user_tasks[task_category][task_id] = {
+                                "progress": 0,
+                                "completed": False,
+                                "claimed": False,
+                            }
 
-                    user_task = user_tasks[task_category][track_key]
-                    if not user_task.get("completed"):
-                        if is_increment:
-                            user_task["progress"] += value
-                        else:
-                            user_task["progress"] = max(
-                                tasks[track_key].get("target", 0), value
-                            )
+                        user_task = user_tasks[task_category][task_id]
+                        if not user_task.get("completed"):
+                            if is_increment:
+                                user_task["progress"] += value
+                            else:
+                                user_task["progress"] = max(
+                                    tasks[task_id].get("target", 0), value
+                                )
 
-                        if user_task["progress"] >= tasks[track_key].get(
-                            "target", float("inf")
-                        ):
-                            user_task["completed"] = True
-                    updated = True
+                            if user_task["progress"] >= tasks[task_id].get(
+                                "target", float("inf")
+                            ):
+                                user_task["completed"] = True
+                            updated = True
             user_data["task"] = user_tasks
             # 写回用户数据文件
             await write_json(self.user_data_path / f"{user_id}.json", user_data)

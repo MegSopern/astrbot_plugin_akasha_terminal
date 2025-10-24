@@ -21,6 +21,7 @@ from ..utils.utils import (
     write_json,
     write_json_sync,
 )
+from .task import Task
 
 
 class Shop:
@@ -42,7 +43,9 @@ class Shop:
         # 导入用户系统获取金钱
         from .user import User
 
-        self.user_system = User()
+        self.user = User()
+        # 导入任务系统更新任务进度
+        self.task = Task()
 
     def _init_default_data(self) -> None:
         """初始化默认商店数据和用户背包（仅当文件不存在时）"""
@@ -233,19 +236,17 @@ class Shop:
                             "success": False,
                             "message": "你还没有伴侣，无法使用此道具",
                         }
-                    user_data["home"]["love"] = (
-                        user_data["home"]["love"] + item["effect"]["love"] * quantity
-                    )
+
+                    up_love = item["effect"]["love"] * quantity
+                    user_data["home"]["love"] = user_data["home"]["love"] + up_love
                     await write_json(target_user_data_path, user_data)
 
-                    # # 更新任务进度
-                    # quest_system = TaskSystem()
-                    # await quest_system.update_quest_progress(
-                    #     user_id, group_id, "max_love", user_data["home"]["love"]
-                    # )
+                    # 更新任务进度
+                    await self.task.update_task_progress(user_id, "max_love", up_love)
+
                     return {
                         "success": True,
-                        "message": f"💕 好感度增加 {item['effect']['love'] * quantity}，当前好感度: {user_data['home']['love']}",
+                        "message": f"💕 好感度增加 {up_love}，当前好感度: {user_data['home']['love']}",
                     }
 
                 # 金币道具
@@ -260,11 +261,10 @@ class Shop:
                     )
                     await write_json(target_user_data_path, user_data)
 
-                    # # 更新任务进度
-                    # quest_system = QuestSystem()
-                    # await quest_system.update_quest_progress(
-                    #     user_id, group_id, "max_money", user_data["home"]["money"]
-                    # )
+                    # 更新任务进度
+                    await self.task.update_task_progress(
+                        user_id, "max_money", user_data["home"]["money"]
+                    )
                     return {
                         "success": True,
                         "message": f"💰 获得 {money} 金币，当前余额: {user_data['home']['money']}",
@@ -392,7 +392,7 @@ class Shop:
             quantity = int(parts[1]) if len(parts) >= 2 else 1
             if quantity <= 0:
                 return False, "购买数量必须为正整数"
-            home_data = await self.user_system.get_home_data(user_id)
+            home_data = await self.user.get_home_data(user_id)
 
             return await self.buy_item(user_id, item_name, home_data, quantity)
         except ValueError:
@@ -438,7 +438,7 @@ class Shop:
             )
         # 更新金钱
         home_data["money"] -= total_price
-        await self.user_system.update_home_data(user_id, home_data)
+        await self.user.update_home_data(user_id, home_data)
         # 更新库存
         if target_item["stock"] != -1:
             target_item["stock"] -= quantity
@@ -449,7 +449,9 @@ class Shop:
             backpack[item_name] = 0
         backpack[item_name] += quantity
         await write_json(file_path, backpack)
-
+        # 更新任务进度
+        await self.task.update_task_progress(user_id, "shop_count", quantity)
+        await self.task.update_task_progress(user_id, "interaction_count", 1)
         return (
             True,
             f"成功购买{target_item['name']} x {quantity}\n花费{total_price}金币",
