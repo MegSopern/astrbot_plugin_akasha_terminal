@@ -14,7 +14,6 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 )
 
 from ..utils.utils import (
-    add_to_backpack,
     get_nickname,
     get_user_data_and_backpack,
     read_json,
