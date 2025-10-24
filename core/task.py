@@ -81,7 +81,7 @@ class Task:
         """获取周常任务刷新剩余时间（到下周一零点）"""
         now = datetime.now(self.CN_TIMEZONE)
         current_weekday = now.weekday()  # 0=周一，6=周日
-        days_until_monday = 7 - current_weekday
+        days_until_monday = (7 - current_weekday) % 7
         # 计算下周一零点
         next_reset = datetime(now.year, now.month, now.day) + timedelta(
             days=days_until_monday
@@ -163,9 +163,9 @@ class Task:
             reset = True
 
         # 重置周常任务
-        if not self.is_same_week(user_data["task"].get("last_weekly_reset")):
+        if not self.is_same_week(user_data["task"].get("last_weekly_refresh")):
             user_data["task"]["weekly"] = {}
-            user_data["task"]["last_weekly_reset"] = today
+            user_data["task"]["last_weekly_refresh"] = today
             reset = True
         # 保存更新后的任务数据
         if reset:
@@ -178,15 +178,12 @@ class Task:
     ) -> Dict[str, int]:
         """获取已完成任务统计"""
         # 统计各类型已完成任务数量
-        daily_completed = sum(
-            1 for q in user_task_data.get("daily", {}).values() if q.get("claimed")
-        )
-        weekly_completed = sum(
-            1 for q in user_task_data.get("weekly", {}).values() if q.get("claimed")
-        )
-        special_completed = sum(
-            1 for q in user_task_data.get("special", {}).values() if q.get("claimed")
-        )
+        for q in user_task_data.get("daily", {}).values():
+            daily_completed = sum(bool(q.get("claimed")))
+        for q in user_task_data.get("weekly", {}).values():
+            weekly_completed = sum(bool(q.get("claimed")))
+        for q in user_task_data.get("special", {}).values():
+            special_completed = sum(bool(q.get("claimed")))
 
         return {
             "daily": daily_completed,
@@ -355,7 +352,7 @@ class Task:
             try:
                 # 统计数据
                 def _count_done(entries: List[Dict[str, Any]]) -> int:
-                    return sum(1 for q in entries if q.get("status") == "✅")
+                    return sum(bool(q.get("status") == "✅") for q in entries)
 
                 daily_completed = _count_done(template_data["daily_tasks"])
                 weekly_completed = _count_done(template_data["weekly_tasks"])
@@ -576,7 +573,7 @@ class Task:
 
             try:
                 user_tasks, user_data = await self.get_user_tasks(
-                    event, str(user_id), is_return_user_data=True
+                    event, user_id, is_return_user_data=True
                 )
                 backpack = await get_user_data_and_backpack(user_id, "user_backpack")
                 task_data = await self.get_task_data()
