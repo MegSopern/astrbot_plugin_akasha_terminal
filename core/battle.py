@@ -21,6 +21,7 @@ from ..utils.utils import (
     read_json_sync,
     write_json,
 )
+from .task import Task
 
 # 挑战bot时的反馈语录列表
 challenge_bot_text_list = [
@@ -85,6 +86,9 @@ class Battle:
             / "config"
             / "astrbot_plugin_akasha_terminal_config.json"
         )
+
+        # 任务系统导入
+        self.task = Task()
 
         # 配置
         config_data = read_json_sync(self.config_file, "utf-8-sig")
@@ -294,6 +298,9 @@ class Battle:
                         f"{opp_name}接受惩罚，已被禁言{random_time_opp / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
+                    await self.task.update_task_progress(
+                        user_id=challenger_id, track_key="duel_wins", value=1
+                    )
                     await event.send(event.chain_result(message2))
                     event.stop_event()
 
@@ -310,6 +317,9 @@ class Battle:
                         f"你接受惩罚，已被禁言{random_time_cha / 60}分钟!"
                     )
                     message2.append(Comp.Plain(message2_part))
+                    await self.task.update_task_progress(
+                        user_id=opponent_id, track_key="duel_wins", value=1
+                    )
                     await event.send(event.chain_result(message2))
                     event.stop_event()
                 # 挑战者胜利
@@ -325,6 +335,9 @@ class Battle:
                         f"{opp_name}接受惩罚，已被禁言{random_time_opp / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
+                    await self.task.update_task_progress(
+                        user_id=challenger_id, track_key="duel_wins", value=1
+                    )
                     await event.send(event.chain_result(message2))
                     event.stop_event()
                 # 挑战者失败
@@ -340,8 +353,20 @@ class Battle:
                         f"你接受惩罚，已被禁言{random_time_cha / 60}分钟！"
                     )
                     message2.append(Comp.Plain(message2_part))
+                    await self.task.update_task_progress(
+                        user_id=opponent_id, track_key="duel_wins", value=1
+                    )
                     await event.send(event.chain_result(message2))
                     event.stop_event()
+
+                # 更新任务进度（参与决斗次数+1）
+                await self.task.update_task_progress(
+                    user_id=challenger_id, track_key="duel_count", value=1
+                )
+                await self.task.update_task_progress(
+                    user_id=opponent_id, track_key="duel_count", value=1
+                )
+
             except Exception:
                 await event.send(
                     event.chain_result(

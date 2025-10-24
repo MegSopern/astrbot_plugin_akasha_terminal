@@ -263,7 +263,7 @@ class Shop:
 
                     # 更新任务进度
                     await self.task.update_task_progress(
-                        user_id, "max_money", user_data["home"]["money"]
+                        user_id, "money_earned", user_data["home"]["money"]
                     )
                     return {
                         "success": True,

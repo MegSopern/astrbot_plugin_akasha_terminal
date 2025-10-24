@@ -10,6 +10,7 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 
 # 导入工具函数
 from ..utils.utils import get_at_ids, get_nickname, read_json, write_json
+from .task import Task
 
 
 class User:
@@ -18,6 +19,8 @@ class User:
         self.data_dir = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
         self.user_data_path = self.data_dir / "user_data"
 
+        # 初始化任务系统
+        self.task = Task()
         # 数据配置映射：统一管理各类型数据的默认值
         self._data_config = {
             "user": {
@@ -215,6 +218,13 @@ class User:
             user_data = await self.get_user(user_id, nickname)
             battle_data = await self.get_battle_data(user_id)
             home_data = await self.get_home_data(user_id)
+
+            # 更新任务进度
+            await self.task.update_task_progress(
+                user_id, "max_money", home_data["money"]
+            )
+            await self.task.update_task_progress(user_id, "max_love", home_data["love"])
+
             return (
                 f"用户信息:\n"
                 f"昵称：{user_data.get('nickname')}\n"

@@ -352,7 +352,9 @@ class Lottery:
             #     lines.append(f" ({wife_name}的祝福)")
             # if time_desc:
             #     lines.append(f" ({time_desc})")
-            # 更新用户数据
+
+            # 更新任务进度
+            await self.task.update_task_progress(user_id, "gacha_count", count)
 
             return message, image_paths
         except Exception as e:

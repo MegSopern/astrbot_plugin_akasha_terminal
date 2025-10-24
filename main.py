@@ -137,14 +137,6 @@ class AkashaTerminal(Star):
         """手动重置每日任务"""
         await self.task.handle_reset_tasks(event)
 
-    @filter.command("打工")
-    async def work_action(self, event: AiocqhttpMessageEvent):
-        """处理打工动作并检查任务进度"""
-        user_id: str = event.get_sender_id()
-        messages = await self.task.handle_work_action(user_id)
-        for msg in messages:
-            yield event.plain_result(msg)
-
     ########## 商店、背包系统
     @filter.command("商店", alias={"虚空商店", "商城", "虚空商城"})
     async def show_shop(self, event: AiocqhttpMessageEvent):

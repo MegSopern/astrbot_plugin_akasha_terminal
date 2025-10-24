@@ -1010,41 +1010,6 @@
 			"permanent": true,
 			"track_key": "gacha_count"
 		},
-		"weapon_collector": {
-			"id": "weapon_collector",
-			"name": "命运的宠儿",
-			"description": "收集10把五星武器",
-			"type": "special",
-			"target": 10,
-			"rewards": {
-				"money": 5000,
-				"items": {
-					"魅力香水": 5,
-					"战斗药剂": 3
-				},
-				"task_points": 100
-			},
-			"permanent": true,
-			"track_key": "five_star_weapons"
-		},
-		"weapon_master": {
-			"id": "weapon_master",
-			"name": "武器的大师",
-			"description": "收集20把五星武器",
-			"type": "special",
-			"target": 20,
-			"rewards": {
-				"money": 10000,
-				"items": {
-					"魅力香水": 10,
-					"战斗药剂": 8,
-					"许愿星": 1
-				},
-				"task_points": 180
-			},
-			"permanent": true,
-			"track_key": "five_star_weapons"
-		},
 		"win_streak_3": {
 			"id": "win_streak_3",
 			"name": "连胜新星",
