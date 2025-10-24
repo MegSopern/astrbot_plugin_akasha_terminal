@@ -18,6 +18,7 @@ from ..utils.utils import (
     seconds_to_duration,
     write_json,
 )
+from .task import Task
 
 
 class Lottery:
@@ -30,6 +31,10 @@ class Lottery:
         self.user_data_path = PLUGIN_DATA_DIR / "user_data"
         self.weapon_file = PLUGIN_DIR / "data" / "weapon.json"
         self.image_base_path = PLUGIN_DIR / "resources" / "weapon_image"
+        self.shop_data_file = PLUGIN_DIR / "data" / "shop_data.json"
+
+        # 导入任务系统更新任务进度
+        self.task = Task()
 
         # 从配置接收抽卡冷却时间
         self.draw_card_cooldown = config.get("other_system", {}).get(
@@ -347,19 +352,24 @@ class Lottery:
             #     lines.append(f" ({wife_name}的祝福)")
             # if time_desc:
             #     lines.append(f" ({time_desc})")
-            # 更新用户数据
+
+            # 更新任务进度
+            await self.task.update_task_progress(user_id, "gacha_count", count)
 
             return message, image_paths
         except Exception as e:
             logger.error(f"武器抽卡失败: {str(e)}")
             return "抽武器时发生错误，请稍后再试~", None
 
-    async def calculate_sign_rewards(self, user_data, user_backpack, base_reward):
+    async def calculate_sign_rewards(
+        self, user_data, user_backpack, base_reward, money_reward
+    ):
         """计算签到奖励及加成"""
         CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
         last_sign = user_backpack["sign_info"].get("last_sign", "")
         streak_count = user_backpack["sign_info"].get("streak_days", 0)
-
+        money_reward += 200 + int(random.random() * 300)
+        msg_parts = []
         # 连续签到逻辑
         if last_sign == (datetime.now(CN_TIMEZONE).date() - timedelta(days=1)).strftime(
             "%Y-%m-%d"
@@ -367,11 +377,24 @@ class Lottery:
             streak_count += 1
         else:
             streak_count = 1
-        if streak_count > 30:
+        if streak_count >= 30:
             streak_count = 1  # 上限30天
 
-        # 连续签到加成（每3天+1，最多+5）
+        # 纠缠之缘连续签到加成（每3天+1，最多+5）
         streak_bonus = min(streak_count // 3, 5)
+        # 金钱连续签到加成
+        if streak_count >= 7:
+            money_reward += 500
+            msg_parts.append("\n+500金币")
+        elif streak_count >= 3:
+            money_reward += 200
+            msg_parts.append("\n+200金币")
+        # 随机道具奖励（10%概率）
+        if random.random() < 0.1:
+            items = ["爱心巧克力", "幸运符", "金币袋"]
+            item_reward = random.choice(items)
+            user_backpack["item_reward"] = user_backpack.get("item_reward", 0) + 1
+            msg_parts.append(f"🎁 随机道具奖励：+{item_reward}个随机道具\n")
 
         # 位置加成
         location_bonus = 0
@@ -413,6 +436,8 @@ class Lottery:
             "spouse_name": spouse_name,
             "lucky_reward": lucky_reward,
             "total_reward": total_reward,
+            "money_reward": money_reward,
+            "money_msg": msg_parts,
         }
 
     async def daily_sign_in(self, event: AiocqhttpMessageEvent):
@@ -420,15 +445,18 @@ class Lottery:
         try:
             user_id = str(event.get_sender_id())
             CN_TIMEZONE = ZoneInfo("Asia/Shanghai")
+            shop_data = await read_json(self.shop_data_file)
             user_data, user_backpack = await get_user_data_and_backpack(user_id)
             today = datetime.now(CN_TIMEZONE).date().strftime("%Y-%m-%d")
 
             # 初始化签到信息
             judge_new_user = False
             base_reward = 1
+            money_base_reward = 0
             if "sign_info" not in user_backpack:
                 user_backpack["sign_info"] = {"last_sign": "", "streak_days": 0}
-                base_reward += 5  # 新用户额外5颗
+                base_reward += 5  # 新用户额外5颗纠缠之缘
+                money_base_reward += 100  # 新用户额外100金币
                 judge_new_user = True
 
             # 检查是否已签到
@@ -437,9 +465,14 @@ class Lottery:
 
             # 计算奖励
             reward_data = await self.calculate_sign_rewards(
-                user_data, user_backpack, base_reward
+                user_data, user_backpack, base_reward, money_base_reward
             )
-
+            # 发放物品奖励
+            item_reward = str(reward_data.get("item_reward") or [""])[1]
+            if item_reward:
+                user_backpack["items"][item_reward] = (
+                    user_backpack["items"].get(item_reward, 0) + 1
+                )
             # 更新签到信息
             user_backpack["sign_info"]["last_sign"] = today
             user_backpack["sign_info"]["streak_days"] = reward_data["streak_count"]
@@ -448,27 +481,36 @@ class Lottery:
             total_reward = reward_data["total_reward"] + reward_data["lucky_reward"]
             user_backpack["weapon"]["纠缠之缘"] += total_reward
 
+            # 更新金钱数量
+            user_data["home"]["money"] += reward_data["money_reward"]
+
             # 构建消息
             message = ""
 
             # 新用户提示
             if judge_new_user:
-                message += "🎉 欢迎来到虚空武器抽卡系统！\n💎 注册成功，获得初始纠缠之缘5颗\n\n"
+                message += "🎉 欢迎来到虚空武器抽卡系统！\n💎 注册成功，获得初始纠缠之缘5颗，金钱100\n\n"
 
             # 基础奖励消息
             message += (
                 f"✅ 签到成功！获得{reward_data['total_reward'] - 5 if judge_new_user else reward_data['total_reward']}颗纠缠之缘\n"
+                f"💰 获得{reward_data['money_reward'] - 100 if judge_new_user else reward_data['money_reward']}金币\n"
                 f"💎 当前拥有：{user_backpack['weapon']['纠缠之缘']}颗纠缠之缘\n"
                 f"📅 当前连续签到{reward_data['streak_count']}天\n"
                 f"💡 可以使用[抽武器]来获得强力装备！\n"
             )
 
             # 幸运奖励消息
+            msg_parts = (reward_data.get("money_msg") or [""])[0]
             if reward_data["lucky_reward"] > 0:
-                message += f"🎁 幸运奖励：额外获得{reward_data['lucky_reward']}颗纠缠之缘！\n\n"
+                message += (
+                    f"🎁 幸运奖励：额外获得{reward_data['lucky_reward']}颗纠缠之缘！"
+                )
+            if item_reward:
+                message += f"\n额外获得:{shop_data['items'][item_reward]}"
             try:
                 # 加成信息
-                bonus_messages = ""
+                bonus_messages = "\n\n"
                 if reward_data["location_bonus"] != 0:
                     bonus_messages += f"📍 位置加成：{reward_data['location_desc']} +({reward_data['location_bonus']:+d})\n"
                 if reward_data["house_bonus"] > 0:
@@ -476,7 +518,9 @@ class Lottery:
                 if reward_data["love_bonus"] > 0:
                     bonus_messages += f"💕 {reward_data['spouse_name']}的爱意加成：+{reward_data['love_bonus']}\n"
                 if reward_data["streak_bonus"] > 0:
-                    bonus_messages += f"🔥 连续签到{reward_data['streak_count']}天加成：+{reward_data['streak_bonus']}\n"
+                    bonus_messages += f"🔥 连续签到{reward_data['streak_count']}天加成：\n+{reward_data['streak_bonus']}颗纠缠之缘\n"
+                    if msg_parts:
+                        bonus_messages += f"{msg_parts}\n"
             except Exception as e:
                 logger.error(f"构建加成信息失败: {str(e)}")
             if bonus_messages:
@@ -484,6 +528,12 @@ class Lottery:
 
             # 保存数据
             await write_json(self.backpack_path / f"{user_id}.json", user_backpack)
+            await write_json(self.user_data_path / f"{user_id}.json", user_data)
+
+            # 更新用户进度
+            await self.task.update_task_progress(
+                user_id, "money_earned", reward_data["money_reward"]
+            )
             return message
         except Exception as e:
             logger.error(f"签到失败: {str(e)}")

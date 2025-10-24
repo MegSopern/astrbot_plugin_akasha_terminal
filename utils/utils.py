@@ -21,6 +21,7 @@ from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
 
 # 文件路径
 PLUGIN_DATA_DIR = Path(StarTools.get_data_dir("astrbot_plugin_akasha_terminal"))
+PLUGIN_DIR = Path(__file__).resolve().parent.parent
 
 
 def logo_AATP():
@@ -240,11 +241,11 @@ async def create_user_data(user_id: str, user_data_path: Path) -> bool:
                 "house_price": 500,
                 "house_level": 1,
             },
-            "quest": {
+            "task": {
                 "daily": {},
                 "weekly": {},
                 "special": {},
-                "quest_points": 0,
+                "task_points": 0,
                 "last_daily_reset": "",
                 "last_weekly_reset": "",
             },
@@ -261,7 +262,10 @@ async def create_user_data(user_id: str, user_data_path: Path) -> bool:
 async def get_user_data_and_backpack(
     user_id: str, only_data_or_backpack: str | None = None
 ) -> dict | tuple[dict, dict]:
-    """获取用户数据和背包数据（不存在则创建）"""
+    """获取用户数据和背包数据（不存在则创建）\n
+    如果only_data_or_backpack为"user_data"则仅返回用户数据\n
+    如果only_data_or_backpack为"user_backpack"则仅返回背包数据\n
+    默认返回(用户数据, 背包数据)元组"""
     user_data_path = PLUGIN_DATA_DIR / "user_data"
     backpack_path = PLUGIN_DATA_DIR / "user_backpack"
     user_data = None
