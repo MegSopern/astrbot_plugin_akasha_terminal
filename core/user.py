@@ -221,9 +221,11 @@ class User:
 
             # 更新任务进度
             await self.task.update_task_progress(
-                user_id, "max_money", home_data["money"]
+                event, user_id, "max_money", home_data["money"]
             )
-            await self.task.update_task_progress(user_id, "max_love", home_data["love"])
+            await self.task.update_task_progress(
+                event, user_id, "max_love", home_data["love"]
+            )
 
             return (
                 f"用户信息:\n"

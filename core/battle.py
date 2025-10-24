@@ -299,7 +299,10 @@ class Battle:
                     )
                     message2.append(Comp.Plain(message2_part))
                     await self.task.update_task_progress(
-                        user_id=challenger_id, track_key="duel_wins", value=1
+                        event=event,
+                        user_id=challenger_id,
+                        track_key="duel_wins",
+                        value=1,
                     )
                     await event.send(event.chain_result(message2))
                     event.stop_event()
@@ -318,7 +321,7 @@ class Battle:
                     )
                     message2.append(Comp.Plain(message2_part))
                     await self.task.update_task_progress(
-                        user_id=opponent_id, track_key="duel_wins", value=1
+                        event=event, user_id=opponent_id, track_key="duel_wins", value=1
                     )
                     await event.send(event.chain_result(message2))
                     event.stop_event()
@@ -336,7 +339,10 @@ class Battle:
                     )
                     message2.append(Comp.Plain(message2_part))
                     await self.task.update_task_progress(
-                        user_id=challenger_id, track_key="duel_wins", value=1
+                        event=event,
+                        user_id=challenger_id,
+                        track_key="duel_wins",
+                        value=1,
                     )
                     await event.send(event.chain_result(message2))
                     event.stop_event()
@@ -354,17 +360,17 @@ class Battle:
                     )
                     message2.append(Comp.Plain(message2_part))
                     await self.task.update_task_progress(
-                        user_id=opponent_id, track_key="duel_wins", value=1
+                        event=event, user_id=opponent_id, track_key="duel_wins", value=1
                     )
                     await event.send(event.chain_result(message2))
                     event.stop_event()
 
                 # 更新任务进度（参与决斗次数+1）
                 await self.task.update_task_progress(
-                    user_id=challenger_id, track_key="duel_count", value=1
+                    event=event, user_id=challenger_id, track_key="duel_count", value=1
                 )
                 await self.task.update_task_progress(
-                    user_id=opponent_id, track_key="duel_count", value=1
+                    event=event, user_id=opponent_id, track_key="duel_count", value=1
                 )
 
             except Exception:

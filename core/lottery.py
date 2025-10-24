@@ -354,7 +354,7 @@ class Lottery:
             #     lines.append(f" ({time_desc})")
 
             # 更新任务进度
-            await self.task.update_task_progress(user_id, "gacha_count", count)
+            await self.task.update_task_progress(event, user_id, "gacha_count", count)
 
             return message, image_paths
         except Exception as e:
@@ -369,7 +369,7 @@ class Lottery:
         last_sign = user_backpack["sign_info"].get("last_sign", "")
         streak_count = user_backpack["sign_info"].get("streak_days", 0)
         money_reward += 200 + int(random.random() * 300)
-        msg_parts = []
+        money_msg = ""
         # 连续签到逻辑
         if last_sign == (datetime.now(CN_TIMEZONE).date() - timedelta(days=1)).strftime(
             "%Y-%m-%d"
@@ -385,16 +385,16 @@ class Lottery:
         # 金钱连续签到加成
         if streak_count >= 7:
             money_reward += 500
-            msg_parts.append("\n+500金币")
+            money_msg = "\n+500金币"
         elif streak_count >= 3:
             money_reward += 200
-            msg_parts.append("\n+200金币")
+            money_msg = "\n+200金币"
+
         # 随机道具奖励（10%概率）
+        item_reward = None
         if random.random() < 0.1:
             items = ["爱心巧克力", "幸运符", "金币袋"]
             item_reward = random.choice(items)
-            user_backpack["item_reward"] = user_backpack.get("item_reward", 0) + 1
-            msg_parts.append(f"🎁 随机道具奖励：+{item_reward}个随机道具\n")
 
         # 位置加成
         location_bonus = 0
@@ -437,7 +437,8 @@ class Lottery:
             "lucky_reward": lucky_reward,
             "total_reward": total_reward,
             "money_reward": money_reward,
-            "money_msg": msg_parts,
+            "item_reward": item_reward,
+            "money_msg": money_msg,
         }
 
     async def daily_sign_in(self, event: AiocqhttpMessageEvent):
@@ -468,11 +469,9 @@ class Lottery:
                 user_data, user_backpack, base_reward, money_base_reward
             )
             # 发放物品奖励
-            item_reward = str(reward_data.get("item_reward") or [""])[1]
+            item_reward = reward_data.get("item_reward")
             if item_reward:
-                user_backpack["items"][item_reward] = (
-                    user_backpack["items"].get(item_reward, 0) + 1
-                )
+                user_backpack[item_reward] = user_backpack.get(item_reward, 0) + 1
             # 更新签到信息
             user_backpack["sign_info"]["last_sign"] = today
             user_backpack["sign_info"]["streak_days"] = reward_data["streak_count"]
@@ -501,13 +500,13 @@ class Lottery:
             )
 
             # 幸运奖励消息
-            msg_parts = (reward_data.get("money_msg") or [""])[0]
+            money_msg = reward_data.get("money_msg", "")
             if reward_data["lucky_reward"] > 0:
                 message += (
                     f"🎁 幸运奖励：额外获得{reward_data['lucky_reward']}颗纠缠之缘！"
                 )
             if item_reward:
-                message += f"\n额外获得:{shop_data['items'][item_reward]}"
+                message += f"\n额外获得:{shop_data['items'][item_reward]['name']} x1！"
             try:
                 # 加成信息
                 bonus_messages = "\n\n"
@@ -519,8 +518,8 @@ class Lottery:
                     bonus_messages += f"💕 {reward_data['spouse_name']}的爱意加成：+{reward_data['love_bonus']}\n"
                 if reward_data["streak_bonus"] > 0:
                     bonus_messages += f"🔥 连续签到{reward_data['streak_count']}天加成：\n+{reward_data['streak_bonus']}颗纠缠之缘\n"
-                    if msg_parts:
-                        bonus_messages += f"{msg_parts}\n"
+                    if money_msg:
+                        bonus_messages += f"{money_msg}\n"
             except Exception as e:
                 logger.error(f"构建加成信息失败: {str(e)}")
             if bonus_messages:
@@ -532,7 +531,7 @@ class Lottery:
 
             # 更新用户进度
             await self.task.update_task_progress(
-                user_id, "money_earned", reward_data["money_reward"]
+                event, user_id, "money_earned", reward_data["money_reward"]
             )
             return message
         except Exception as e:

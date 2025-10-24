@@ -211,7 +211,9 @@ class Shop:
             await write_json(file_path, backpack)
 
             # 执行道具效果
-            result = await self.execute_item_effect(item, user_id, backpack, quantity)
+            result = await self.execute_item_effect(
+                event, item, user_id, backpack, quantity
+            )
             if not result["success"]:
                 return False, f"❌ {result['message']}"
             return True, result["message"]
@@ -220,7 +222,7 @@ class Shop:
             return False, "使用物品失败，请稍后再试~"
 
     async def execute_item_effect(
-        self, item, user_id, backpack, quantity
+        self, event: AiocqhttpMessageEvent, item, user_id, backpack, quantity
     ) -> Dict[str, Any]:
         """执行道具效果，返回执行结果"""
         try:
@@ -242,7 +244,9 @@ class Shop:
                     await write_json(target_user_data_path, user_data)
 
                     # 更新任务进度
-                    await self.task.update_task_progress(user_id, "max_love", up_love)
+                    await self.task.update_task_progress(
+                        event, user_id, "max_love", up_love
+                    )
 
                     return {
                         "success": True,
@@ -263,7 +267,7 @@ class Shop:
 
                     # 更新任务进度
                     await self.task.update_task_progress(
-                        user_id, "money_earned", user_data["home"]["money"]
+                        event, user_id, "money_earned", user_data["home"]["money"]
                     )
                     return {
                         "success": True,
@@ -394,14 +398,19 @@ class Shop:
                 return False, "购买数量必须为正整数"
             home_data = await self.user.get_home_data(user_id)
 
-            return await self.buy_item(user_id, item_name, home_data, quantity)
+            return await self.buy_item(event, user_id, item_name, home_data, quantity)
         except ValueError:
             return False, "数量必须是数字"
         except Exception as e:
             return False, f"购买失败: {str(e)}"
 
     async def buy_item(
-        self, user_id: str, item_name: str, home_data: dict, quantity: int = 1
+        self,
+        event: AiocqhttpMessageEvent,
+        user_id: str,
+        item_name: str,
+        home_data: dict,
+        quantity: int = 1,
     ) -> Tuple[bool, str]:
         """
         购买物品（支持批量购买）
@@ -450,8 +459,8 @@ class Shop:
         backpack[item_name] += quantity
         await write_json(file_path, backpack)
         # 更新任务进度
-        await self.task.update_task_progress(user_id, "shop_count", quantity)
-        await self.task.update_task_progress(user_id, "interaction_count", 1)
+        await self.task.update_task_progress(event, user_id, "shop_count", quantity)
+        await self.task.update_task_progress(event, user_id, "interaction_count", 1)
         return (
             True,
             f"成功购买{target_item['name']} x {quantity}\n花费{total_price}金币",

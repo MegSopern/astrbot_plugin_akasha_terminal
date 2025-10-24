@@ -38,17 +38,17 @@ class Task:
 
     def format_rewards(self, rewards: Dict[str, Any]) -> str:
         """格式化奖励文本"""
-        reward_texts = []
+        reward_texts = ""
         if "money" in rewards:
-            reward_texts.append(f"💰{rewards['money']}")
+            reward_texts += f"💰{rewards['money']}"
         if "love" in rewards:
-            reward_texts.append(f"❤️{rewards['love']}")
+            reward_texts += f"，❤️{rewards['love']}"
         if "task_points" in rewards:
-            reward_texts.append(f"🏆{rewards['task_points']}")
+            reward_texts += f"，🏆{rewards['task_points']}"
         if "items" in rewards:
             for item_name, count in rewards["items"].items():
-                reward_texts.append(f"{item_name}×{count}")
-        return ", ".join(reward_texts) or "无奖励"
+                reward_texts += f"，{item_name}×{count}"
+        return reward_texts
 
     def _status_of(self, state: Dict[str, Any]) -> str:
         """获取任务状态符号"""
@@ -59,7 +59,7 @@ class Task:
     # 判断记录的数据和今天是否在同一周
     def is_same_week(self, date_str: str) -> bool:
         """判断给定日期是否在本周"""
-        date = datetime.strptime(date_str, "%Y-%m-%d")
+        date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=self.CN_TIMEZONE)
         today = datetime.now(self.CN_TIMEZONE)
         return (
             date.isocalendar()[1] == today.isocalendar()[1] and date.year == today.year
@@ -69,7 +69,9 @@ class Task:
         """获取每日任务刷新剩余时间（到明天零点）"""
         now = datetime.now(self.CN_TIMEZONE)
         # 计算明天零点
-        next_reset = datetime(now.year, now.month, now.day) + timedelta(days=1)
+        next_reset = datetime(
+            now.year, now.month, now.day, tzinfo=self.CN_TIMEZONE
+        ) + timedelta(days=1)
         diff = next_reset - now
         # 格式化：小时+分钟
         hours = diff.seconds // 3600
@@ -82,9 +84,9 @@ class Task:
         current_weekday = now.weekday()  # 0=周一，6=周日
         days_until_monday = (7 - current_weekday) % 7
         # 计算下周一零点
-        next_reset = datetime(now.year, now.month, now.day) + timedelta(
-            days=days_until_monday
-        )
+        next_reset = datetime(
+            now.year, now.month, now.day, tzinfo=self.CN_TIMEZONE
+        ) + timedelta(days=days_until_monday)
         diff = next_reset - now
         # 格式化：天+小时（无天则只显示小时）
         days, hours = diff.days, diff.seconds // 3600
@@ -176,13 +178,24 @@ class Task:
         self, user_task_data: Dict[str, Any]
     ) -> Dict[str, int]:
         """获取已完成任务统计"""
-        # 统计各类型已完成任务数量
-        for q in user_task_data.get("daily", {}).values():
-            daily_completed = sum(bool(q.get("claimed")))
-        for q in user_task_data.get("weekly", {}).values():
-            weekly_completed = sum(bool(q.get("claimed")))
-        for q in user_task_data.get("special", {}).values():
-            special_completed = sum(bool(q.get("claimed")))
+        # 初始化变量为0
+        daily_completed = 0
+        weekly_completed = 0
+        special_completed = 0
+
+        # 统计每日任务已完成数量：收集所有任务的claimed状态，再求和
+        daily_tasks = user_task_data.get("daily", {}).values()
+        daily_completed = sum(1 for task in daily_tasks if task.get("claimed", False))
+
+        # 统计周常任务已完成数量
+        weekly_tasks = user_task_data.get("weekly", {}).values()
+        weekly_completed = sum(1 for task in weekly_tasks if task.get("claimed", False))
+
+        # 统计特殊任务已完成数量
+        special_tasks = user_task_data.get("special", {}).values()
+        special_completed = sum(
+            1 for task in special_tasks if task.get("claimed", False)
+        )
 
         return {
             "daily": daily_completed,
@@ -288,7 +301,7 @@ class Task:
             # 构建模板数据
             template_data = {
                 "user_id": user_id,
-                "user_name": get_nickname(event, user_id) or "未知用户",
+                "user_name": await get_nickname(event, user_id) or "未知用户",
                 "task_points": user_tasks.get("task_points", 0),
                 "daily_tasks": [],
                 "weekly_tasks": [],
@@ -380,39 +393,28 @@ class Task:
                 daily_refresh = self.get_refresh_time()
                 weekly_refresh = self.get_weekly_refresh_time()
 
-                message = [Comp.Plain(f"📋 {template_data['user_name']}的任务列表\n")]
-                message.append(
-                    Comp.Plain(f"🏆 任务点数: {template_data['task_points']}\n")
-                )
-                message.append(
-                    Comp.Plain(
-                        f"📊 完成率: {completion_rate}% ({total_completed}/{total_tasks})\n\n"
-                    )
-                )
-
+                message = f"📋 {template_data['user_name']}的任务列表\n"
+                message += f"🏆 任务点数: {template_data['task_points']}\n"
+                message += f"📊 完成率: {completion_rate}% ({total_completed}/{total_tasks})\n\n"
                 # 每日任务
-                message.append(Comp.Plain("📅 每日任务:\n"))
+                message += "📅 每日任务:\n"
                 for task in template_data["daily_tasks"][:3]:
-                    message.append(
-                        Comp.Plain(
-                            f"{task['status']} {task['name']} - {task['progressText']}\n"
-                        )
+                    message += (
+                        f"{task['status']} {task['name']} - {task['progressText']}\n"
                     )
 
                 # 周常任务（按原样在前面插入一个换行）
-                message.append(Comp.Plain("\n📆 周常任务:\n"))
+                message += "\n📆 周常任务:\n"
                 for task in template_data["weekly_tasks"][:3]:
-                    message.append(
-                        Comp.Plain(
-                            f"{task['status']} {task['name']} - {task['progressText']}\n"
-                        )
+                    message += (
+                        f"{task['status']} {task['name']} - {task['progressText']}\n"
                     )
 
                 # 刷新提示
-                message.append(Comp.Plain(f"🔄 每日任务刷新: {daily_refresh}\n"))
-                message.append(Comp.Plain(f"🔄 周常任务刷新: {weekly_refresh}\n"))
+                message += f"🔄 每日任务刷新: {daily_refresh}\n"
+                message += f"🔄 周常任务刷新: {weekly_refresh}\n"
 
-                await event.send(event.chain_result(message))
+                await event.send(event.plain_result(message))
                 return
             except Exception as e:
                 logger.error(f"构建任务消息失败: {str(e)}")
@@ -429,11 +431,9 @@ class Task:
         try:
             user_tasks = await self.get_user_tasks(event, user_id)
             task_data = await self.get_task_data()
-            daily_tasks = task_data.get("weekly_tasks", {})
+            daily_tasks = task_data.get("daily_tasks", {})
 
-            message = ["📅 每日任务 📅\n"]
-            message.append("━━━━━━━━━━━━━━━━\n")
-
+            message = "📅 每日任务 📅\n━━━━━━━━━━━━━━━\n"
             for task_id, task in daily_tasks.items():
                 user_task = user_tasks.get("daily", {}).get(
                     task_id, {"progress": 0, "completed": False, "claimed": False}
@@ -442,26 +442,23 @@ class Task:
                 progress_percent = progress / task["target"] * 100
                 status = self._status_of(user_task)
 
-                message.append(f"{status} {task['name']}\n")
-                message.append(f"   📝 {task['description']}\n")
+                message += f"{status} {task['name']}\n   📝 {task['description']}\n"
+
                 if task.get("requirement"):
-                    message.append(f"   ⚠️ {task['requirement']}\n")
-                message.append(
-                    f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
-                )
+                    message += f"   ⚠️ {task['requirement']}\n"
+                message += f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
 
                 # 显示奖励
                 rewards_text = self.format_rewards(task["rewards"])
-                message.append(f"   🎁 奖励: {rewards_text}\n")
+                message += f"   🎁 奖励: {rewards_text}\n"
 
                 if user_task["completed"] and not user_task["claimed"]:
-                    message.append(f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n")
-
-                message.append("   ────────────────\n")
+                    message += f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n"
+                message += "──────────────\n"
 
             # 显示刷新时间
-            message.append(f"\n🔄 任务将在 {self.get_refresh_time()} 后刷新")
-            await event.send(event.plain_result(Comp.Plain("".join(message))))
+            message += f"\n🔄 任务将在 {self.get_refresh_time()} 后刷新"
+            await event.send(event.plain_result(message))
 
         except Exception as e:
             logger.error(f"显示每日任务失败: {str(e)}")
@@ -475,8 +472,8 @@ class Task:
             task_data = await self.get_task_data()
             weekly_tasks = task_data.get("weekly_tasks", {})
 
-            message = ["📆 周常任务 📆\n"]
-            message.append("━━━━━━━━━━━━━━━━\n")
+            message = "📆 周常任务 📆\n"
+            message += "━━━━━━━━━━━━━━━\n"
 
             for task_id, task in weekly_tasks.items():
                 user_task = user_tasks.get("weekly", {}).get(
@@ -486,25 +483,23 @@ class Task:
                 progress_percent = progress / task["target"] * 100
                 status = self._status_of(user_task)
 
-                message.append(f"{status} {task['name']}\n")
-                message.append(f"   📝 {task['description']}\n")
+                message += f"{status} {task['name']}\n"
+                message += f"   📝 {task['description']}\n"
                 if task.get("requirement", ""):
-                    message.append(f"   ⚠️ {task['requirement']}\n")
-                message.append(
-                    f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
-                )
+                    message += f"   ⚠️ {task['requirement']}\n"
+                message += f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
 
                 # 显示奖励
                 rewards_text = self.format_rewards(task["rewards"])
-                message.append(f"   🎁 奖励: {rewards_text}\n")
+                message += f"   🎁 奖励: {rewards_text}\n"
 
                 if user_task["completed"] and not user_task["claimed"]:
-                    message.append(f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n")
-                message.append("   ────────────────\n")
+                    message += f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n"
+                message += "───────────────\n"
 
             # 显示刷新时间
-            message.append(f"\n🔄 任务将在 {self.get_weekly_refresh_time()} 后刷新")
-            await event.send(event.plain_result(Comp.Plain("".join(message))))
+            message += f"\n🔄 任务将在 {self.get_weekly_refresh_time()} 后刷新"
+            await event.send(event.plain_result(message))
         except Exception as e:
             logger.error(f"显示周常任务失败: {str(e)}")
             await event.send(event.plain_result("周常任务暂时无法访问，请稍后再试"))
@@ -517,8 +512,8 @@ class Task:
             task_data = await self.get_task_data()
             special_tasks = task_data.get("special_tasks", {})
 
-            message = ["⭐ 特殊任务 ⭐\n"]
-            message.append("━━━━━━━━━━━━━━━━\n")
+            message = "⭐ 特殊任务 ⭐\n"
+            message += "━━━━━━━━━━━━━━━\n"
 
             for task_id, task in special_tasks.items():
                 user_task = user_tasks.get("special", {}).get(
@@ -533,25 +528,21 @@ class Task:
                 progress_percent = progress / task["target"] * 100
                 status = self._status_of(user_task)
 
-                message.append(
-                    f"{status} {task['name']} {'（限时）' if task.get('one_time') else ''}\n"
-                )
-                message.append(f"   📝 {task['description']}\n")
+                message += f"{status} {task['name']} {'（限时）' if task.get('one_time') else ''}\n"
+                message += f"   📝 {task['description']}\n"
                 if task.get("requirement"):
-                    message.append(f"   ⚠️ {task['requirement']}\n")
-                message.append(
-                    f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
-                )
+                    message += f"   ⚠️ {task['requirement']}\n"
+                message += f"   📊 进度: {progress}/{task['target']} ({progress_percent:.1f}%)\n"
 
                 # 显示奖励
                 rewards_text = self.format_rewards(task["rewards"])
-                message.append(f"   🎁 奖励: {rewards_text}\n")
+                message += f"   🎁 奖励: {rewards_text}\n"
 
                 if user_task["completed"] and not user_task["claimed"]:
-                    message.append(f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n")
+                    message += f"   💡 使用 #领取奖励 {task['name']} 领取奖励\n"
 
-                message.append("   ────────────────\n")
-            await event.send(event.plain_result(Comp.Plain("".join(message))))
+                message += "───────────────\n"
+            await event.send(event.plain_result(message))
 
         except Exception as e:
             logger.error(f"显示特殊任务失败: {str(e)}")
@@ -580,19 +571,23 @@ class Task:
                 # 查找任务
                 task = None
                 task_type = None
+                user_task = None  # 初始化变量为None
+                found = False  # 标志位：是否找到任务
 
                 # 检查所有任务类型
                 for task_type_key in [
                     "daily_tasks",
                     "weekly_tasks",
                     "special_tasks",
-                ]:
-                    for tid, tdef in user_tasks.get(task_type_key, {}).items():
-                        if tdef["name"] == task_name:
-                            user_task = tdef
+                ]:  # 遍历当前类型下的所有任务
+                    for tid, user_task in user_tasks.get(task_type_key, {}).items():
+                        if user_task["name"] == task_name:
                             task = task_data[task_type_key].get(tid)
                             task_type = task_type_key.replace("_tasks", "")
-                            break
+                            found = True  # 标记找到任务
+                            break  # 跳出内层循环
+                    if found:
+                        break  # 找到任务后跳出外层循环
 
                 if not user_task:
                     await event.send(
@@ -834,6 +829,7 @@ class Task:
 
     async def update_task_progress(
         self,
+        event: AiocqhttpMessageEvent,
         user_id: str,
         track_key: str,
         is_increment: bool = True,
@@ -848,7 +844,7 @@ class Task:
         """
         try:
             user_tasks, user_data = await self.get_user_tasks(
-                user_id, is_return_user_data=True
+                event, user_id, is_return_user_data=True
             )
             task_data = await self.get_task_data()
 
