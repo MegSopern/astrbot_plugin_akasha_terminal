@@ -16,7 +16,7 @@
 			"track_key": "work_count"
 		},
 		"daily_shop": {
-			"id": "2",
+			"id": "daily_shop",
 			"name": "购物达人",
 			"description": "在商店购买3件道具",
 			"type": "daily",
@@ -70,7 +70,8 @@
 					"金币袋": 1
 				},
 				"task_points": 10
-			}
+			},
+			"track_key": "duel_count"
 		}
 	},
 	"weekly_tasks": {
@@ -94,8 +95,8 @@
 			"rewards": {
 				"money": 100,
 				"items": {
-					"6": 1,
-					"7": 1
+					"神秘宝箱": 1,
+					"时间沙漏": 1
 				},
 				"task_points": 50
 			},
@@ -110,9 +111,9 @@
 			"rewards": {
 				"money": 1000,
 				"items": {
-					"6": 5,
-					"7": 5,
-					"8": 1
+					"神秘宝箱": 5,
+					"时间沙漏": 5,
+					"魅力香水": 1
 				},
 				"task_points": 400
 			},
@@ -129,7 +130,7 @@
 			"rewards": {
 				"money": 100,
 				"items": {
-					"9": 1
+					"战斗药剂": 1
 				},
 				"task_points": 10
 			}
@@ -143,7 +144,7 @@
 			"rewards": {
 				"money": 100,
 				"items": {
-					"9": 1
+					"战斗药剂": 1
 				},
 				"task_points": 100
 			}
@@ -157,7 +158,7 @@
 			"rewards": {
 				"money": 100,
 				"items": {
-					"9": 1
+					"战斗药剂": 1
 				},
 				"task_points": 300
 			}
@@ -205,8 +206,8 @@
 			"rewards": {
 				"money": 2500,
 				"items": {
-					"4": 8,
-					"7": 3
+					"经验加速器": 8,
+					"时间沙漏": 3
 				},
 				"task_points": 55
 			},
@@ -222,13 +223,31 @@
 			"rewards": {
 				"money": 5000,
 				"items": {
-					"9": 5,
-					"8": 3
+					"战斗药剂": 5,
+					"魅力香水": 3
 				},
 				"task_points": 90
 			},
 			"permanent": true,
 			"track_key": "proposal_success"
+		},
+		"love_believer": {
+			"id": "love_believer",
+			"name": "爱的信徒",
+			"description": "与伴侣的好感度达到500",
+			"type": "special",
+			"target": 500,
+			"rewards": {
+				"money": 1000,
+				"love": 50,
+				"items": {
+					"神秘宝箱": 1,
+					"时间沙漏": 1
+				},
+				"task_points": 25
+			},
+			"permanent": true,
+			"track_key": "max_love"
 		},
 		"love_master": {
 			"id": "love_master",
@@ -240,10 +259,47 @@
 				"money": 2000,
 				"love": 100,
 				"items": {
-					"6": 1,
-					"7": 2
+					"神秘宝箱": 1,
+					"时间沙漏": 2
 				},
 				"task_points": 50
+			},
+			"permanent": true,
+			"track_key": "max_love"
+		},
+		"love_devotee": {
+			"id": "love_devotee",
+			"name": "深爱的守护",
+			"description": "与伴侣的好感度达到2000",
+			"type": "special",
+			"target": 2000,
+			"rewards": {
+				"money": 4000,
+				"love": 200,
+				"items": {
+					"时间沙漏": 3,
+					"魅力香水": 2
+				},
+				"task_points": 80
+			},
+			"permanent": true,
+			"track_key": "max_love"
+		},
+		"love_saint": {
+			"id": "love_saint",
+			"name": "爱的圣者",
+			"description": "与伴侣的好感度达到5000",
+			"type": "special",
+			"target": 5000,
+			"rewards": {
+				"money": 10000,
+				"love": 500,
+				"items": {
+					"魅力香水": 5,
+					"战斗药剂": 4,
+					"许愿星": 1
+				},
+				"task_points": 150
 			},
 			"permanent": true,
 			"track_key": "max_love"
@@ -292,8 +348,8 @@
 			"rewards": {
 				"money": 2000,
 				"items": {
-					"6": 3,
-					"8": 2
+					"神秘宝箱": 3,
+					"魅力香水": 2
 				},
 				"task_points": 40
 			},
@@ -310,8 +366,8 @@
 				"money": 3500,
 				"love": 200,
 				"items": {
-					"8": 4,
-					"9": 3
+					"魅力香水": 4,
+					"战斗药剂": 3
 				},
 				"task_points": 75
 			},
@@ -328,7 +384,7 @@
 				"money": 2500,
 				"items": {
 					"神秘宝箱": 5,
-					"6": 3
+					"魅力香水": 3
 				},
 				"task_points": 55
 			},
@@ -344,8 +400,8 @@
 			"rewards": {
 				"money": 4000,
 				"items": {
-					"6": 6,
-					"8": 4
+					"神秘宝箱": 6,
+					"魅力香水": 4
 				},
 				"task_points": 85
 			},
@@ -517,9 +573,46 @@
 				"money": 3000,
 				"items": {
 					"体力药水": 10,
-					"6": 2
+					"神秘宝箱": 2
 				},
 				"task_points": 60
+			},
+			"permanent": true,
+			"track_key": "work_count"
+		},
+		"work_legend": {
+			"id": "work_legend",
+			"name": "劳动的传说",
+			"description": "累计打工200次",
+			"type": "special",
+			"target": 200,
+			"rewards": {
+				"money": 6000,
+				"items": {
+					"体力药水": 15,
+					"时间沙漏": 3,
+					"魅力香水": 2
+				},
+				"task_points": 100
+			},
+			"permanent": true,
+			"track_key": "work_count"
+		},
+		"work_god": {
+			"id": "work_god",
+			"name": "劳动的神祇",
+			"description": "累计打工500次",
+			"type": "special",
+			"target": 500,
+			"rewards": {
+				"money": 15000,
+				"items": {
+					"体力药水": 40,
+					"魅力香水": 8,
+					"战斗药剂": 6,
+					"许愿星": 1
+				},
+				"task_points": 250
 			},
 			"permanent": true,
 			"track_key": "work_count"
@@ -541,6 +634,40 @@
 			"permanent": true,
 			"track_key": "welfare_count"
 		},
+		"wealth_starter": {
+			"id": "wealth_starter",
+			"name": "财富的萌芽",
+			"description": "累计拥有10000金币",
+			"type": "special",
+			"target": 10000,
+			"rewards": {
+				"money": 1000,
+				"items": {
+					"神秘宝箱": 1,
+					"时间沙漏": 1
+				},
+				"task_points": 20
+			},
+			"permanent": true,
+			"track_key": "max_money"
+		},
+		"wealth_grower": {
+			"id": "wealth_grower",
+			"name": "财富的积累",
+			"description": "累计拥有50000金币",
+			"type": "special",
+			"target": 50000,
+			"rewards": {
+				"money": 5000,
+				"items": {
+					"时间沙漏": 2,
+					"魅力香水": 1
+				},
+				"task_points": 50
+			},
+			"permanent": true,
+			"track_key": "max_money"
+		},
 		"millionaire": {
 			"id": "millionaire",
 			"name": "财富的守望者",
@@ -550,10 +677,46 @@
 			"rewards": {
 				"money": 10000,
 				"items": {
-					"8": 3,
-					"9": 5
+					"魅力香水": 3,
+					"战斗药剂": 5
 				},
 				"task_points": 100
+			},
+			"permanent": true,
+			"track_key": "max_money"
+		},
+		"multi_millionaire": {
+			"id": "multi_millionaire",
+			"name": "财富的巨擘",
+			"description": "累计拥有500000金币",
+			"type": "special",
+			"target": 500000,
+			"rewards": {
+				"money": 50000,
+				"items": {
+					"魅力香水": 10,
+					"战斗药剂": 15,
+					"许愿星": 1
+				},
+				"task_points": 250
+			},
+			"permanent": true,
+			"track_key": "max_money"
+		},
+		"tycoon": {
+			"id": "tycoon",
+			"name": "财富的君王",
+			"description": "累计拥有1000000金币",
+			"type": "special",
+			"target": 1000000,
+			"rewards": {
+				"money": 100000,
+				"items": {
+					"魅力香水": 20,
+					"战斗药剂": 30,
+					"许愿星": 3
+				},
+				"task_points": 500
 			},
 			"permanent": true,
 			"track_key": "max_money"
@@ -567,8 +730,8 @@
 			"rewards": {
 				"money": 2500,
 				"items": {
-					"7": 3,
-					"8": 2
+					"时间沙漏": 3,
+					"魅力香水": 2
 				},
 				"task_points": 45
 			},
@@ -585,7 +748,7 @@
 				"money": 3000,
 				"items": {
 					"神秘宝箱": 6,
-					"8": 3
+					"魅力香水": 3
 				},
 				"task_points": 60
 			},
@@ -602,7 +765,7 @@
 				"money": 1500,
 				"items": {
 					"幸运符": 6,
-					"7": 2
+					"时间沙漏": 2
 				},
 				"task_points": 30
 			},
@@ -618,7 +781,7 @@
 			"rewards": {
 				"money": 5000,
 				"items": {
-					"9": 5,
+					"战斗药剂": 5,
 					"体力药水": 10
 				},
 				"task_points": 80
@@ -635,8 +798,8 @@
 			"rewards": {
 				"money": 3000,
 				"items": {
-					"8": 2,
-					"9": 3
+					"魅力香水": 2,
+					"战斗药剂": 3
 				},
 				"task_points": 60
 			},
@@ -736,8 +899,8 @@
 			"rewards": {
 				"money": 1500,
 				"items": {
-					"6": 2,
-					"7": 1
+					"神秘宝箱": 2,
+					"时间沙漏": 1
 				},
 				"task_points": 30
 			},
@@ -754,7 +917,7 @@
 				"money": 2000,
 				"items": {
 					"经验书": 10,
-					"6": 4
+					"神秘宝箱": 4
 				},
 				"task_points": 40
 			},
@@ -787,8 +950,8 @@
 			"rewards": {
 				"money": 2000,
 				"items": {
-					"7": 4,
-					"9": 2
+					"时间沙漏": 4,
+					"战斗药剂": 2
 				},
 				"task_points": 45
 			},
@@ -804,10 +967,45 @@
 			"rewards": {
 				"money": 1500,
 				"items": {
-					"6": 3,
-					"7": 2
+					"神秘宝箱": 3,
+					"时间沙漏": 2
 				},
 				"task_points": 35
+			},
+			"permanent": true,
+			"track_key": "gacha_count"
+		},
+		"gacha_enthusiast": {
+			"id": "gacha_enthusiast",
+			"name": "抽卡的爱好者",
+			"description": "进行100次武器抽卡",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 3000,
+				"items": {
+					"时间沙漏": 4,
+					"魅力香水": 2
+				},
+				"task_points": 60
+			},
+			"permanent": true,
+			"track_key": "gacha_count"
+		},
+		"gacha_whale": {
+			"id": "gacha_whale",
+			"name": "抽卡的巨鲸",
+			"description": "进行500次武器抽卡",
+			"type": "special",
+			"target": 500,
+			"rewards": {
+				"money": 15000,
+				"items": {
+					"魅力香水": 10,
+					"战斗药剂": 8,
+					"许愿星": 2
+				},
+				"task_points": 200
 			},
 			"permanent": true,
 			"track_key": "gacha_count"
@@ -821,30 +1019,169 @@
 			"rewards": {
 				"money": 5000,
 				"items": {
-					"8": 5,
-					"9": 3
+					"魅力香水": 5,
+					"战斗药剂": 3
 				},
 				"task_points": 100
 			},
 			"permanent": true,
 			"track_key": "five_star_weapons"
 		},
-		"duel_champion": {
-			"id": "duel_champion",
-			"name": "胜负的执念",
-			"description": "赢得20场决斗",
+		"weapon_master": {
+			"id": "weapon_master",
+			"name": "武器的大师",
+			"description": "收集20把五星武器",
 			"type": "special",
 			"target": 20,
 			"rewards": {
-				"money": 3000,
+				"money": 10000,
 				"items": {
-					"7": 5,
-					"8": 3
+					"魅力香水": 10,
+					"战斗药剂": 8,
+					"许愿星": 1
+				},
+				"task_points": 180
+			},
+			"permanent": true,
+			"track_key": "five_star_weapons"
+		},
+		"win_streak_3": {
+			"id": "win_streak_3",
+			"name": "连胜新星",
+			"description": "赢得3场连续决斗",
+			"type": "special",
+			"target": 3,
+			"rewards": {
+				"money": 800,
+				"items": {
+					"战斗药剂": 2,
+					"幸运符": 1
+				},
+				"task_points": 20
+			},
+			"permanent": true,
+			"track_key": "duel_wins"
+		},
+		"duel_warrior": {
+			"id": "duel_warrior",
+			"name": "决斗战士",
+			"description": "赢得10场决斗",
+			"type": "special",
+			"target": 10,
+			"rewards": {
+				"money": 1500,
+				"items": {
+					"战斗药剂": 5,
+					"神秘宝箱": 2
+				},
+				"task_points": 40
+			},
+			"permanent": true,
+			"track_key": "duel_wins"
+		},
+		"duel_champion": {
+			"id": "duel_champion",
+			"name": "胜负的执念",
+			"description": "赢得30场决斗",
+			"type": "special",
+			"target": 30,
+			"rewards": {
+				"money": 5000,
+				"items": {
+					"时间沙漏": 5,
+					"魅力香水": 3
 				},
 				"task_points": 70
 			},
 			"permanent": true,
 			"track_key": "duel_wins"
+		},
+		"duel_hero": {
+			"id": "duel_hero",
+			"name": "胜利的英雄",
+			"description": "赢得50场决斗",
+			"type": "special",
+			"target": 50,
+			"rewards": {
+				"money": 8000,
+				"items": {
+					"魅力香水": 6,
+					"战斗药剂": 5
+				},
+				"task_points": 120
+			},
+			"permanent": true,
+			"track_key": "duel_wins"
+		},
+		"duel_overlord": {
+			"id": "duel_overlord",
+			"name": "无敌的霸主",
+			"description": "赢得100场决斗",
+			"type": "special",
+			"target": 100,
+			"rewards": {
+				"money": 15000,
+				"items": {
+					"魅力香水": 12,
+					"战斗药剂": 10,
+					"神秘宝箱": 5
+				},
+				"task_points": 200
+			},
+			"permanent": true,
+			"track_key": "duel_wins"
+		},
+		"duel_god": {
+			"id": "duel_god",
+			"name": "战神降临",
+			"description": "赢得200场决斗",
+			"type": "special",
+			"target": 200,
+			"rewards": {
+				"money": 30000,
+				"items": {
+					"魅力香水": 20,
+					"战斗药剂": 18,
+					"许愿星": 2
+				},
+				"task_points": 350
+			},
+			"permanent": true,
+			"track_key": "duel_wins"
+		},
+		"duel_novice": {
+			"id": "duel_novice",
+			"name": "战斗的启蒙",
+			"description": "参与5场决斗",
+			"type": "special",
+			"target": 5,
+			"rewards": {
+				"money": 500,
+				"items": {
+					"体力药水": 3,
+					"战斗药剂": 1
+				},
+				"task_points": 15
+			},
+			"permanent": true,
+			"track_key": "duel_count"
+		},
+		"duel_apprentice": {
+			"id": "duel_apprentice",
+			"name": "决斗学徒",
+			"description": "参与30场决斗",
+			"type": "special",
+			"target": 30,
+			"rewards": {
+				"money": 1500,
+				"items": {
+					"战斗药剂": 5,
+					"时间沙漏": 2
+				},
+				"task_points": 40
+			},
+			"permanent": true,
+			"track_key": "duel_count"
 		},
 		"duel_veteran": {
 			"id": "duel_veteran",
@@ -855,10 +1192,45 @@
 			"rewards": {
 				"money": 4000,
 				"items": {
-					"6": 8,
-					"9": 4
+					"神秘宝箱": 8,
+					"战斗药剂": 4
 				},
 				"task_points": 80
+			},
+			"permanent": true,
+			"track_key": "duel_count"
+		},
+		"duel_master": {
+			"id": "duel_master",
+			"name": "决斗宗师",
+			"description": "参与300场决斗",
+			"type": "special",
+			"target": 300,
+			"rewards": {
+				"money": 10000,
+				"items": {
+					"魅力香水": 10,
+					"战斗药剂": 8
+				},
+				"task_points": 150
+			},
+			"permanent": true,
+			"track_key": "duel_count"
+		},
+		"duel_legend": {
+			"id": "duel_legend",
+			"name": "传说的战士",
+			"description": "参与500场决斗",
+			"type": "special",
+			"target": 500,
+			"rewards": {
+				"money": 20000,
+				"items": {
+					"魅力香水": 15,
+					"战斗药剂": 12,
+					"许愿星": 1
+				},
+				"task_points": 250
 			},
 			"permanent": true,
 			"track_key": "duel_count"
