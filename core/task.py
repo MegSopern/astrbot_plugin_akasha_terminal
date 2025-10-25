@@ -132,10 +132,10 @@ class Task:
         today = datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d")
         user_data = await read_json(self.user_data_path / f"{user_id}.json")
         if (
-            not user_data["task"]["last_daily_reset"]
+            not user_data["task"]["last_daily_refresh"]
             or not user_data["task"]["last_weekly_refresh"]
         ):
-            user_data["task"]["last_daily_reset"] = today
+            user_data["task"]["last_daily_refresh"] = today
             user_data["task"]["last_weekly_refresh"] = today
             await write_json(self.user_data_path / f"{user_id}.json", user_data)
 
@@ -158,9 +158,9 @@ class Task:
         """检查并重置过期任务"""
         reset = False
         # 重置每日任务
-        if user_data["task"].get("last_daily_reset") != today:
+        if user_data["task"].get("last_daily_refresh") != today:
             user_data["task"]["daily"] = {}
-            user_data["task"]["last_daily_reset"] = today
+            user_data["task"]["last_daily_refresh"] = today
             reset = True
 
         # 重置周常任务
@@ -808,7 +808,7 @@ class Task:
             # 重置每日任务
             today = datetime.now(self.CN_TIMEZONE).strftime("%Y-%m-%d")
             user_data["task"]["daily"] = {}
-            user_data["task"]["last_daily_reset"] = today
+            user_data["task"]["last_daily_refresh"] = today
             await write_json(self.user_data_path / f"{user_id}.json", user_data)
 
             message = [

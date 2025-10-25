@@ -246,8 +246,8 @@ async def create_user_data(user_id: str, user_data_path: Path) -> bool:
                 "weekly": {},
                 "special": {},
                 "task_points": 0,
-                "last_daily_reset": "",
-                "last_weekly_reset": "",
+                "last_daily_refresh": "",
+                "last_weekly_refresh": "",
             },
         }
 

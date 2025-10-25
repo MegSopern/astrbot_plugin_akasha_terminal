@@ -624,6 +624,7 @@ class Shop:
         try:
             # message = [Comp.At(qq=1677520180)]
             # message.append(Comp.Plain("：\n测试换行\n测试成功！"))
+            # await event.send(event.chain_result(message))
             message = str(self.config_path)
             await event.send(event.plain_result(message))
         except Exception as e:
