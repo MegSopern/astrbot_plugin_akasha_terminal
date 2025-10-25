@@ -235,7 +235,7 @@ async def create_user_data(user_id: str, user_data_path: Path) -> bool:
                 "wait": 0,
                 "place": "home",
                 "placetime": 0,
-                "money": 100,
+                "money": 0,
                 "house_name": "小破屋",
                 "house_space": 6,
                 "house_price": 500,

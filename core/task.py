@@ -260,7 +260,6 @@ class Task:
             task_shop = task_data.get("task_shop", {})
 
             # 公共工具（仅在本函数内使用，减少重复逻辑）
-
             def _progress_of(state: Dict[str, Any], target: int) -> Tuple[int, int]:
                 progress = min(state.get("progress", 0), target)
                 percent = math.floor((progress / target) * 100) if target else 0
@@ -288,7 +287,8 @@ class Task:
                 result: List[Dict[str, Any]] = []
                 for tid, task_item in task_defs.items():
                     state = user_target_tasks.get(
-                        tid, {"progress": 0, "completed": False, "claimed": False}
+                        task_item["name"],
+                        {"progress": 0, "completed": False, "claimed": False},
                     )
                     # 特殊任务：跳过已领取的一次性任务
                     if (
@@ -436,7 +436,7 @@ class Task:
             message = "📅 每日任务 📅\n━━━━━━━━━━━━━━━\n"
             for task_id, task in daily_tasks.items():
                 user_task = user_tasks.get("daily", {}).get(
-                    task_id, {"progress": 0, "completed": False, "claimed": False}
+                    task["name"], {"progress": 0, "completed": False, "claimed": False}
                 )
                 progress = min(user_task["progress"], task["target"])
                 progress_percent = progress / task["target"] * 100
@@ -477,7 +477,7 @@ class Task:
 
             for task_id, task in weekly_tasks.items():
                 user_task = user_tasks.get("weekly", {}).get(
-                    task_id, {"progress": 0, "completed": False, "claimed": False}
+                    task["name"], {"progress": 0, "completed": False, "claimed": False}
                 )
                 progress = min(user_task["progress"], task["target"])
                 progress_percent = progress / task["target"] * 100
@@ -517,7 +517,7 @@ class Task:
 
             for task_id, task in special_tasks.items():
                 user_task = user_tasks.get("special", {}).get(
-                    task_id, {"progress": 0, "completed": False, "claimed": False}
+                    task["name"], {"progress": 0, "completed": False, "claimed": False}
                 )
 
                 # 跳过已完成的一次性任务
@@ -555,12 +555,11 @@ class Task:
             if not parts:
                 await event.send(
                     event.plain_result(
-                        "请指定要领取奖励的任务名称！\n使用方法: /领取奖励 [任务名称]"
+                        "请指定要领取奖励的任务名称！\n使用方法: #领取奖励 [任务名称]"
                     )
                 )
                 return
             task_name = parts[0]
-
             try:
                 user_tasks, user_data = await self.get_user_tasks(
                     event, user_id, is_return_user_data=True
@@ -575,17 +574,26 @@ class Task:
                 found = False  # 标志位：是否找到任务
 
                 # 检查所有任务类型
-                for task_type_key in [
-                    "daily_tasks",
-                    "weekly_tasks",
-                    "special_tasks",
-                ]:  # 遍历当前类型下的所有任务
-                    for tid, user_task in user_tasks.get(task_type_key, {}).items():
-                        if user_task["name"] == task_name:
-                            task = task_data[task_type_key].get(tid)
-                            task_type = task_type_key.replace("_tasks", "")
-                            found = True  # 标记找到任务
-                            break  # 跳出内层循环
+                task_type_mapping = {
+                    "daily_tasks": "daily",
+                    "weekly_tasks": "weekly",
+                    "special_tasks": "special",
+                }
+                # 检查所有任务类型（使用带_tasks的键访问访问task_data）
+                for task_data_key, task_type in task_type_mapping.items():
+                    # 遍历用户任务（用户任务的键是不带_tasks的，如"weekly"）
+                    for user_task_name, user_task in user_tasks.get(
+                        task_type, {}
+                    ).items():
+                        if user_task_name == task_name:
+                            # 从task_data中获取对应类型的任务定义（用带_tasks的键）
+                            for task_item in task_data.get(task_data_key, {}).values():
+                                if task_item["name"] == task_name:
+                                    task = task_item  # 找到对应任务定义
+                                    found = True  # 标记找到任务
+                                    break  # 跳出内层循环
+                            if found:
+                                break  # 跳出次内层循环
                     if found:
                         break  # 找到任务后跳出外层循环
 
@@ -611,25 +619,25 @@ class Task:
 
             try:
                 # 处理奖励发放
-                rewards = []
+                rewards = ""
                 # 金币奖励
                 if "money" in task["rewards"]:
                     user_data["home"]["money"] = (
                         user_data["home"].get("money", 0) + task["rewards"]["money"]
                     )
-                    rewards.append(f"💰 {task['rewards']['money']} 金币")
+                    rewards += f"💰 {task['rewards']['money']} 金币\n"
 
                 # 好感度奖励
                 if "love" in task["rewards"]:
                     user_data["home"]["love"] = (
                         user_data["home"].get("love", 0) + task["rewards"]["love"]
                     )
-                    rewards.append(f"❤️ {task['rewards']['love']} 好感度")
+                    rewards += f"❤️ {task['rewards']['love']} 好感度\n"
 
                 # 道具奖励
                 if "items" in task["rewards"]:
                     for item_name, count in task["rewards"]["items"].items():
-                        rewards.append(f"{item_name} ×{count}")
+                        rewards += f"{item_name} ×{count}\n"
                         backpack[item_name] = backpack.get(item_name, 0) + count
 
                 # 任务点数奖励
@@ -638,9 +646,7 @@ class Task:
                         user_tasks.get("task_points", 0)
                         + task["rewards"]["task_points"]
                     )
-                    rewards.append(f"🏆 {task['rewards']['task_points']} 任务点数")
-
-                msg_parts = [Comp.Plain("\n".join(rewards))]
+                    rewards += f"🏆 {task['rewards']['task_points']} 任务点数\n"
                 # 构建奖励消息
 
                 message = [
@@ -649,7 +655,7 @@ class Task:
                         "：\n🎉 任务完成！\n"
                         f"📋 {task_name}\n"
                         "🎁 获得奖励:\n"
-                        f"{msg_parts}\n"
+                        f"{rewards}\n"
                         f"💰 当前金币: {user_data.get('money', 0)}\n"
                         f"🏆 任务点数: {user_tasks.get('task_points', 0)}"
                     ),
@@ -657,7 +663,7 @@ class Task:
                 await event.send(event.chain_result(message))
 
                 # 标记为已领取
-                user_data["task"][task_type][task["id"]]["claimed"] = True
+                user_data["task"][task_type][task["name"]]["claimed"] = True
 
                 # 保存数据
                 await write_json(self.user_data_path / f"{user_id}.json", user_data)
@@ -832,15 +838,17 @@ class Task:
         event: AiocqhttpMessageEvent,
         user_id: str,
         track_key: str,
-        is_increment: bool = True,
         value: int = 1,
+        is_increment: bool = True,
+        is_direct_set: bool = False,
     ) -> bool:
         """
         更新任务进度（供其他系统调用）\n
         user_id: 用户ID\n
         track_key: 任务追踪键\n
         value: 增量值或设置值，默认1\n
-        is_increment: 是否为增量更新，False则为设置最大值，默认True
+        is_increment: 是否为增量更新，False则为设置最大值，默认True（当is_direct_set为True时此参数无效）\n
+        is_direct_set: 是否直接设置进度值，True则直接将progress设置为value，默认False
         """
         try:
             user_tasks, user_data = await self.get_user_tasks(
@@ -857,21 +865,26 @@ class Task:
             updated = False
             for task_category, tasks in tasks_categories.items():
                 for task_id, task in tasks.items():
-                    if track_key == task.get("itrack_key"):
+                    if track_key == task.get("track_key"):
                         if task_category not in user_tasks:
                             user_tasks[task_category] = {}
-                        if task_id not in user_tasks[task_category]:
-                            user_tasks[task_category][task_id] = {
+                        if task["name"] not in user_tasks[task_category]:
+                            user_tasks[task_category][task["name"]] = {
                                 "progress": 0,
                                 "completed": False,
                                 "claimed": False,
                             }
 
-                        user_task = user_tasks[task_category][task_id]
+                        user_task = user_tasks[task_category][task["name"]]
                         if not user_task.get("completed"):
-                            if is_increment:
+                            if is_direct_set:
+                                # 直接设置进度值
+                                user_task["progress"] = value
+                            elif is_increment:
+                                # 增量更新
                                 user_task["progress"] += value
                             else:
+                                # 设置为最大值（原逻辑）
                                 user_task["progress"] = max(
                                     tasks[task_id].get("target", 0), value
                                 )

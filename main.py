@@ -86,18 +86,6 @@ class AkashaTerminal(Star):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
 
     ########## 任务系统
-    @filter.command("任务商店", alias={"任务兑换"})
-    async def quest_shop(self, event: AiocqhttpMessageEvent):
-        """显示任务商店"""
-        await self.task.format_task_shop_items(event)
-
-    @filter.command("领取任务", alias="获取任务")
-    async def get_daily_task(self, event: AiocqhttpMessageEvent):
-        """领取日常任务"""
-        user_id = str(event.get_sender_id())
-        message = await self.task.get_user_daily_task(user_id)
-        yield event.plain_result(message)
-
     @filter.command("每日任务", alias={"日常任务"})
     async def show_daily_tasks(self, event: AiocqhttpMessageEvent):
         """查看每日任务"""
@@ -113,14 +101,19 @@ class AkashaTerminal(Star):
         """查看特殊任务"""
         await self.task.format_user_special_tasks(event)
 
-    @filter.command("领取奖励", alias={"完成任务"})
+    @filter.command("领取奖励", alias={"完成任务", "领取任务奖励"})
     async def claim_reward(self, event: AiocqhttpMessageEvent):
         """领取任务奖励，使用方法: #领取奖励 [任务名称]"""
         parts = await get_cmd_info(event)
         await self.task.handle_claim_reward(event, parts)
 
+    @filter.command("任务商店", alias={"任务兑换"})
+    async def quest_shop(self, event: AiocqhttpMessageEvent):
+        """显示任务商店"""
+        await self.task.format_task_shop_items(event)
+
     @filter.command(
-        "虚空兑换", alias={"商店兑换", "商城兑换", "虚空商城兑换", "虚空商店兑换"}
+        "虚空兑换", alias={"商店兑换", "商城兑换", "任务商城兑换", "任务商店兑换"}
     )
     async def exchange_reward(self, event: AiocqhttpMessageEvent):
         """任务商店购买物品，使用方法: /虚空兑换 [商品名称]"""
@@ -172,7 +165,7 @@ class AkashaTerminal(Star):
         success, message = await self.shop.handle_gift_command(event, parts)
         yield event.plain_result(message)
 
-    @filter.command("抽武器", alias={"单抽武器", "单抽"})
+    @filter.command("抽武器", alias={"单抽武器", "单抽", "抽卡"})
     async def draw_weapon(self, event: AiocqhttpMessageEvent):
         """单抽武器"""
         message, image_path = await self.lottery.weapon_draw(event, count=1)

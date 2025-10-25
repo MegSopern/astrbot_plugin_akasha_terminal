@@ -48,7 +48,7 @@ class User:
                     "wait": 0,
                     "place": "home",
                     "placetime": 0,
-                    "money": 100,
+                    "money": 0,
                     "house_name": "小破屋",
                     "house_space": 6,
                     "house_price": 500,
@@ -221,10 +221,10 @@ class User:
 
             # 更新任务进度
             await self.task.update_task_progress(
-                event, user_id, "max_money", home_data["money"]
+                event, user_id, "max_money", home_data["money"], is_direct_set=True
             )
             await self.task.update_task_progress(
-                event, user_id, "max_love", home_data["love"]
+                event, user_id, "max_love", home_data["love"], is_direct_set=True
             )
 
             return (
