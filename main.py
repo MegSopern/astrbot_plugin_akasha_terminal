@@ -244,3 +244,56 @@ class AkashaTerminal(Star):
     async def abcd(self, event: AiocqhttpMessageEvent):
         """测试用例方法"""
         await self.shop.ceshi_command(event)
+
+    ########## 合成系统
+    @filter.command("合成列表", alias={"查看合成", "合成配方"})
+    async def composite_list(self, event: AiocqhttpMessageEvent):
+        """展示合成列表"""
+        message = await self.shop.show_composite_list()
+        yield event.plain_result(message)
+
+    @filter.command("合成", alias={"虚空合成", "开始合成"})
+    async def composite_item(self, event: AiocqhttpMessageEvent):
+        """合成物品，使用方法: /合成 物品名称"""
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        success, message = await self.shop.handle_composite_command(event, input_str)
+        yield event.plain_result(message)
+
+    @filter.command("工坊", alias={"合成工坊", "我的工坊"})
+    async def workshop(self, event: AiocqhttpMessageEvent):
+        """展示工坊信息"""
+        message = await self.shop.show_workshop(event)
+        yield event.plain_result(message)
+
+    @filter.command("升级工坊", alias={"工坊升级", "提升工坊"})
+    async def upgrade_workshop(self, event: AiocqhttpMessageEvent):
+        """升级工坊"""
+        message = await self.shop.upgrade_workshop(event)
+        yield event.plain_result(message)
+
+    @filter.command("批量合成", alias={"快速合成", "一键合成"})
+    async def batch_composite(self, event: AiocqhttpMessageEvent):
+        """批量合成物品，使用方法: /批量合成 物品名称 数量"""
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        success, message = await self.shop.handle_batch_composite_command(
+            event, input_str
+        )
+        yield event.plain_result(message)
+
+    @filter.command("道具分解", alias={"分解", "分解道具"})
+    async def prop_decomposition(self, event: AiocqhttpMessageEvent):
+        """分解道具，使用方法: /道具分解 物品名称"""
+        cmd_prefix = event.message_str.split()[0]
+        input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
+        success, message = await self.shop.handle_prop_decomposition_command(
+            event, input_str
+        )
+        yield event.plain_result(message)
+
+    @filter.command("合成历史", alias={"历史", "制作记录"})
+    async def composite_history(self, event: AiocqhttpMessageEvent):
+        """查看合成历史记录"""
+        message = await self.shop.show_composite_history(event)
+        yield event.plain_result(message)
