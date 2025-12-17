@@ -98,7 +98,12 @@ def _unlock_file(fileno):
 
 
 def read_json_sync(file_path: Path, encoding_config: str = "utf-8") -> Dict[str, Any]:
-    """同步原子读取JSON文件（无.lock文件）"""
+    """
+    同步原子读取JSON文件（无.lock文件）\n
+    :param file_path: JSON文件路径
+    :param encoding_config: 文件编码，默认为'utf-8'
+    :return: 读取的JSON数据字典
+    """
     if not file_path.exists():
         return {}
 
@@ -122,7 +127,13 @@ def read_json_sync(file_path: Path, encoding_config: str = "utf-8") -> Dict[str,
 def write_json_sync(
     file_path: Path, data: Dict[str, Any], encoding_config: str = "utf-8"
 ) -> bool:
-    """同步原子写入JSON文件（无.lock文件）"""
+    """
+    同步原子写入JSON文件（无.lock文件）\n
+    :param file_path: JSON文件路径
+    :param data: 要写入的字典数据
+    :param encoding_config: 文件编码，默认为'utf-8'
+    :return: 写入是否成功，成功返回True，失败返回False
+    """
 
     def write_json_atomic() -> None:
         # 生成临时文件
@@ -155,7 +166,12 @@ def write_json_sync(
 
 
 async def read_json(file_path: Path, encoding_config: str = "utf-8") -> Dict[str, Any]:
-    """异步原子读取JSON文件（无.lock文件）"""
+    """
+    异步原子读取JSON文件（无.lock文件）\n
+    :param file_path: JSON文件路径
+    :param encoding_config: 文件编码，默认为'utf-8'
+    :return: 读取的JSON数据字典
+    """
     if not file_path.exists():
         return {}
 
@@ -167,7 +183,13 @@ async def read_json(file_path: Path, encoding_config: str = "utf-8") -> Dict[str
 async def write_json(
     file_path: Path, data: Dict[str, Any], encoding_config: str = "utf-8"
 ) -> bool:
-    """异步原子写入JSON文件（无.lock文件）"""
+    """
+    异步原子写入JSON文件（无.lock文件）\n
+    :param file_path: JSON文件路径
+    :param data: 要写入的字典数据
+    :param encoding_config: 文件编码，默认为'utf-8'
+    :return: 写入是否成功，成功返回True，失败返回False
+    """
     loop = asyncio.get_running_loop()
     # 复用同步写入逻辑（通过线程池执行）
     return await loop.run_in_executor(
@@ -175,9 +197,12 @@ async def write_json(
     )
 
 
-# 以下函数内容不变
 def get_at_ids(event: AiocqhttpMessageEvent) -> list[str]:
-    """获取QQ被at用户的id列表"""
+    """
+    获取QQ被at用户的id列表
+    :param event: Aiocqhttp消息事件对象
+    :return: 被at用户的id列表（排除自己）
+    """
     return [
         str(seg.qq)
         for seg in event.get_messages()
@@ -186,7 +211,11 @@ def get_at_ids(event: AiocqhttpMessageEvent) -> list[str]:
 
 
 def seconds_to_duration(seconds) -> str:
-    """将秒数转换为友好的时长字符串，如将秒数转换为"1天2小时3分4秒"""
+    """
+    将秒数转换为友好的时长字符串，如将秒数转换为"1天2小时3分4秒\n
+    :param seconds: 要转换的秒数
+    :return: 转换后的时长字符串
+    """
     if not isinstance(seconds, (int, float)) or seconds < 0:
         return "输入必须是非负的数字"
 
@@ -212,7 +241,12 @@ def seconds_to_duration(seconds) -> str:
 
 
 async def create_user_data(user_id: str, user_data_path: Path) -> bool:
-    """创建user系统初始数据"""
+    """
+    创建user系统初始数据\n
+    :param user_id: 用户id号
+    :param user_data_path: 用户数据存储路径
+    :return: 创建成功返回True，失败返回False
+    """
     try:
         default_user_data = {
             "user": {
@@ -262,10 +296,14 @@ async def create_user_data(user_id: str, user_data_path: Path) -> bool:
 async def get_user_data_and_backpack(
     user_id: str, only_data_or_backpack: str | None = None
 ) -> dict | tuple[dict, dict]:
-    """获取用户数据和背包数据（不存在则创建）\n
+    """
+    获取用户数据和背包数据（不存在则创建）\n
+    :param user_id: 用户id号
+    :param only_data_or_backpack: 可指定只获取用户数据或背包数据\n
     如果only_data_or_backpack为"user_data"则仅返回用户数据\n
     如果only_data_or_backpack为"user_backpack"则仅返回背包数据\n
-    默认返回(用户数据, 背包数据)元组"""
+    :return: 用户数据字典或背包数据字典，或包含两者的元组
+    """
     user_data_path = PLUGIN_DATA_DIR / "user_data"
     backpack_path = PLUGIN_DATA_DIR / "user_backpack"
     user_data = None
@@ -299,24 +337,35 @@ async def get_user_data_and_backpack(
 
 
 async def get_referenced_msg_id(event: AiocqhttpMessageEvent) -> str | None:
-    """获取被引用消息者的id"""
+    """
+    获取被引用消息者的id\n
+    :param event: Aiocqhttp消息事件对象
+    :return: 被引用消息者的id，如果没有引用消息则返回None
+    """
     for seg in event.get_messages():
         if isinstance(seg, Reply):
             return str(seg.sender_id)
 
 
 async def get_nickname(event: AiocqhttpMessageEvent, user_id) -> str:
-    """获取群用户的群昵称或QQ名"""
-    client = event.bot
+    """
+    获取群用户的群昵称或QQ名\n
+    :param user_id: 要获取昵称的用户QQ号
+    :return: 用户的群昵称或QQ名
+    """
     group_id = event.get_group_id()
-    all_info = await client.get_group_member_info(
+    all_info = await event.bot.get_group_member_info(
         group_id=int(group_id), user_id=int(user_id)
     )
     return all_info.get("card") or all_info.get("nickname")
 
 
 async def get_cmd_info(event: AiocqhttpMessageEvent) -> list[str]:
-    """提取命令及获取去除前缀后的内容"""
+    """
+    提取命令及获取去除前缀后的内容\n
+    :param event: Aiocqhttp消息事件对象
+    :return: 去除命令前缀后的内容列表
+    """
     cmd_prefix = event.message_str.split()[0]
     input_str = event.message_str.replace(cmd_prefix, "", 1).strip()
     return input_str.strip().split()
